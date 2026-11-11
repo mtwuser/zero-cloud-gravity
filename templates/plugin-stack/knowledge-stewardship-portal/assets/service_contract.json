@@ -1,0 +1,21 @@
+{
+  "service_id": "knowledge-stewardship-portal",
+  "contract_version": "zcg-service-v1",
+  "bind_host": "127.0.0.1",
+  "enabled_modules": ["data_pipeline", "crud", "vault", "node_mesh"],
+  "data_scopes": ["node", "network", "federation"],
+  "surfaces": [
+    "surfaces/web/index.html",
+    "surfaces/data/node_scope.json",
+    "surfaces/data/network_scope.json",
+    "surfaces/data/federation_scope.json"
+  ],
+  "web_templates": [
+    "web/templates/index.html",
+    "web/templates/partials/overview.html"
+  ],
+  "web_static": [
+    "web/static/css/plugin.css",
+    "web/static/js/islands/plugin-island.js"
+  ]
+}

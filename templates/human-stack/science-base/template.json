@@ -1,0 +1,10 @@
+{
+  "schema_version": "zcg-template-v1",
+  "name": "science-base",
+  "kind": "human-stack",
+  "stack_group": "human-stack",
+  "extends": "universal-base",
+  "target_role": "department",
+  "description": "Universal scientific method, 1:1:1 traceability, SI/ISO precision, and E3..E0 epistemic rigor.",
+  "recommended_surface_bindings": []
+}

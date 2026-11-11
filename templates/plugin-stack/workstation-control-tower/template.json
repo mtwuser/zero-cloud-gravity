@@ -1,0 +1,29 @@
+{
+  "schema_version": "zcg-template-v1",
+  "name": "workstation-control-tower",
+  "kind": "plugin-stack",
+  "stack_group": "plugin-stack",
+  "extends": "universal-base",
+  "target_role": "workstation",
+  "description": "Zero-build Workstation Control Tower cockpit surfacing system manifests, global profiles, and mounted layers.",
+  "runtime_service": {
+    "service_id": "workstation-control-tower",
+    "framework": "zero-build-html-cockpit",
+    "bound_surfaces": ["surfaces/web/", "surfaces/data/"],
+    "healthcheck_endpoint": "/healthz",
+    "enabled_modules": ["node_mesh", "telemetry", "work_ledger", "vault"],
+    "web_assets": {
+      "templates_dir": "web/templates",
+      "static_dir": "web/static"
+    },
+    "delivery_channel": {
+      "protocol": "python314-native-asgi",
+      "zones": ["Z1", "Z2", "Z3", "Z4"],
+      "default_tier": "T1",
+      "latency_budget_ms": 200,
+      "http_poll_stop_status": 286,
+      "telemetry_sink": ".agents/telemetry"
+    }
+  },
+  "recommended_surface_bindings": []
+}

@@ -1,0 +1,30 @@
+{{ archetype_spotlight_html }}
+<div class="zcg-grid" style="margin-top: 1rem;">
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_check }} Sprint Work Ledger &amp; Stage Gates</h2>
+      <span class="zcg-badge">HTTP 286</span>
+    </div>
+    <p>Inspect active <code>WORKTASK.md</code> lots, T2 background job progress, and progressive promotion gates.</p>
+    <button type="button" class="zcg-btn" data-zcg-get="/api/modules/work-ledger" data-zcg-target="#zcg-capability-stage">{{ icon_check }} Open Work Ledger</button>
+  </article>
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_database }} Workspace Records &amp; Deliverable Vault</h2>
+      <span class="zcg-badge">CARDS / LIST / TABLE</span>
+    </div>
+    <p>Manage structured operational records and SHA-256 content-addressed deliverable artifacts.</p>
+    <div class="zcg-tabs">
+      <button type="button" class="zcg-btn" data-zcg-get="/api/modules/crud?view=cards" data-zcg-target="#zcg-capability-stage">{{ icon_database }} Workspace Records</button>
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/vault?view=cards" data-zcg-target="#zcg-capability-stage">{{ icon_vault }} Deliverable Vault</button>
+    </div>
+  </article>
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_layers }} Cloud Links, Role Projection &amp; Mesh</h2>
+      <span class="zcg-badge">1-Hop + Link</span>
+    </div>
+    <p>Review 1-hop parent/child topology, declarative <code>linked_nodes</code>, and minimal-disclosure role capsules.</p>
+    <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/node-mesh" data-zcg-target="#zcg-capability-stage">{{ icon_compass }} Inspect Node Mesh</button>
+  </article>
+</div>

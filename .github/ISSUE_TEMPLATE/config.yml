@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Advisories (NIST CSF 2.0 / MCP-Sec)
+    url: https://github.com/mtwuser/zero-cloud-gravity/security/advisories/new
+    about: Report path-containment, capsule-integrity, or sandbox security issues privately.

@@ -1,0 +1,10 @@
+{
+  "schema_version": "zcg-template-v1",
+  "name": "business-base",
+  "kind": "human-stack",
+  "stack_group": "human-stack",
+  "extends": "universal-base",
+  "target_role": "corporate",
+  "description": "Executive 4-Channel synthesis, RBAC sovereignty, Node Work & Sprint Ledger, and audit compliance.",
+  "recommended_surface_bindings": []
+}

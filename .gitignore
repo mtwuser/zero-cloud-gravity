@@ -1,0 +1,22 @@
+# Python & tooling caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.venv
+.venv/
+venv
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+
+# Zero-Cloud Node transient runtime & session state
+logs/
+.agents/runtime/
+.agents/SESSION.md
+.workstation-state.json

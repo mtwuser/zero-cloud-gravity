@@ -1,0 +1,17 @@
+[Desktop Entry]
+Name=Antigravity IDE
+Comment=AI-Powered Integrated Development Environment
+Exec=/opt/antigravity-ide/antigravity-ide %F
+Icon=/opt/antigravity-ide/resources/app/resources/linux/code.png
+Type=Application
+StartupNotify=true
+StartupWMClass=Antigravity
+Categories=Development;IDE;
+MimeType=text/plain;inode/directory;
+Actions=new-empty-window;
+Keywords=antigravity;code;ide;ai;
+
+[Desktop Action new-empty-window]
+Name=New Empty Window
+Exec=/opt/antigravity-ide/antigravity-ide --new-window %F
+Icon=/opt/antigravity-ide/resources/app/resources/linux/code.png

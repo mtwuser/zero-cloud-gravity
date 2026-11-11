@@ -1,0 +1,30 @@
+{{ archetype_spotlight_html }}
+<div class="zcg-grid" style="margin-top: 1rem;">
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_shield }} Runtime Telemetry &amp; Tamper-Evident Audit DAG</h2>
+      <span class="zcg-badge">NIST CSF 2.0</span>
+    </div>
+    <p>Inspect live sampling probes, bulkhead shielding state, and SHA-256 hash-chained fiduciary audit decisions.</p>
+    <div class="zcg-tabs">
+      <button type="button" class="zcg-btn" data-zcg-get="/api/modules/telemetry" data-zcg-target="#zcg-capability-stage">{{ icon_activity }} Security Telemetry</button>
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/telemetry/audit" data-zcg-target="#zcg-capability-stage">{{ icon_shield }} Audit Chain</button>
+    </div>
+  </article>
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_layers }} Governed Surface Mesh &amp; Ephemeral Sandboxes</h2>
+      <span class="zcg-badge">R0..R2</span>
+    </div>
+    <p>Verify 1-hop departmental reach, capability rings, and strictly-read-only ephemeral bot boundaries.</p>
+    <button type="button" class="zcg-btn" data-zcg-get="/api/modules/node-mesh" data-zcg-target="#zcg-capability-stage">{{ icon_compass }} Inspect Governed Mesh</button>
+  </article>
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_lock }} Fiduciary Gate &amp; Remediation Ledger</h2>
+      <span class="zcg-badge">precedence: 5</span>
+    </div>
+    <p>Review security remediation tasks and environment promotion sign-offs across <code>dev -&gt; tst -&gt; pre -&gt; pro</code>.</p>
+    <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/work-ledger" data-zcg-target="#zcg-capability-stage">{{ icon_check }} Remediation Ledger</button>
+  </article>
+</div>

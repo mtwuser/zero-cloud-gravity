@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zero-cloud-gravity"
+version = "1.0.0"
+description = "Sovereign Zero-Cloud Node Architecture, Contextual MCP & Epistemic Governance Engine for Google Antigravity"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+zcg = "zcg.cli.dispatcher:main"
+zcg-mcp = "zcg.mcp.server:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "S", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S108", "S603", "S607"]
+"antigravity/.gemini/config/scripts/**" = ["S603"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = ["src"]
+warn_unreachable = true
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+
+[tool.coverage.run]
+source = ["src/zcg"]
+branch = true
+omit = ["*/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 100
+exclude_also = [
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

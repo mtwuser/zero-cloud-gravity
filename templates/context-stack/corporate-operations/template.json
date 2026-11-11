@@ -1,0 +1,10 @@
+{
+  "schema_version": "zcg-template-v1",
+  "name": "corporate-operations",
+  "kind": "context-stack",
+  "stack_group": "context-stack",
+  "extends": "business-base",
+  "target_role": "corporate",
+  "description": "Closed-loop Node Work & Sprint Ledger, Epistemic Knowledge & Spec Atlas, and multi-department SLAs.",
+  "recommended_surface_bindings": []
+}

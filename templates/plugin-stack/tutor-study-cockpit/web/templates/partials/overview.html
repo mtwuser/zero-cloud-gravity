@@ -1,0 +1,33 @@
+{{ archetype_spotlight_html }}
+<div class="zcg-grid" style="margin-top: 1rem;">
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_sparkles }} Socratic Curriculum Drills (M1..M4)</h2>
+      <span class="zcg-badge">study-drills</span>
+    </div>
+    <p>Practice active-recall exercises filtered by mastery stage (<code>M1</code>..<code>M4</code>) across cards, list, or table layouts.</p>
+    <div class="zcg-tabs">
+      <button type="button" class="zcg-btn" data-zcg-get="/api/modules/crud?view=cards" data-zcg-target="#zcg-capability-stage">{{ icon_sparkles }} Drill Cards</button>
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/crud?view=list" data-zcg-target="#zcg-capability-stage">{{ icon_book }} Compact List</button>
+    </div>
+  </article>
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_vault }} Formula Sheets &amp; Rubric Vault</h2>
+      <span class="zcg-badge">SHA-256</span>
+    </div>
+    <p>Store problem sets, derivation sheets, and verified lab rubrics in the local content-addressed vault.</p>
+    <button type="button" class="zcg-btn" data-zcg-get="/api/modules/vault?view=cards" data-zcg-target="#zcg-capability-stage">{{ icon_vault }} Open Study Vault</button>
+  </article>
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_layers }} Mounted Knowledge Atlases &amp; Telemetry</h2>
+      <span class="zcg-badge">sci-* / gov-*</span>
+    </div>
+    <p>Inspect mounted <code>sci-*</code> corpora, <code>knowledge-feed</code> links to <code>&lt;persona&gt;-work</code>, and session telemetry.</p>
+    <div class="zcg-tabs">
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/node-mesh" data-zcg-target="#zcg-capability-stage">{{ icon_compass }} Knowledge Mesh</button>
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/telemetry" data-zcg-target="#zcg-capability-stage">{{ icon_activity }} Lab Telemetry</button>
+    </div>
+  </article>
+</div>

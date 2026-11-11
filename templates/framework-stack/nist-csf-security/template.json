@@ -1,0 +1,40 @@
+{
+  "schema_version": "zcg-template-v1",
+  "name": "nist-csf-security",
+  "kind": "framework-stack",
+  "stack_group": "framework-stack",
+  "extends": "software-engineering",
+  "target_role": "domain-policy",
+  "description": "NIST CSF 2.0, OWASP ASVS, zero-trust secret hygiene, and MCP capability-ring governance.",
+  "recommended_surface_bindings": [
+    {
+      "binding_id": "nist-csf-security-policy",
+      "mode": "authoritative",
+      "target_globs": [
+        "src/**",
+        "system/**",
+        "antigravity/**"
+      ],
+      "architectural_planes": [
+        "infrastructure",
+        "domain",
+        "application"
+      ],
+      "scopes": [
+        "*"
+      ],
+      "traits": [
+        "security"
+      ],
+      "rule_files": [
+        "templates/framework-stack/nist-csf-security/rules/nist-csf-security.md"
+      ],
+      "invariants": [
+        "Enforce NIST CSF 2.0 Govern/Protect/Detect controls and zero standing privileges."
+      ],
+      "canonical_templates": [
+        "templates/framework-stack/nist-csf-security/skills/nist-csf-audit/SKILL.md"
+      ]
+    }
+  ]
+}

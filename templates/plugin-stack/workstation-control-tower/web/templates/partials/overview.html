@@ -1,0 +1,33 @@
+{{ archetype_spotlight_html }}
+<div class="zcg-grid" style="margin-top: 1rem;">
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_layers }} Personal Sovereign Triad &amp; 1-Hop Mesh</h2>
+      <span class="zcg-badge">.personal.local</span>
+    </div>
+    <p>Inspect governed sub-layers (<code>&lt;persona&gt;-tutor</code>, <code>&lt;persona&gt;-work</code>), declarative cloud links, and active daemons.</p>
+    <button type="button" class="zcg-btn" data-zcg-get="/api/modules/node-mesh" data-zcg-target="#zcg-capability-stage">{{ icon_compass }} Inspect Node Mesh</button>
+  </article>
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_activity }} Runtime Telemetry &amp; Audit DAG</h2>
+      <span class="zcg-badge">G1..G3</span>
+    </div>
+    <p>Monitor sampling cadence, heartbeat jitter dispersion, bulkhead saturation, and hash-chained runtime audit nodes.</p>
+    <div class="zcg-tabs">
+      <button type="button" class="zcg-btn" data-zcg-get="/api/modules/telemetry" data-zcg-target="#zcg-capability-stage">{{ icon_activity }} Live Telemetry</button>
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/telemetry/audit" data-zcg-target="#zcg-capability-stage">{{ icon_shield }} Audit Chain</button>
+    </div>
+  </article>
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_vault }} Workstation Ledger &amp; Snapshot Vault</h2>
+      <span class="zcg-badge">HTTP 286</span>
+    </div>
+    <p>Track host maintenance tasks, deferred T2 jobs, and content-addressed configuration snapshots.</p>
+    <div class="zcg-tabs">
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/work-ledger" data-zcg-target="#zcg-capability-stage">{{ icon_check }} Work Ledger</button>
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/vault?view=cards" data-zcg-target="#zcg-capability-stage">{{ icon_vault }} Snapshot Vault</button>
+    </div>
+  </article>
+</div>

@@ -1,0 +1,10 @@
+{% extends "plugin_shell.html" %}
+{% block island %}
+  <aside class="zcg-card zcg-plugin-island" data-island="plugin-status" data-hydrate="visible" data-zcg-sse="/events">
+    <div class="zcg-card__header">
+      <strong>{{ icon_globe }} Epistemic Stewardship &amp; SSE Telemetry</strong>
+      <span class="zcg-badge" data-role="island-badge">Awaiting hydration</span>
+    </div>
+    <p data-role="island-detail">Read-only audited pro surface; runtime SQLite WAL &amp; blobs isolated in .agents/telemetry/.</p>
+  </aside>
+{% endblock %}

@@ -1,0 +1,156 @@
+---
+name: governance
+description: "Constructive work-lifecycle orchestration (roadmaps → WORKROAD → WORKTASK → CHANGELOG), 1-hop downward directive delegation (make delegate), RBAC/stage decisions (make roster|decision|env-gate), and raw conversation knowledge extraction."
+---
+
+# Governance — Constructive Work Lifecycle, 1-Hop Delegation & Knowledge Extraction (`/governance`)
+
+> **Purpose (`Constructive Governance & Inter-Layer Orchestration Playbook — 0% Audit Overlap`)**: Activate `/governance` **exclusively to execute constructive governance transitions**: promoting work across `roadmaps/ -> WORKROAD.md -> WORKTASK.md -> CHANGELOG.md`, delegating 1-hop directives downward (`make delegate`), recording RBAC/consensus decisions (`make roster`, `make decision`, `make env-gate`), or extracting architectural knowledge from raw conversation transcripts.
+> **Orchestrating vs. Auditing Boundary**: Never use `/governance` to audit a repository or layer. To **audit** layer manifests (`system/zcg-node.json`), deontic precedence (`0..100`), RBAC rosters, surface bindings, or 1-hop horizon drift, run **`/review layer`** (or **`/review governance`**, `C1` tactical check) or **`/audit layer`** (or **`/audit governance`**, `C2` closed-world sweep).
+
+## Part 1 — Promotion Flow and Changelog
+
+> **When to use**: Use this skill when moving items between work tiers (`roadmaps/`, active backlog, task tracker), or when completing a feature and writing the `CHANGELOG.md`.
+
+### Promotion Flow
+
+Work flows strictly from left to right:
+`roadmaps/ → WORKROAD.md (or ROADMAP.md) / BACKLOG.md → WORKTASK.md → CHANGELOG.md`
+
+#### 1. Future Roadmap (`roadmaps/`) → Active Roadmap (`WORKROAD.md` / `ROADMAP.md`)
+- Select the next roadmap by priority number.
+- Execute **deep-analysis** before promotion according to the active `workspace_mode` (`make status` / `.agents/rules/*.md`):
+  - **Technical / Hybrid Mode (`software-engineering` / `framework-stack/*`)**: `1. Guides/Specs -> 2. Tests [E2E -> Imp -> Unit] -> 3. Code` (audit specs, tests, and code).
+  - **Business Mode (`business-base` / `context-stack/*` / `Root 0` / `Department`)**: `1. Normative Policies & Lex Superior (0..100) -> 2. Corporate Ledgers (corporate/), Modular Corpus (docs/) & Traceable IDs ([DEPT]-[TYPE]-[YYYY]-[NNN]) -> 3. Cross-Surface Contracts & Sign-Off Gates` (audit corporate ledgers, statutory/scientific corpora, policies, and downstream department/squad impact).
+- Enrich the roadmap with your findings, then promote its phase checklist to `WORKROAD.md`.
+
+#### 2. Active Roadmap / Backlog (`WORKROAD.md` / `BACKLOG.md`) → Active Tasks (`WORKTASK.md`)
+- Promote one phase at a time.
+- If `WORKTASK.md` already has items, run cross-task analysis first to detect dependencies and shared components.
+- Move the phase to `WORKTASK.md`, renaming the prefix as needed (e.g. `R1` to `T1`).
+
+#### 3. Active Tasks (`WORKTASK.md`) → Done (`CHANGELOG.md`)
+- Completed items are DELETED from `WORKTASK.md`, `WORKROAD.md`, and `BACKLOG.md`. Do not leave them as strikethrough (`~~`) or checkmarks.
+- Log completed work exclusively in `CHANGELOG.md`.
+
+### Mode & Horizon Discipline ("Capture, don't act" & Zero Premature Horizon Mixing)
+
+When working on a specific task or milestone (`vN`), you might spot unrelated improvements or future architectural visions (`v(N+1)`):
+1. **Capture**: Add a one-line observation to `BACKLOG.md` or refine the future horizon section inside `roadmaps/*` and `WORKROAD.md`.
+2. **Continue**: Return to your current task immediately.
+3. **Never mix modes or horizons**: Do not refactor an unrelated file while writing tests for a new feature, and **never** introduce future roadmap concepts (`v(N+1)`) into active `vN` code, templates, or public documentation (`README.md`, `docs/`, `CHANGELOG.md`).
+
+### CHANGELOG Entries & `[Unreleased]` Release Discipline
+
+Always write for the **USER** (or downstream adopter), not internal scratch notes:
+- **Always log ongoing work under `## [Unreleased]`**: During active development, place all `### Added`, `### Changed`, and `### Fixed` entries under `## [Unreleased]` at the top of `CHANGELOG.md`.
+- **Never bump `VERSION` prematurely**: Keep `VERSION`, `pyproject.toml`, and `README.md` badges at the last published release on `origin`. Never append `(vX.Y.Z)` to ordinary work commits or chain `git push` by default.
+- **Explicit Release Cuts (`/release`)**: Only promote `## [Unreleased]` $\rightarrow$ `## [X.Y.Z] - YYYY-MM-DD`, bump `VERSION`, and deliver a tag/push block when the user explicitly triggers `/release` (`skills/release/SKILL.md`).
+- Explain how the user's experience or the system's external behavior changed.
+- ✅ *Good*: "Profile section streamlined with real-time notification count."
+- ❌ *Bad*: "Refactored ProfileService.get_stats() to use aggregate query and serializers."
+
+---
+
+## Part 2 — Knowledge Extraction & Architectural Integration from Raw Conversations
+
+> **When to use**: Use this procedure when extracting deep architectural knowledge from raw planning conversations or AI chat logs (`input`/`output` transcripts) and integrating the findings into a project's reference and normative architecture documentation.
+
+### The 3-Stage Extraction & Integration Pipeline
+
+#### Stage 1 — Exhaustive Reference Extraction & Gap Analysis (`docs/reference/`)
+1. **Sequential Segment Reading**: Read the raw conversation file in complete, non-overlapping line segments (never sample or skip middle sections) to extract 100% of domain insights, invariants, and architectural mechanisms.
+2. **Structured Reference Corpus**: Synthesize the extracted concepts into structured reference documents under `docs/reference/<topic>.md` (`< 465` lines per file), updating `docs/README.md` and `README.md`.
+3. **Fit & Gap Matrix**: Classify each extracted mechanism against the current architecture (`100% Aligned`, `Conceptual Enrichment`, or `Actionable Gap`) and present the gap analysis before modifying normative specs.
+
+#### Stage 2 — Normative Architectural & Roadmap Integration (`docs/architecture/` & `roadmaps/`)
+1. **Theoretical & Reference Foundations**: Add formal sections to the project's reference guides (`docs/reference/*.md`) and human workflow guides (`docs/guides/*.md`).
+2. **Normative Specifications (`1:1:1`)**: Integrate the approved mechanisms, `1:1:1` (`Spec <-> Source <-> Unit Test`) tables, and glossary definitions into the authoritative architecture documents (`docs/architecture/*.md`).
+3. **Roadmap Propagation**: Update pending roadmap files (`roadmaps/*.md`) so future implementation phases incorporate the newly formalized invariants.
+
+#### Stage 3 — Raw Source Decommissioning (Zero-Residue)
+- Once 100% of the extracted insights are verified in `docs/reference/` and `docs/architecture/`, **delete the temporary raw conversation file** so no unindexed chat dumps remain in the repository.
+- Alternatively, when processing massive multi-file queues incrementally across multiple turns, apply **Destructive Queue Ingestion** (popping synthesized line ranges from the source file after each checkpoint until the file reaches `0 bytes` and is removed).
+
+---
+
+## Part 3 — Inter-Layer Operational & Business Governance (`Root 0 <-> Department <-> Squad <-> Project`)
+
+> **When to use**: Use this procedure in `corporate-root` (`corporate`), `domain-policy`, `department`, `squad`, or `project` workspaces to orchestrate reciprocal task delegation (`make delegate`), ticket-linked branch execution (`make task`), inter-layer consultation (`make consult`), upward completion receipts (`make complete`), bottom-up roadmap/ledger proposals (`make promote`), isomorphic `dev -> tst -> pre -> pro` stage gates (`make env-gate`), 4-role roster management (`make roster`), and non-destructive proposal decisions (`make decision`).
+> *(For promoting Antigravity agent rules `.agents/rules/*.md`, skills `.agents/skills/*/SKILL.md`, or reusable `templates/**`, use **`/enrich`** instead.)*
+
+### 0. Command Cadence & Human-Consciousness Tiers (`command_tiers` in `make status`)
+
+Match execution autonomy to the operation's cadence, consolidation level, and blast radius:
+- **`C1: auto_reflexive` (High-Frequency / Consolidated & Automated — `0` cross-layer mutation)**: `make status`, `make diff`, `make horizon`, `make upstream-diff`, `make consult`, `make authority`, `make mcp-test`, `make lint`, `make format`, `make test-unit`, `make test-imp`, `make test-e2e`, `make verify`, `/sopen`, `/review`. Safe for the agent to run autonomously (`// delegate: flash`).
+- **`C2: guided_tactical` (Per-Task / Intra-Layer Transitions — local workspace state)**: `make task`, `make sync`, `compare-upstream --apply-safe`, `make apply-template`, `make setup-dev` (`oss-dev` only), `make workstation-sync`, `/continue`, `/sclose`, `/audit`. Agent prepares local trackers/state and presents the branch/commit block or blueprint for user execution.
+- **`C3: conscious_human_gated` (Low-Frequency / High-Consciousness Inter-Layer & Authority Gates)**: `make delegate`, `make complete`, `make promote`, `make env-gate`, `make decision`, `make roster`, `/enrich` (§4), `/release`. Never auto-chain silently; always surface the **1-Hop Impact Summary** (`origin -> target`, ticket/proposal ID, authority check) and require explicit human intent.
+
+### 1. Top-Down 1-Hop Directive & Artifact Delivery (`make delegate` / `delegate-to-child`)
+
+1. **Enforce the 1-Hop Horizon, Strict Intra-Workspace Subtree Containment (`layers/<child>/`) & Dual Authority Gate**:
+   - `Root 0` (`corporate`) delivers exclusively to its immediate child `Department` / `domain-policy` layers mounted under `layers/<child-layer-id>/` (`Department` delivers to `Squad`). Never skip tiers and **never mutate or suggest `cd <sibling-repo> && git commit` on external sibling directories outside `<PROJECT_ROOT>`**.
+   - **Same-Owner Direct Subtree Mode (`delivery_mode: "direct_subtree"`)**: When the parent actor is also an authorized `owner` or `maintainer` of `layers/<child>/system/zcg-node.json`, `make delegate` updates `layers/<child>/<surface>` in place and emits `zcg subtree push <child> <branch>`.
+   - **Cross-Owner Proposal / PR Mode (`delivery_mode: "proposal_pr"`, `--create-pr` or `CROSS_OWNER_CHILD_DELEGATION`)**: When the parent actor is not an authorized owner/maintainer of the child layer (or `--create-pr` is passed), `make delegate` stages the directive or artifact non-destructively under `layers/<child>/.agents/proposals/from-<parent-id>/`, adds a `P0` review item in `layers/<child>/WORKTASK.md`, and emits `zcg subtree push <child> delegate/<TICKET-ID>` for child-owner PR review.
+2. **Traceable Ticket Registration (`## Outbound Delegations`) & Non-Destructive Staging**:
+   - **Trackers (`WORKTASK.md`, `BACKLOG.md`, `WORKROAD.md`, `ROADMAP.md`, `WORKVALI.md`)**: Appends a traceable directive (`- [ ] **[P1 · [<TICKET-ID>] · Delegated from '<parent-id>']**: ...`) into `layers/<child>/<tracker>` (or stages a proposal if cross-owner) and logs `- [/] **[<TICKET-ID> -> <child-id> (<surface>, stage: delegated)]**` under `## Outbound Delegations` in the parent's `WORKTASK.md`.
+   - **Roadmaps, Corporate Ledgers & Rules (`roadmaps`, `corporate`, `rules`)**: Delivers `--source <rel-path>` into `layers/<child>/<surface>`. If the target file already exists and `--force` is not passed (or if cross-owner), stages non-destructively at `layers/<child>/.agents/proposals/from-<parent-id>/<file>` and adds a `P0` review item in `layers/<child>/WORKTASK.md`.
+   ```bash
+   make delegate CHILD=<child-layer-id> [TASK="<directive>"] [TICKET=<TICKET-ID>] [SOURCE=<rel-path>] [SURFACE=WORKTASK.md|BACKLOG.md|WORKROAD.md|WORKVALI.md|roadmaps|rules|corporate] [PRIORITY=P0|P1|P2] [CREATE_PR=1]
+   ```
+
+### 2. Child Execution (`make task`), Ephemeral Consultation (`make consult`) & Reciprocal Completion (`make complete`)
+
+1. **Claim Task & Create Ticket-Linked Feature Branch (`make task` / `start-task`)**:
+   ```bash
+   make task TASK="<ticket-id-or-text>" [TICKET=<TICKET-ID>]
+   # Marks item [/] in WORKTASK.md, records Ticket ID & Origin Layer in .agents/SESSION.md,
+   # and emits: git checkout -b feature/<TICKET-ID>-<descriptive-slug>
+   ```
+2. **One-Shot Read-Only Inter-Layer Consultation (`make consult` / `consult-layer`)**:
+   ```bash
+   make consult LAYER=<target-layer-or-template> QUERY="<question>"
+   # Spawns a strictly-read-only ephemeral fork, returns a 4-Channel Executive Digest + rcap1 capsules, and auto-reaps.
+   ```
+3. **Close Task & Emit Upward Completion Receipt (`make complete` / `complete-task`)**:
+   ```bash
+   make complete TASK="<ticket-id-or-text>" [DELIVERABLE=<rel-path>]
+   # Marks item [x] in child WORKTASK.md and reciprocally updates parent WORKTASK.md
+   # (## Outbound Delegations -> [x] ... stage: completed (pro)), or stages
+   # .agents/proposals/to-<parent>/completion-<ticket>.md + PR plan (feature/<TICKET-ID>-completed).
+   ```
+
+### 3. Level Report (`make horizon`), Bottom-Up Proposals (`make promote`), $N$-Layer Env Gates (`make env-gate`), Roster (`make roster`) & Decisions (`make decision`)
+
+1. **Bilateral 3-Bucket Level Report (`make horizon` / `inspect-horizon`)**:
+   - Inspects what arrived from above (`layer_report.inbound_from_upstream`: delegated tasks, staged `from-*` proposals, parent rule updates with `oss_auto_sync_covered: true`), what arrived from below (`layer_report.inbound_from_downstream`: completed child delegations `[x]`, `completion-*.md` receipts, `to-*` proposals, child drifts), and local workspace changes (`layer_report.local_workspace_changes`, including `pending_consensus_items`), alongside `actor_role_profile` (`owner`, `maintainer`, `validator`, `member`, or read-only `consumer`, plus `entity_identity` and `upstream_relationship`).
+2. **Bottom-Up Roadmap, Ledger & Tracker Proposals (`make promote` / `promote-from-project --create-pr`)**:
+   - Escalates operational/business artifacts (`roadmaps/*.md`, `corporate/**`, `docs/**`, `BACKLOG.md`, `WORKROAD.md`, `WORKVALI.md`) 1 hop upward via PR (staging non-destructively at `.agents/proposals/to-<parent>/` when protected):
+     ```bash
+     make promote SOURCE=<roadmaps/file.md|corporate/policy.md|WORKVALI.md|BACKLOG.md>
+     ```
+3. **Isomorphic `dev -> tst -> pre -> pro` Promotion Gate & $N$-Departmental Surface Consensus (`make env-gate`)**:
+   - Verifies stage readiness (`0` open `P0` in `WORKTASK.md` + `member` role for `tst`, `0` unchecked items in `WORKVALI.md` + `validator`/`owner` authority for `pre`, `CHANGELOG.md` + `owner` or internal parent `owner` overarching authority `UPSTREAM_HIERARCHICAL_AUTHORITY` for `pro`) and evaluates `evaluate_multilayer_surface_consensus` across all `co_owning_layers` matching `FILES`:
+     - **`RECONCILED_FLOW`**: All $N$ co-owning layers satisfied $\rightarrow$ proceeds to `pre`/`pro`.
+     - **`ITERATION_REQUIRED`** (`REJECTED`/`DEFERRED`/`PENDING`): Iterate on the same task branch in `dev`/`tst` and re-validate in `pre`.
+     - **`ESCALATE_TO_ROOT`** (`BLOCKED` by an `"internal"` department): Halts `pro` and routes 1-hop upward to the shared `governing_root_id` (`Root 0`) for cross-CO arbitration and upstream rule codification (`rule_learning_hint` via `/enrich` / `make promote`).
+     - **`ESCALATE_INTER_ENTITY_ROOTS`** (`BLOCKED` by an `"external"` layer): Local `Root 0` cannot override `external:public-government` (`PUBLIC_REGULATORY_COMPLIANCE_REQUIRED`) or `external:enterprise` (`CROSS_ENTITY_ESCALATION_REQUIRED`).
+     ```bash
+     make env-gate ENV=<tst|pre|pro> [FILES=<rel-path1,rel-path2>]
+     ```
+4. **4-Role Roster & `.github/CODEOWNERS` Sync (`make roster` / `manage-roster`)**:
+   - Maintains `owners`, `maintainers`, `validators`, and `members` in `system/zcg-node.json` and syncs `.github/CODEOWNERS`:
+     ```bash
+     make roster [ADD=<email>] [REMOVE=<email>] [ROLE=owner|maintainer|validator|member]
+     ```
+5. **Human Governance Decision Recording (`make decision` / `record-decision`)**:
+   - Resolves pending staged proposals or cross-departmental surface reviews (`approve`, `reject`, `defer`, `blocked`) in `WORKTASK.md`, `.agents/SESSION.md`, and `logs/governance_audit.jsonl`:
+     ```bash
+     make decision ITEM=<proposal-or-surface-path> DEC=<approve|reject|defer|blocked> REASON="<justification>"
+     ```
+6. **Federated Knowledge Library Lifecycle & Normative Obsolescence Review (`Q1..Q4` `Age × Empirical Usage` Radar)**:
+   - For workspaces governing or mounting Federated Knowledge Libraries (`gov-<country>`, `sci-<discipline>`, `geo-<territory>`, `org-<entity>` resolved via `local-mcp-clone -> private-mirror-remote -> public-canonical-remote`), inspect `citation_lifecycle_radar` in `audit_node_drift` (`verify_epistemic_context_claims` / `.agents/telemetry/citation_stats.json`):
+     - **`Q1_HOT_CORE`** (`<= 180d`, `>= 3` citations): Promote to pre-indexed `L0/L1` hot cache and prioritize `1:1:1` regression protection.
+     - **`Q2_HIGH_FRICTION`** (`> 180d`, `>= 3` citations): High-demand aging statute, scientific review, or corporate SOP — schedule priority modernization in `WORKROAD.md`.
+     - **`Q3_EMERGING_NICHE`** (`<= 180d`, `< 3` citations): Recently authored or specialized rule — monitor organic adoption.
+     - **`Q4_NORMATIVE_OBSOLESCENCE`** (`> 180d`, `0` citations): Candidate for legislative repeal, archival, or `L1` consolidation. Popularity never overrides epistemic truth (`E3 > E2 > E1 > E0`, `epistemic_override_allowed: false`), and stale consumer citations (`CITATION_DRIFT_DETECTED` on `citation_receipt` digest mismatch) trigger targeted re-consultation.

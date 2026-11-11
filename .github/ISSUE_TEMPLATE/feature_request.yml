@@ -1,0 +1,27 @@
+name: Feature or Stack Proposal
+description: Propose an orthogonal capability, template pack, or Horizon v2.0.0 enhancement
+title: "[Feat]: "
+labels: ["enhancement"]
+body:
+  - type: input
+    id: axis
+    attributes:
+      label: Architectural Plane & Stack Tier
+      description: e.g., zcg/mcp, human-stack, context-stack, framework-stack, plugin-stack
+      placeholder: "plugin-stack"
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Problem Statement & Specification Scope
+      description: Describe the sovereign Zero-Cloud workflow or Google Antigravity integration goal.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Proposed 1:1:1 Verification Contract
+      description: How will this capability be verified in tests/unit/, tests/imp/, and tests/e2e/?
+    validations:
+      required: true

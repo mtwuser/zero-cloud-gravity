@@ -1,0 +1,21 @@
+{
+  "schema_version": "zcg-template-v1",
+  "name": "google-cloud-iac",
+  "kind": "framework-stack",
+  "stack_group": "framework-stack",
+  "extends": "nist-csf-security",
+  "target_role": "environment-cluster",
+  "description": "Declarative Google Cloud infrastructure (Cloud Run, GKE, BigQuery, Cloud KMS, IAM Workload Identity) and Antigravity SDK integration.",
+  "recommended_surface_bindings": [
+    {
+      "binding_id": "google-cloud-iac-cluster",
+      "mode": "authoritative",
+      "target_globs": ["infra/**", "Dockerfile", "system/**"],
+      "architectural_planes": ["infrastructure"],
+      "scopes": ["*"],
+      "traits": ["gcp"],
+      "rule_files": ["templates/framework-stack/google-cloud-iac/rules/google-cloud-iac.md"],
+      "invariants": ["Target pure Google Cloud services with IAM Workload Identity Federation and resource labels."]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": "zcg-template-v1",
+  "name": "secops-mcp-guardian",
+  "kind": "plugin-stack",
+  "stack_group": "plugin-stack",
+  "extends": "nist-csf-security",
+  "target_role": "domain-policy",
+  "description": "SecOps MCP Guardian plugin auditing capability rings, rcap1 alerts, Q1..Q4 citation drift, and TTL bot leases.",
+  "runtime_service": {
+    "service_id": "secops-mcp-guardian",
+    "framework": "zero-build-html-cockpit",
+    "bound_surfaces": [
+      "surfaces/web/",
+      "surfaces/data/"
+    ],
+    "healthcheck_endpoint": "/healthz",
+    "enabled_modules": ["telemetry", "node_mesh", "work_ledger"],
+    "web_assets": {
+      "templates_dir": "web/templates",
+      "static_dir": "web/static"
+    },
+    "delivery_channel": {
+      "protocol": "python314-native-asgi",
+      "zones": ["Z1", "Z2", "Z3", "Z4"],
+      "default_tier": "T1",
+      "latency_budget_ms": 200,
+      "http_poll_stop_status": 286,
+      "telemetry_sink": ".agents/telemetry"
+    }
+  },
+  "ephemeral_fork_policy": {
+    "bot_role": "secops-mcp-orchestrator-bot",
+    "trigger": "on_surface_match",
+    "model_tier": "inherit",
+    "access_mode": "strictly-read-only",
+    "mount_templates": [
+      "nist-csf-security"
+    ],
+    "resolution": "L2",
+    "ttl_seconds": 300,
+    "handback_contract": "4-channel-digest+rcap1"
+  },
+  "recommended_surface_bindings": []
+}

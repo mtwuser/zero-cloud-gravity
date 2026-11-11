@@ -1,0 +1,1 @@
+# Zero external runtime dependencies — 100% Python 3.12+ C-backed standard library

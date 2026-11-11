@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Antigravity Agents
+Comment=Google Antigravity 2.0 Autonomous Agent Environment
+Exec=/opt/antigravity-agents/antigravity %F
+Icon=applications-development
+Type=Application
+StartupNotify=true
+StartupWMClass=Antigravity
+Categories=Development;IDE;
+MimeType=text/plain;inode/directory;

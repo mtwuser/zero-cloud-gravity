@@ -1,0 +1,10 @@
+{
+  "schema_version": "zcg-template-v1",
+  "name": "academic-curriculum",
+  "kind": "context-stack",
+  "stack_group": "context-stack",
+  "extends": "academic-base",
+  "target_role": "department",
+  "description": "Structured syllabus design, lab rubrics, mastery checkpoints, and study-atlas organization.",
+  "recommended_surface_bindings": []
+}

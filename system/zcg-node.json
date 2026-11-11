@@ -1,0 +1,166 @@
+{
+  "schema_version": "zcg-node-v1",
+  "layer_id": "zero-cloud-gravity-workstation",
+  "layer_role": "workstation",
+  "entity_kind": "open-source",
+  "visibility": "public",
+  "precedence": 10,
+  "global_profile": "universal-base",
+  "interaction_language": "en",
+  "description": "ZeroCloudGravity — Sovereign Zero-Cloud Antigravity Node, Epistemic Atlas & Federated Governance Baseline",
+  "upstream_layer": {
+    "layer_id": "mtwuser/zero-cloud-gravity",
+    "repository": "https://github.com/mtwuser/zero-cloud-gravity.git",
+    "branch": "master"
+  },
+  "mounted_layers_dir": "layers",
+  "mounted_layers": [],
+  "excluded_contexts": {
+    "web": [
+      "governance",
+      "topology",
+      "mcp",
+      "capsules",
+      "cockpit",
+      "cli",
+      "ephemeral"
+    ],
+    "platform": [
+      "governance",
+      "topology",
+      "mcp",
+      "capsules",
+      "cockpit",
+      "cli",
+      "ephemeral"
+    ]
+  },
+  "default_stack_templates": [
+    "universal-base",
+    "academic-base",
+    "science-base",
+    "business-base",
+    "academic-curriculum",
+    "scientific-methodology",
+    "software-engineering",
+    "corporate-operations",
+    "nist-csf-security",
+    "google-cloud-iac",
+    "workstation-control-tower",
+    "corporate-root-hub",
+    "node-work-cockpit",
+    "tutor-study-cockpit",
+    "secops-mcp-guardian"
+  ],
+  "baseline_guardrails": [
+    "Enforce 1:1:1 symmetry across docs/architecture, tests/unit, and src/zcg.",
+    "Never execute mutating Git commands automatically; deliver Conventional Commit blocks at full stop.",
+    "Maintain 100.00% isolated unit statement and branch coverage and zero linter or strict typing errors.",
+    "Enforce strict workspace path containment and E3 > E2 > E1 > E0 epistemic precedence."
+  ],
+  "surface_bindings": [
+    {
+      "binding_id": "zcg-core-and-topology",
+      "precedence": 10,
+      "mode": "authoritative",
+      "description": "Core constants, manifests, epistemics, and triadic node topology.",
+      "default_resolution": "L2",
+      "target_globs": [
+        "src/zcg/core/**",
+        "src/zcg/topology/**"
+      ],
+      "architectural_planes": [
+        "domain"
+      ],
+      "scopes": [
+        "core",
+        "topology"
+      ],
+      "traits": [
+        "*"
+      ],
+      "rule_files": [
+        "antigravity/.gemini/config/AGENTS.md"
+      ],
+      "canonical_templates": [],
+      "invariants": [
+        "Preserve strict acyclic DAG layering (core -> topology -> governance -> cockpit -> capsules -> ephemeral -> mcp)."
+      ]
+    },
+    {
+      "binding_id": "zcg-mcp-and-capsules",
+      "precedence": 10,
+      "mode": "authoritative",
+      "description": "Contextual MCP stdio server, rcap1 capsules, and TTL Department Bots.",
+      "default_resolution": "L2",
+      "target_globs": [
+        "src/zcg/capsules/**",
+        "src/zcg/ephemeral/**",
+        "src/zcg/mcp/**"
+      ],
+      "architectural_planes": [
+        "infrastructure",
+        "domain"
+      ],
+      "scopes": [
+        "capsules",
+        "ephemeral",
+        "mcp"
+      ],
+      "traits": [
+        "*"
+      ],
+      "rule_files": [
+        "antigravity/.gemini/config/AGENTS.md"
+      ],
+      "canonical_templates": [],
+      "invariants": [
+        "Enforce strictly-read-only path containment and HMAC-SHA256 verification on all rcap1 frames."
+      ],
+      "ephemeral_fork_policy": {
+        "bot_role": "security-auditor-bot",
+        "trigger": "on_surface_match",
+        "model_tier": "inherit",
+        "access_mode": "strictly-read-only",
+        "mount_templates": [
+          "nist-csf-security"
+        ],
+        "resolution": "L2",
+        "ttl_seconds": 300,
+        "handback_contract": "4-channel-digest+rcap1"
+      }
+    }
+  ],
+  "environments": {
+    "dev": {
+      "branch_pattern": "feature/*",
+      "access_mode": "read-write-scoped",
+      "default_guardrails": [
+        "Verify isolated unit tests and strict typing before task completion."
+      ]
+    },
+    "tst": {
+      "branch_pattern": "env/tst",
+      "access_mode": "read-write-scoped",
+      "default_guardrails": [
+        "Require passing implementation contract checks before promotion."
+      ]
+    },
+    "pre": {
+      "branch_pattern": "env/pre",
+      "access_mode": "strictly-read-only",
+      "default_guardrails": [
+        "Require validator sign-off and zero drift telemetry."
+      ]
+    },
+    "pro": {
+      "branch_pattern": "master",
+      "access_mode": "strictly-read-only",
+      "default_guardrails": [
+        "Enforce pro-tier L3 capsule verification and immutable release gates."
+      ]
+    }
+  },
+  "federated_mcps": [],
+  "governing_root_id": "zero-cloud-gravity-workstation"
+}

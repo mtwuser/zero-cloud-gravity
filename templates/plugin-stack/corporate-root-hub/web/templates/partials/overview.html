@@ -1,0 +1,33 @@
+{{ archetype_spotlight_html }}
+<div class="zcg-grid" style="margin-top: 1rem;">
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_layers }} Enterprise Topology &amp; Departmental Subtrees</h2>
+      <span class="zcg-badge">.intranet.local</span>
+    </div>
+    <p>Inspect governed departmental nodes, fiduciary <code>domain-policy</code> gates, and public <code>org-*</code> twins.</p>
+    <button type="button" class="zcg-btn" data-zcg-get="/api/modules/node-mesh" data-zcg-target="#zcg-capability-stage">{{ icon_compass }} Inspect Portfolio Mesh</button>
+  </article>
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_check }} Executive Work Ledger &amp; Decision Records</h2>
+      <span class="zcg-badge">Lex Superior</span>
+    </div>
+    <p>Review cross-departmental delegations, stage-gate approvals, and structured charter records.</p>
+    <div class="zcg-tabs">
+      <button type="button" class="zcg-btn" data-zcg-get="/api/modules/work-ledger" data-zcg-target="#zcg-capability-stage">{{ icon_check }} Portfolio Ledger</button>
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/crud?view=table" data-zcg-target="#zcg-capability-stage">{{ icon_database }} Decision Records</button>
+    </div>
+  </article>
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_database }} Corporate Data Pipeline &amp; Charter Vault</h2>
+      <span class="zcg-badge">CDC / CVS</span>
+    </div>
+    <p>Audit KPI feed ingestion quality and verify SHA-256 board resolutions and policy annexes.</p>
+    <div class="zcg-tabs">
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/data-pipeline" data-zcg-target="#zcg-capability-stage">{{ icon_activity }} Data Pipeline</button>
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/vault?view=cards" data-zcg-target="#zcg-capability-stage">{{ icon_vault }} Charter Vault</button>
+    </div>
+  </article>
+</div>

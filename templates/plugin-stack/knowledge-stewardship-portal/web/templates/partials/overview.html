@@ -1,0 +1,33 @@
+{{ archetype_spotlight_html }}
+<div class="zcg-grid" style="margin-top: 1rem;">
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_book }} Epistemic Corpus &amp; Citation Atlas</h2>
+      <span class="zcg-badge">E3 &gt; E2 &gt; E1 &gt; E0</span>
+    </div>
+    <p>Curate statutory (<code>gov-*</code>), territorial (<code>geo-*</code>), scientific (<code>sci-*</code>), and public twin (<code>org-*</code>) entries with deterministic <code>rcap1</code> compaction.</p>
+    <div class="zcg-tabs">
+      <button type="button" class="zcg-btn" data-zcg-get="/api/modules/crud?view=cards" data-zcg-target="#zcg-capability-stage">{{ icon_book }} Browse Entries (Cards)</button>
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/crud?view=table" data-zcg-target="#zcg-capability-stage">{{ icon_database }} Table View</button>
+    </div>
+  </article>
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_database }} Data Pipeline (SchemaDiscovery, CDC &amp; CVS)</h2>
+      <span class="zcg-badge">Level B</span>
+    </div>
+    <p>Inspect inferred schemas, SHA-256 delta events, continuous validation scores, and drift gates for curated datasets.</p>
+    <button type="button" class="zcg-btn" data-zcg-get="/api/modules/data-pipeline" data-zcg-target="#zcg-capability-stage">{{ icon_activity }} Inspect Data Pipeline</button>
+  </article>
+  <article class="zcg-card">
+    <div class="zcg-card__header">
+      <h2>{{ icon_vault }} Content-Addressed Annex Vault &amp; 1-Hop Mesh</h2>
+      <span class="zcg-badge">SHA-256</span>
+    </div>
+    <p>Verify immutable reference attachments and inspect 3-stage stewardship links across <code>.knowledge.local</code>.</p>
+    <div class="zcg-tabs">
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/vault?view=cards" data-zcg-target="#zcg-capability-stage">{{ icon_vault }} Open Annex Vault</button>
+      <button type="button" class="zcg-btn zcg-btn--secondary" data-zcg-get="/api/modules/node-mesh" data-zcg-target="#zcg-capability-stage">{{ icon_compass }} Inspect 1-Hop Mesh</button>
+    </div>
+  </article>
+</div>

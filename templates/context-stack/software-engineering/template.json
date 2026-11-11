@@ -1,0 +1,10 @@
+{
+  "schema_version": "zcg-template-v1",
+  "name": "software-engineering",
+  "kind": "context-stack",
+  "stack_group": "context-stack",
+  "extends": "science-base",
+  "target_role": "squad",
+  "description": "Strict typing, stdlib-first modular DAGs, OWASP/MCP security, and 100% isolated Unit->Imp->E2E testing.",
+  "recommended_surface_bindings": []
+}

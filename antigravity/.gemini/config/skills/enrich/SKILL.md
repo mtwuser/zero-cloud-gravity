@@ -1,0 +1,215 @@
+---
+name: enrich
+description: extract and enrich shared knowledge — scan project rules/skills for universal patterns to promote upstream
+---
+
+# Knowledge Enrichment — `/enrich`
+
+> **Purpose**: Detect rules, skills, or patterns that have matured in a project and should be promoted to a higher layer in the knowledge hierarchy.
+> Run periodically, after major milestones, or when changing PCs.
+
+---
+
+## Rule & Context Pillar Hierarchy
+
+Before scanning, the agent MUST understand the 4 physical context pillars (`Axis 5` of the 7-Axis Taxonomy):
+
+```
+Pillar A — Universal Global Baseline (zero-cloud-gravity)
+│  Rules for ANY developer, ANY project, ANY stack.
+│  Examples: zero-residue, AAA testing, commit discipline, coverage gates.
+│  Location: $ZCG_RUNTIME_DIR/antigravity/.gemini/config/ & templates/human-stack/{universal-base,academic-base,science-base,business-base}/
+│
+├── Pillar B — Templates, Frameworks & Mounted Subtree Layers (templates/* & layers/*)
+│   │  Reusable stack starter packs, departmental/domain policy packs, and cross-cutting
+│   │  subtree layers mounted under <node>/layers/<layer-name>/ via zcg subtree.
+│   │  Queried on demand via MCP (compare_layer_patterns) and promoted via
+│   │  zcg promote-from-project or zcg subtree push <layer-name> <branch>.
+│   │
+│   ├── Pillar C — Product / Project Workspace (<product>/.agents/)
+│   │   │  Rules and skills specific to a single product repository or squad workspace.
+│   │   │  Location: <product>/.agents/
+│   │   │
+│   │   └── Pillar D — Navigable Repository Documentation (<repo>/docs/ & corporate/)
+│   │       3-tier progressive disclosure (README.md -> docs/guides/ -> docs/architecture/ & reference/).
+│   │
+│   └── (other products using the same template pack or subtree layers)
+│
+└── (other frameworks or standalone projects)
+```
+
+**Promotion direction**: knowledge flows UPWARD (`Pillar C → Pillar B → Pillar A`) when patterns prove universal.
+**Inheritance direction**: configuration flows DOWNWARD (`Pillar A → Pillar B → Pillar C`) via ZeroCloudGravity + Git.
+
+---
+
+## §0. Pre-Flight Hierarchical Sync & Authority Gate (MANDATORY FIRST STEP)
+
+> [!IMPORTANT]
+> Before evaluating any upward promotion, `/enrich` MUST ensure the active workspace is synchronized with the latest rules from its hierarchical ancestors (`Upstream OSS Pillar A` $\rightarrow$ `Level 1 Root 0` $\rightarrow$ `Level 2 Department` $\rightarrow$ `Level 3 Unit/Squad` $\rightarrow$ `Level 4 Project`).
+
+1. **Run `make horizon`, `make upstream-diff`, and `make diff`** in the active workspace (or `~/.local/bin/zcg inspect-horizon <PROJECT_ROOT>` and `compare-upstream <PROJECT_ROOT>`).
+2. **Inspect Version, Section-Level Upstream Additions & Mounted Child Sync Status (`downward_sync_needed` & `child_sync_needed`)**:
+   - Check `oss_root_version` (`$ZCG_RUNTIME_DIR/VERSION`), `upstream_version` (`1-hop parent VERSION`), `workspace_version`, `downward_sync_needed` (`shared_template_drifts` with `drift_direction: "upstream_newer"`), `child_sync_needed` (`downstream_layer_drifts` across mounted `layers/*` children), and `make upstream-diff` (`in_sync_sections`, `upstream_only_sections`, `local_only_sections`, `diverged_sections`).
+   - **If `make upstream-diff` reports `upstream_only_sections` alongside `local_only_sections`**:
+     - Run `zcg compare-upstream . --apply-safe` to adopt new upstream sections without overwriting local custom sections, then review any `diverged_sections` (`diff_preview`) with the user.
+   - **If `downward_sync_needed: true`, `child_sync_needed: true`, or `make diff` reports `modified_in_project`**:
+     1. Run **`make sync`** (`downward_sync_command`) FIRST so the workspace absorbs both the latest 1-hop upstream templates (while preserving any newer locally promoted templates) and all updated 1-hop downstream mounted child layers (`layers/*`) into `.agents/`.
+     2. Verify `make diff` reports `0` drift (`modified_in_project: []`) and `make horizon` reports `downward_sync_needed: false`.
+     3. Never mistake an `"upstream_newer"` template drift for an upward promotion candidate — doing so would overwrite newer parent rules with stale local copies.
+3. **Inspect Git Authority (`actor_is_layer_owner` & `actor_is_upstream_owner`)**:
+   - Determine the required Git Flow strategy based on `git config user.email` authority:
+     - **`actor_is_layer_owner: true`**: Authorized to commit and push directly (or per departmental branch policy) within the current workspace.
+     - **`actor_is_layer_owner: false`**: Must use a feature branch + Pull Request workflow for local layer changes.
+     - **`actor_is_upstream_owner: false` or `is_oss_community_horizon: true`**: Any 1-hop upward promotion (`make promote`) MUST generate a branch/PR (`--create-pr`) for upstream owner review rather than pushing directly to the parent repository.
+
+---
+
+## §1. Inventory Scan
+
+// delegate: flash
+
+> [!IMPORTANT]
+> **Scope restriction**: ONLY scan directories from these two sources:
+> 1. **Active workspace URIs** — the repos listed in the agent's `<user_information>` metadata
+> 2. **Shared config** — `~/.gemini/config/` (and `$ZCG_RUNTIME_DIR/antigravity/.gemini/config/`)
+>
+> **NEVER** scan `~/Projects/` broadly or enter directories outside the workspace.
+> Unrelated directories (e.g. `OFF/`, `ALT/`, personal projects) MUST be ignored.
+
+1. **Identify projects from workspace** — use the workspace URIs provided in the session metadata. These are the ONLY directories to scan.
+2. **For each workspace project**, read:
+   - `.agents/rules/*.md` — all rule files
+   - `.agents/skills/**/*.md` — all skill files (including project-specific command skills such as `start`)
+3. **Read shared config** — `~/.gemini/config/` (and `$ZCG_RUNTIME_DIR/antigravity/.gemini/config/`):
+   - `AGENTS.md` (global rules)
+   - `hooks.json` and `scripts/*.py` (global lifecycle hooks)
+   - `skills/*/SKILL.md` (shared skills, including session commands like `/sopen`, `/sclose`)
+4. **Generate inventory table**:
+
+```markdown
+| Layer | Source | File | Key Concepts |
+|-------|--------|------|--------------|
+| A     | zero-cloud-gravity | AGENTS.md | [list] |
+| B     | <framework-repo> | coding.md | [list] |
+| ...   | ... | ... | ... |
+```
+
+---
+
+## §2. Knowledge Diff
+
+For each project rule/skill, classify against the layer model:
+
+### §2.1 Upward Promotion Candidates (Project → Shared)
+
+Detect patterns that have **matured** in a project and should move up:
+
+| Signal | What it means |
+|--------|---------------|
+| A project rule duplicates a shared rule but with MORE detail | The project version is richer — merge upstream |
+| A project skill has no equivalent in shared config | New reusable pattern — extract |
+| Multiple projects have similar rules | Convergence — unify in shared |
+| A project rule contradicts a shared rule | Drift — investigate and reconcile |
+| An inter-departmental `ESCALATE_TO_ROOT` deadlock (`BLOCKED`) was arbitrated by `Root 0` | **Consensus-to-Rule Learning Loop** — codify the resolved criterion into the parent template (`rule_learning_hint` / `make promote`) so future tasks pass automatically as `RECONCILED_FLOW` |
+
+### §2.2. Downward Sync Gaps (Shared → Project)
+
+Detect upstream updates in shared layers or templates that have not yet been synchronized into the active project:
+
+| Signal | What it means |
+|--------|---------------|
+| Shared rule was updated but project still has old copy | Project needs update |
+| New shared skill was added but project doesn't reference it | Inform — may need integration |
+
+### §2.3 Multi-Dimensional Layer & Template Classification
+
+For each candidate, determine the exact target layer and template pack using `.agents/LAYER_LINEAGE.md`, `make horizon` (`inspect-horizon <project>`), `make diff` (`diff-project <project>`), or the MCP tool `compare_layer_patterns` with `layer="all"`:
+
+| If the rule, skill, or template pattern... | Target Layer & Day-to-Day Command (`make` or CLI) |
+|---|---|
+| Applies to ANY project regardless of domain or stack (`<= 18,000` bytes cap, promoted from `Root 0` passing `OSS_AGNOSTICISM_VIOLATION`) | **A (Universal Open Source Root)**: `$ZCG_RUNTIME_DIR/templates/human-stack/<pack>/` (`make promote SOURCE=<path> TEMPLATE=<universal-base\|academic-base\|science-base\|business-base>`) |
+| Applies to a cross-cutting domain policy (`domain-policy`, e.g., Legal/Security) or department (`department`, e.g., Design/Marketing) | **B (Parent Department, Corporate Root 0, or Mounted Subtree `layers/*`)**: 1-hop parent layer (`make promote SOURCE=<path> [TEMPLATE=<pack>]`, or `zcg subtree push <layer-name> <branch>` when pushing a mounted subtree) |
+| Applies to any project using a specific specialization stack or template pack (`human-stack`, `context-stack`, `framework-stack`, `plugin-stack`) | **B (Framework Repo or Polymorphic Template Pack)**: `<layer>/templates/<stack>/<pack>/` (`make promote SOURCE=<path> TEMPLATE=<pack>`) |
+| Refines a reusable **`Human-Stack` cognitive, mastery (`M1..M4`), or cross-discipline bridge rule (`precedence: 85..95`)** | **B / A (Living `Human-Stack` Catalog in Squad, Department, `Root 0`, or `universal-base`)**: 1-hop parent layer (`make promote SOURCE=<path> [TEMPLATE=<pack>]`) to homogenize cross-enterprise human-agent pairing |
+| Materialized lineage file (`layer-<NN>-<layer>.md`) | **Already tracked by `Pillar B` (`layers/<layer>`)** — only promote if modified in the project (`modified_in_project` in `make diff`) |
+| Sovereign node customization (`templates/<layer_id>/rules/<layer_id>.md`, `antigravity/.gemini/config/AGENTS.md` in a layer/knowledge/tutor node, or `.agents/rules/<project>-*.md` in a leaf consumer project) | **`Pillar B/C` (Sovereign to the Node)**: Stays in `<node>/templates/<layer_id>/` (skipped by upstream `make sync` via `skip_id = layer_id` and auto-reconciled from `.agents/rules/<layer_id>.md`) or `<project>/.agents/`, keeping inherited base/stack templates (`universal-base`, `academic-base`, `science-base`, `business-base`, `software-engineering`) pure for `0`-conflict Open-Source upgrades |
+
+> [!NOTE]
+> **Strict Boundary Between `/enrich` (Agent Meta-Governance) and `/governance` (Operational & Business Layer Governance)**:
+> - **`/enrich`** governs **only** Antigravity agent configuration assets (`.agents/rules/*.md`, `AGENTS.md`, `.agents/skills/*/SKILL.md`, and `templates/**`).
+> - Never use `/enrich` for operational work items, roadmaps (`roadmaps/*.md`), corporate ledgers (`corporate/**`), task delegation/completion (`WORKTASK.md`), or validation sign-off (`WORKVALI.md`, `BACKLOG.md`, `WORKROAD.md`). Use **`/governance`** (`skills/governance/SKILL.md` Part 3) for all inter-layer operational and business workflows.
+
+> [!IMPORTANT]
+> **Strict 1-Hop Horizon & Never Bypass `Root 0`**:
+> - Never promote directly from a child layer (`squad` / `squad-*`, `department` / `dept-*`, or `domain-policy`) into `zero-cloud-gravity` (`Pillar A`).
+> - Always inspect `make horizon` (`immediate_upstream_id`, `is_oss_community_horizon`, `actor_is_layer_owner`):
+>   - **Internal Corporate Horizon (`is_oss_community_horizon: false`)**: Promote strictly **1 hop upward** (`Squad` $\rightarrow$ `Department` $\rightarrow$ `Corporate Root 0`) via `make promote SOURCE=<path> [TEMPLATE=<pack>]` (or `zcg subtree pull <layer-name>` from `Root 0`).
+>   - **Open-Source Community Horizon (`is_oss_community_horizon: true`, only from `Root 0`)**: Never edit `$ZCG_RUNTIME_DIR` files directly from an external workspace; always propose an anonymized Pull Request via `make promote SOURCE=<path> TEMPLATE=<universal-base|academic-base|science-base|business-base>` (or `~/.local/bin/zcg promote-from-project . --source <path> --to-layer zero-cloud-gravity --template <pack> --create-pr`).
+
+---
+
+## §3. Extraction Proposal
+
+Generate a structured proposal for the user respecting the 1-hop horizon:
+
+```markdown
+## Enrichment Proposal — [date]
+
+### Promote 1-Hop Upward (`<immediate_upstream_id>`)
+- [ ] [rule/skill name]: [what changes] — [why it belongs in immediate 1-hop parent (`Root 0` / `dept-*` / `zero-cloud-gravity`)]
+
+### Update Current Layer from Upstream (`make sync`)
+- [ ] [project]: [rule/skill] needs sync from [1-hop parent version]
+
+### Contradictions / Drift
+- ⚠️ [description of conflict]
+```
+
+**Wait for user approval before applying any changes.**
+
+---
+
+## §4. Apply & Distribute (Dual-Regime Push Governance)
+
+After approval, distinguish strictly between **Internal Corporate Repositories** and the **Open-Source Root (`zero-cloud-gravity`)**:
+
+### Regime 1 — Internal Corporate / Departmental / Squad Repos (`is_oss_community_horizon: false`)
+1. **Promote or Sync within the 1-Hop Internal Hierarchy**:
+   - Run `make promote SOURCE=<rel-path> [TEMPLATE=<pack>]` (which creates a contextualized PR when `actor_is_layer_owner: false`, or updates the 1-hop parent template/subtree when authorized).
+2. **Agile Internal Commit & Push**:
+   - For internal corporate, departmental (`dept-*`), and squad (`squad-*`) repositories where the user is the authorized layer owner (`actor_is_layer_owner: true`), deliver standard working commit + push blocks so internal teams and `Root 0` subtrees stay continuously synchronized:
+   ```bash
+   ### [Internal Corporate / Department / Squad repo]
+   cd <REPO_PATH>
+   git add -u
+   git commit -m "chore(governance): [summary of internal layer sync/enrichment]"
+   git push
+   ```
+
+### Regime 2 — Open-Source Root (`zero-cloud-gravity` / `is_oss_community_horizon: true`)
+1. **From External Workspaces (`Root 0` $\rightarrow$ `zero-cloud-gravity`)**:
+   - **NEVER** mutate `$ZCG_RUNTIME_DIR` directly from an external project; execute `make promote SOURCE=<path> TEMPLATE=<pack>` (which passes `--create-pr` automatically via the generated `Makefile`) to generate an anonymized Pull Request (`OSS_AGNOSTICISM_VIOLATION` gate enforced).
+2. **Inside `zero-cloud-gravity` (`ZCG_DEV_REPO_DIR` / `operating_state: "oss-dev"` Direct Self-Enrichment)**:
+   - Because `ZCG_DEV_REPO_DIR` (`~/Projects/dev-<repo>`) IS the top-level canonical source (`Pillar A`) and `.agents/` is projected from `templates/`, self-enrichment inside `ZCG_DEV_REPO_DIR` works by authoring learned rules/skills directly in `antigravity/.gemini/config/skills/*/SKILL.md` and `templates/human-stack/{universal-base,academic-base,science-base,business-base}/` (or `templates/context-stack/software-engineering/`), and immediately running `zcg apply-project . --include-defaults` so `.agents/` stays `100% in_sync` (`0` drift in `make diff`).
+   - Run `make verify` to confirm all verification gates pass.
+   - Log changes under `## [Unreleased]` in `CHANGELOG.md` **without bumping `VERSION`**.
+   - **NEVER include `git push` on working/enrichment commits in `zero-cloud-gravity`**. Chain `&& ~/.local/bin/zcg-sync --sync` so the workstation repository (`ZCG_WORKSTATION_DIR` in `~/.config/zero-cloud-gravity/workstation.conf`) and `~/.gemini/config/` reconcile automatically upon commit. Pushing to the public Open-Source remote requires an explicit, conscious version release via `/release` (`skills/release/SKILL.md`):
+   ```bash
+   ### zero-cloud-gravity (local [Unreleased] commit + $HOME workstation sync — publish via /release)
+   cd "${ZCG_DEV_REPO_DIR:-$ZCG_RUNTIME_DIR}"
+   git add -u
+   git commit -m "enrich: [summary of upstream promotions]" && ~/.local/bin/zcg-sync --sync
+   ```
+
+---
+
+## Rules
+
+- **Read before writing** — always scan existing content before proposing changes
+- **Never auto-merge** — all promotions require explicit user approval
+- **Enforce 1-hop horizon** — `Squad` $\rightarrow$ `Department` $\rightarrow$ `Corporate Root 0` $\rightarrow$ `zero-cloud-gravity` (never skip tiers)
+- **Dual-regime push discipline** — agile `git push` is allowed for authorized owners in internal corporate/departmental repos (`is_oss_community_horizon: false`), whereas `zero-cloud-gravity` (`is_oss_community_horizon: true`) requires PR-based intake from `Root 0` and local `[Unreleased]` commits (pushing only on explicit `/release`)
+- **One direction per execution** — either promote upstream OR sync downstream, not both simultaneously
+- **ISO-neutral & domain-agnostic examples** — when promoting rules, skills, or docs to `Root 0` or `zero-cloud-gravity`, generalize all examples to ISO-neutral, jurisdiction-agnostic, and industry-neutral identifiers (`gov-iso`, `geo-iso`, `[ISO-NNNN]`, `[LAW-YYYY-NNNN]`, `Record #NNN`)
+- **Log the enrichment** — update `CHANGELOG.md` under `## [Unreleased]`
