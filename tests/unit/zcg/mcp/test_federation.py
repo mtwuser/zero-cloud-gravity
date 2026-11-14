@@ -8,10 +8,11 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
-from zcg.mcp.federation import FederationMixin
+from zcg.mcp.federation import AUDIT_CMD_TIMEOUT_SECONDS, FederationMixin
 
 
 def _seed_federation_repo(repo: Path) -> None:
@@ -167,11 +168,24 @@ class TestMCPFederation:
                 "content"
             ][0]["text"]
         )
+        with patch(
+            "zcg.mcp.federation.subprocess.run",
+            side_effect=subprocess.TimeoutExpired(
+                cmd=["verify"], timeout=AUDIT_CMD_TIMEOUT_SECONDS
+            ),
+        ):
+            timeout_res = json.loads(
+                node.tool_audit_node_drift({"mode": "verify-repo"})["content"][0]["text"]
+            )
 
         # Assert
+        assert AUDIT_CMD_TIMEOUT_SECONDS == 180
         assert "verify_repo" in fallback_res["checks"]
         assert script_res["healthy"] is False
         assert script_res["warnings"][0]["code"] == "NODE_DRIFT_DETECTED"
         assert "system_audit" in ws_audit["checks"]
+        assert timeout_res["healthy"] is False
+        assert timeout_res["checks"]["verify_repo"]["exit_code"] == 124
+        assert "Timed out after 180s." in timeout_res["checks"]["verify_repo"]["output"]
         with pytest.raises(ValueError, match="Invalid mode"):
             node.tool_audit_node_drift({"mode": "invalid"})

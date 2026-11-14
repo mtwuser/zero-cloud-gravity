@@ -65,6 +65,8 @@ class TestTemplates:
         # Assert
         assert len(catalog.search_dirs) == 2
         assert "<title>Portal</title>" in full_html.value
+        assert 'rel="icon" type="image/svg+xml" href="/static/img/logo.svg"' in full_html.value
+        assert 'class="zcg-brand-logo"' in full_html.value
         assert "A &amp; B <em>OK</em>" in full_html.value
         assert block_html.value == "<section>Partial !</section>"
         assert standalone_html.value == "<p>Standalone</p>"
@@ -183,5 +185,6 @@ class TestTemplates:
         # Assert
         assert 'aria-label="Verified"' in labelled_svg.value
         assert "alex-pc — Tower" in rendered_shell.value and "Island" in rendered_shell.value
+        assert 'src="/static/img/logo.svg"' in rendered_shell.value
         assert exc_icon.value is not None and exc_cyc.value is not None
         assert exc_dep.value is not None

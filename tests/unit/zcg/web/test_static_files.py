@@ -33,11 +33,14 @@ class TestStaticFiles:
         # Act
         resp_local = catalog.serve(req, "css/theme.css")
         resp_builtin = catalog.serve(req, "js/zcg-swap.js")
+        resp_logo = catalog.serve(req, "img/logo.svg")
 
         # Assert
         assert len(catalog.search_dirs) == 2
         assert resp_local.status == 200 and b"cyan" in resp_local.body
         assert resp_builtin.status == 200 and b"ZCGSwap" in resp_builtin.body
+        assert resp_logo.status == 200 and b"<svg" in resp_logo.body
+        assert "image/svg+xml" in resp_logo.content_type
 
     def test_serve_returns_304_not_modified_when_if_none_match_matches_etag_expected(
         self, tmp_path: Path

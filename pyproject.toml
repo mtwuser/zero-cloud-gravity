@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zero-cloud-gravity"
-version = "1.0.0"
+version = "1.0.1"
 description = "Sovereign Zero-Cloud Node Architecture, Contextual MCP & Epistemic Governance Engine for Google Antigravity"
 readme = "README.md"
 license = "MIT"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.0.0) — Official Google Antigravity Agents, CLI (agy) & IDE Installer/Updater
+# ZeroCloudGravity (v1.0.1) — Official Google Antigravity Agents, CLI (agy) & IDE Installer/Updater
 # Usage: ./scripts/install-antigravity.sh [--agents | --cli | --ide | --all] [--force] [--dry-run] [--version] [--help]
 
 set -euo pipefail
@@ -148,7 +148,9 @@ prepare_agents_src() {
     echo "  -> Downloading Antigravity Agents v${latest_ver:-latest} (${installed_ver:+installed: v${installed_ver} -> }${latest_url})..." >&2
     rm -rf "${DOWNLOADS_DIR}/Antigravity" "${DOWNLOADS_DIR}/Antigravity.zip" "${DOWNLOADS_DIR}/Antigravity.tar.gz" \
            "${DOWNLOADS_DIR}/Antigravity-x64.zip" "${DOWNLOADS_DIR}/Antigravity-x64.tar.gz"
-    if curl -fL --progress-bar -o "${DOWNLOADS_DIR}/Antigravity.tar.gz.part" "${latest_url}" >&2; then
+    local curl_dl_flags=(-sSfL)
+    [[ -t 2 ]] && curl_dl_flags=(-fL --progress-bar)
+    if curl "${curl_dl_flags[@]}" -o "${DOWNLOADS_DIR}/Antigravity.tar.gz.part" "${latest_url}" >&2; then
       mv -f "${DOWNLOADS_DIR}/Antigravity.tar.gz.part" "${DOWNLOADS_DIR}/Antigravity.tar.gz"
     else
       rm -f "${DOWNLOADS_DIR}/Antigravity.tar.gz.part"
@@ -205,7 +207,9 @@ prepare_ide_src() {
   if [[ -n "${latest_url}" ]]; then
     echo "  -> Downloading Antigravity IDE v${latest_ver:-latest} (${installed_ver:+installed: v${installed_ver} -> }${latest_url})..." >&2
     rm -rf "${DOWNLOADS_DIR}/Antigravity IDE" "${DOWNLOADS_DIR}/Antigravity IDE.zip" "${DOWNLOADS_DIR}/Antigravity IDE.tar.gz"
-    if curl -fL --progress-bar -o "${DOWNLOADS_DIR}/Antigravity IDE.tar.gz.part" "${latest_url}" >&2; then
+    local curl_dl_flags=(-sSfL)
+    [[ -t 2 ]] && curl_dl_flags=(-fL --progress-bar)
+    if curl "${curl_dl_flags[@]}" -o "${DOWNLOADS_DIR}/Antigravity IDE.tar.gz.part" "${latest_url}" >&2; then
       mv -f "${DOWNLOADS_DIR}/Antigravity IDE.tar.gz.part" "${DOWNLOADS_DIR}/Antigravity IDE.tar.gz"
     else
       rm -f "${DOWNLOADS_DIR}/Antigravity IDE.tar.gz.part"
@@ -289,7 +293,7 @@ install_or_update_cli() {
     # Clean redundant PATH block appended by upstream installer to stowed shell profiles
     for rc_file in "${HOME}/.bashrc" "${HOME}/.profile"; do
       if [[ -f "${rc_file}" ]] && grep -q "# Added by Antigravity CLI installer" "${rc_file}" 2>/dev/null; then
-        python3 -c 'import pathlib,re,sys; p=pathlib.Path(sys.argv[1]).resolve(); t=p.read_text(encoding="utf-8"); p.write_text(re.sub(r"\n*# Added by Antigravity CLI installer\nexport PATH=\"[^\"]*\.local/bin:\$PATH\"\n*", "\n", t), encoding="utf-8")' "${rc_file}" 2>/dev/null || true
+        python3 -c 'import pathlib,re,sys; p=pathlib.Path(sys.argv[1]).resolve(); t=p.read_text(encoding="utf-8"); p.write_text(re.sub(r"\n*# Added by Antigravity CLI installer\nexport PATH=\"[^\"]*\.local/bin:[$]PATH\"\n*", "\n", t), encoding="utf-8")' "${rc_file}" 2>/dev/null || true
       fi
     done
     echo "  OK: Antigravity CLI (agy) installed/updated at ${CLI_BIN}"

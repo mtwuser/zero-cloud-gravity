@@ -50,7 +50,8 @@
     "corporate-root-hub",
     "node-work-cockpit",
     "tutor-study-cockpit",
-    "secops-mcp-guardian"
+    "secops-mcp-guardian",
+    "knowledge-stewardship-portal"
   ],
   "baseline_guardrails": [
     "Enforce 1:1:1 symmetry across docs/architecture, tests/unit, and src/zcg.",

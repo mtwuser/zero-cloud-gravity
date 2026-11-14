@@ -1,31 +1,61 @@
 name: Bug Report
-description: Report a deterministic defect in zcg CLI, zcg-mcp, templates, or node governance
+description: Report a deterministic defect in the zcg CLI, zcg-mcp server, ASGI web engine, templates, or Ubuntu 26.04 workstation scripts
 title: "[Bug]: "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for reporting an issue in **ZeroCloudGravity**. Please use ISO-neutral examples (`squad-iso`, `corp-iso-root`) and omit private credentials.
-  - type: input
+        Thank you for reporting an issue in **ZeroCloudGravity**. Please use ISO-neutral examples (`corp-iso-root`, `squad-iso`, `alex-pc`) and omit personal credentials, OAuth tokens, or private paths.
+  - type: dropdown
     id: component
     attributes:
-      label: Affected Subpackage or Surface
-      description: e.g., src/zcg/governance/bootstrap.py, zcg-mcp, templates/plugin-stack/node-work-cockpit
-      placeholder: "src/zcg/..."
+      label: Affected Subsystem or Stack Plane
+      description: Select the primary ZeroCloudGravity subsystem exhibiting the defect.
+      options:
+        - "Core & Node Manifests (src/zcg/core/, system/zcg-node.json)"
+        - "Data Pipeline & Role Projection (src/zcg/platform/)"
+        - "Native ASGI Web & API Engine (src/zcg/web/)"
+        - "Triadic Topology, Subtrees & Sovereign Twins (src/zcg/topology/)"
+        - "Governance, RBAC, Work Ledger & Links (src/zcg/governance/)"
+        - "Node Cockpits, RFC 6761 Domains & Provenance (src/zcg/cockpit/)"
+        - "zcg CLI & Command Dispatcher (src/zcg/cli/)"
+        - "Contextual MCP Server, rcap1 Capsules & Ephemeral Bots (src/zcg/{capsules,ephemeral,mcp}/)"
+        - "Declarative Stack Templates & Reference Dashboards (templates/*-stack/)"
+        - "Antigravity 2.0 Global Rules, Hooks & Skills (antigravity/.gemini/config/)"
+        - "Ubuntu 26.04 Workstation Scripts & External Recipes (install.sh, scripts/workstation-*.sh)"
+        - "Automated Verification Suite & CI (scripts/verify-repo.sh, tests/, .github/workflows/ci.yml)"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Observed vs. Expected Behavior
+      description: Concisely describe what occurred versus the normative contract in docs/architecture/01..06.
     validations:
       required: true
   - type: textarea
     id: reproduction
     attributes:
-      label: Minimal Reproduction Steps
-      description: Exact CLI command or JSON-RPC payload to reproduce the behavior.
+      label: Minimal Deterministic Reproduction Steps
+      description: Exact CLI commands, ASGI HTTP requests, or JSON-RPC payloads that trigger the issue.
+      placeholder: |
+        1. Run `zcg bootstrap-workspace /tmp/squad-iso --id squad-iso --role squad --precedence 50 --templates science-base,software-engineering`
+        2. Run `zcg status /tmp/squad-iso`
+        3. Observe output...
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS, Python & Antigravity Surface
+      description: Operating system, Python 3.14 build, GNU Stow version, and active Antigravity surface (Desktop 2.0 / IDE / agy CLI).
+      placeholder: "Ubuntu 26.04 LTS, Python 3.14, Stow 2.4, Google Antigravity 2.0"
     validations:
       required: true
   - type: textarea
-    id: expected
+    id: logs
     attributes:
-      label: Expected vs. Observed Behavior
-      description: Reference the relevant Specification under docs/architecture/01..05 if applicable.
-    validations:
-      required: true
+      label: Sanitized Diagnostic Output / Logs
+      description: Paste relevant terminal output or `./scripts/verify-repo.sh` diagnostics (free of secrets or private identifiers).
+      render: shell

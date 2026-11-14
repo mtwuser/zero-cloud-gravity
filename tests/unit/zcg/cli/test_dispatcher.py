@@ -85,6 +85,13 @@ class TestDispatcher:
         (ws / "VERSION").write_text("1.0.0\n", "utf-8")
 
         # Act
+        with patch(
+            "zcg.cli.dispatcher.dispatch_zcg_cli",
+            return_value=(0, {"passed": True, "streamed": True}, None),
+        ):
+            assert dispatcher.main(["install-antigravity"]) == 0
+            assert capsys.readouterr().out == ""
+
         assert dispatcher.main(["--version"]) == 0
         assert dispatcher.main(["--help"]) == 0
         assert dispatcher.main(["--bad-flag"]) == 1

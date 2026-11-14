@@ -1,7 +1,7 @@
-# ZeroCloudGravity (`zcg` · `v1.0.0`)
+# ZeroCloudGravity (`zcg` · `v1.0.1`)
 
 [![CI](https://github.com/mtwuser/zero-cloud-gravity/actions/workflows/ci.yml/badge.svg)](https://github.com/mtwuser/zero-cloud-gravity/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](VERSION)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](VERSION)
 [![Coverage](https://img.shields.io/badge/coverage-100%25%20(unit%20%2B%20branch)-brightgreen.svg)](scripts/verify-repo.sh)
 [![Python](https://img.shields.io/badge/python-3.14%20(zero--deps)-3776AB.svg)](pyproject.toml)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-26.04%20LTS-E95420.svg)](https://ubuntu.com/)
@@ -14,7 +14,7 @@ This platform is built on **one unified fractal pattern** (*every governed direc
 1. **Ubuntu 26.04 Workstation Backup, Audit, Restore & Dual-Repo `$HOME` Sync ([`scripts/workstation-sync.sh`](scripts/workstation-sync.sh), [`scripts/workstation-backup.sh`](scripts/workstation-backup.sh), [`scripts/workstation-audit.sh`](scripts/workstation-audit.sh), [`scripts/workstation-restore.sh`](scripts/workstation-restore.sh), [`scripts/install-antigravity.sh`](scripts/install-antigravity.sh))** — snapshot APT packages, Snaps, NPM globals, external recipes, and GNOME settings into plain-text `system/*` manifests, manage `~/.bashrc`, `~/.profile`, and `~/.gitconfig` via [GNU Stow](https://www.gnu.org/software/stow/), and couple the passive `$HOME/zero-cloud-gravity` engine appliance with your personal `Root 0` workstation node (`~/<persona>-pc`) via `zcg workstation-sync` (`zcg-sync`).
 2. **Local Google Antigravity 2.0 Governance (`antigravity/`, `templates/`)** — composable `AGENTS.md` baselines (`<= 18,000` bytes across `universal-base`, `academic-base`, `science-base`, `business-base` + personal workstation rules), 4 deterministic Python 3.14 lifecycle hooks (`PreToolUse`, `PostToolUse`, `PostInvocation`, `Stop`), 17 reusable skills (`8` global `human-stack` + `7` `context-stack` + `1` `framework-stack` + `1` `plugin-stack`), and `16` declarative `zcg-template-v1` template packs.
 3. **Zero-Cloud Intranet & Personal Cockpits (`src/zcg/cockpit/`)** — Python 3.14 Native ASGI `DeliveryChannel` (`Zone Z1..Z4 × Tier T1..T5`, `--zcg-*` design tokens, `data-zcg-surface="cockpit"`, `HTTP 286` poll control, `runtime_telemetry` bridged to `.agents/telemetry/`) with deterministic localhost port mapping (`8700 + precedence`), `.intranet.local` / `.personal.local` / `.knowledge.local` routing, `3-Scope` JSON feeds, declarative `dual_world_contract` overlays, and `6` editable WCAG 2.2 AA `plugin-stack` Reference Dashboards (`workstation-control-tower`, `corporate-root-hub`, `node-work-cockpit`, `tutor-study-cockpit`, `secops-mcp-guardian`, `knowledge-stewardship-portal`).
-4. **Multi-Layer CLI (`zcg`) & Contextual MCP Server (`zcg-mcp`)** — 31-subcommand tiered CLI (`C1` Discovery + `lint-arch`, `C2` Lifecycle + `scaffold-plugin-module`, `C3` Sovereign Governance, `Subtree`, `Workstation`) plus a read-only JSON-RPC 2.0 `stdio` MCP server sealing `rcap1` (`L0 -> L1 -> L2 -> L3`) `zlib + HMAC-SHA256` Merkle context capsules, `citation_receipt` provenance (`E3..E0`), zero-checkout Git `DMCP`/`GRCC` branch projection, and `strictly-read-only` Ephemeral Department Bots.
+4. **Multi-Layer CLI (`zcg`) & Contextual MCP Server (`zcg-mcp`)** — 33-subcommand tiered CLI (`C1` Discovery + `lint-arch`, `C2` Lifecycle + `scaffold-plugin-module`, `C3` Sovereign Governance, `Subtree`, `Workstation` with real-time TTY progress streaming and `--json` automation mode) plus a read-only JSON-RPC 2.0 `stdio` MCP server sealing `rcap1` (`L0 -> L1 -> L2 -> L3`) `zlib + HMAC-SHA256` Merkle context capsules, `citation_receipt` provenance (`E3..E0`), zero-checkout Git `DMCP`/`GRCC` branch projection, and `strictly-read-only` Ephemeral Department Bots.
 
 The table below summarizes the four progressive adoption modes of ZeroCloudGravity:
 
@@ -168,7 +168,7 @@ Code structure, CLI commands, and repository health evolve deterministically acr
 
 ## 4. Repository Structure (`5 × 5 × 5` Architecture)
 
-The repository tree separates the `antigravity/` Stow module, the `3-Tier` `docs/` corpus, the `16` declarative `templates/` packs, the `5` workstation scripts, and the `74`-module `src/zcg/` engine:
+The repository tree separates the `antigravity/` Stow module, the `3-Tier` `docs/` corpus, the `16` declarative `templates/` packs, the `6` automation & workstation scripts, and the `74`-module `src/zcg/` engine:
 
 ```text
 zero-cloud-gravity/
@@ -233,7 +233,7 @@ zcg promote-from-project <dir> --source <rel-path> [--to-layer <id>] [--create-p
 zcg check-env-promotion [<dir>] --to-env <tst|pre|pro> [--files <csv>]
 
 # 3. Deterministic 8-Gate Repository Verification Suite:
-make install && make verify                          # Ruff + Mypy --strict + 100.00% 1:1 isolated unit + imp + e2e + zcg-mcp --self-test
+make setup-dev && make verify                        # Ruff + Mypy --strict + ShellCheck + 100.00% 1:1 isolated unit + imp + e2e + zcg-mcp --self-test
 ```
 
 ---
@@ -244,4 +244,4 @@ Community governance, vulnerability reporting, and independent stewardship follo
 
 - **Contributing & `1:1:1` Verification**: [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) · [`ACCESSIBILITY.md`](ACCESSIBILITY.md)
 - **Security Policy & Boundary Isolation**: [`SECURITY.md`](SECURITY.md) · [`LICENSE` (MIT)](LICENSE)
-- **Independent Open-Source Patronage**: [`FUNDING.md`](FUNDING.md) *(activated via GitHub **Sponsor** / [`.github/FUNDING.yml`](.github/FUNDING.yml))*
+- **Independent Open-Source Patronage**: [`.github/FUNDING.md`](.github/FUNDING.md) *(activated via GitHub **Sponsor** / [`.github/FUNDING.yml`](.github/FUNDING.yml))*

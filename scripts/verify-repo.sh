@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.0.0) — Deterministic 8-Stage Repository Verification Gate
+# ZeroCloudGravity (v1.0.1) — Deterministic 8-Stage Repository Verification Gate
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -15,6 +15,7 @@ PYTHON="${VENV_BIN}/python"
 PYTEST="${VENV_BIN}/pytest"
 RUFF="${VENV_BIN}/ruff"
 MYPY="${VENV_BIN}/mypy"
+SHELLCHECK="${VENV_BIN}/shellcheck"
 ZCG="${VENV_BIN}/zcg"
 ZCG_MCP="${VENV_BIN}/zcg-mcp"
 
@@ -23,6 +24,9 @@ if [[ ! -x "${PYTHON}" ]]; then
   PYTEST="pytest"
   RUFF="ruff"
   MYPY="mypy"
+fi
+if [[ ! -x "${SHELLCHECK}" ]]; then
+  SHELLCHECK="shellcheck"
 fi
 
 cleanup() {
@@ -35,7 +39,7 @@ echo "=== ZeroCloudGravity Repository Verification (v${VERSION_STR}) ==="
 
 echo ""
 echo "[1/8] Open-Source Metadata, SemVer & Relative Markdown Links"
-for req in VERSION LICENSE README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md FUNDING.md \
+for req in VERSION LICENSE README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md \
   CODE_OF_CONDUCT.md ACCESSIBILITY.md Makefile Dockerfile .dockerignore install.sh \
   pyproject.toml requirements.txt requirements-dev.txt system/zcg-node.json \
   docs/README.md \
@@ -46,9 +50,12 @@ for req in VERSION LICENSE README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md FU
   docs/architecture/03_governance_and_work_ledger.md \
   docs/architecture/04_cockpit_and_intranet_surfaces.md \
   docs/architecture/05_contextual_mcp_and_capsules.md \
+  docs/architecture/06_web_and_api_application_engine.md \
   docs/reference/01_stack_and_plugin_matrix.md \
   docs/reference/02_cli_mcp_and_security_reference.md \
+  .github/workflows/ci.yml \
   .github/FUNDING.yml \
+  .github/FUNDING.md \
   .github/PULL_REQUEST_TEMPLATE.md \
   .github/ISSUE_TEMPLATE/bug_report.yml \
   .github/ISSUE_TEMPLATE/feature_request.yml \
@@ -64,6 +71,7 @@ SH_ENTRYPOINTS=(
   install.sh
   scripts/verify-repo.sh
   scripts/install-antigravity.sh
+  scripts/workstation-sync.sh
   scripts/workstation-backup.sh
   scripts/workstation-audit.sh
   scripts/workstation-restore.sh
@@ -72,9 +80,8 @@ for sh_file in "${SH_ENTRYPOINTS[@]}"; do
   [[ -x "${REPO_DIR}/${sh_file}" ]] || { echo "Not executable: ${sh_file}" >&2; exit 1; }
   bash -n "${REPO_DIR}/${sh_file}"
 done
-if command -v shellcheck >/dev/null 2>&1; then
-  shellcheck "${SH_ENTRYPOINTS[@]}" templates/plugin-stack/workstation-control-tower/assets/external/*/*.sh
-fi
+command -v "${SHELLCHECK}" >/dev/null 2>&1 || { echo "Missing required tool: shellcheck (run 'make setup-dev')" >&2; exit 1; }
+"${SHELLCHECK}" "${SH_ENTRYPOINTS[@]}" templates/plugin-stack/workstation-control-tower/assets/external/*/*.sh
 echo "  OK: Verified syntax and permissions on shell entrypoints and external recipes"
 
 echo ""

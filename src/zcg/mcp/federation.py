@@ -38,7 +38,7 @@ from zcg.mcp.surfaces import SurfaceGovernanceMixin
 from zcg.topology.identity import resolve_node_entity_identity
 from zcg.topology.network import discover_network_topology
 
-AUDIT_CMD_TIMEOUT_SECONDS: int = 30
+AUDIT_CMD_TIMEOUT_SECONDS: int = 180
 
 
 class FederationMixin(SurfaceGovernanceMixin):
@@ -167,22 +167,26 @@ class FederationMixin(SurfaceGovernanceMixin):
             )
             cmds.append(("system_audit", sys_cmd))
         for key, cmd in cmds:
-            proc = subprocess.run(  # noqa: S603
-                cmd,
-                cwd=self.repo_dir,
-                env=env,
-                capture_output=True,
-                text=True,
-                timeout=AUDIT_CMD_TIMEOUT_SECONDS,
-                check=False,
-            )
-            ok = proc.returncode == 0
+            try:
+                proc = subprocess.run(  # noqa: S603
+                    cmd,
+                    cwd=self.repo_dir,
+                    env=env,
+                    capture_output=True,
+                    text=True,
+                    timeout=AUDIT_CMD_TIMEOUT_SECONDS,
+                    check=False,
+                )
+                code, raw_out = proc.returncode, proc.stdout + proc.stderr
+            except subprocess.TimeoutExpired:
+                code, raw_out = 124, f"Timed out after {AUDIT_CMD_TIMEOUT_SECONDS}s."
+            ok = code == 0
             if not ok:
                 results["healthy"] = False
             results["checks"][key] = {
-                "exit_code": proc.returncode,
+                "exit_code": code,
                 "passed": ok,
-                "output": ANSI_ESCAPE_RE.sub("", proc.stdout + proc.stderr).strip(),
+                "output": ANSI_ESCAPE_RE.sub("", raw_out).strip(),
             }
         results["warnings"] = (
             []

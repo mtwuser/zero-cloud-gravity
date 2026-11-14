@@ -96,6 +96,6 @@ def main(argv: list[str] | None = None) -> int:
     code, payload, err_msg = dispatch_zcg_cli(repo_dir, dry_run, args[idx], args[idx + 1 :])
     if err_msg is not None:
         print(f"Error: {err_msg}", file=sys.stderr)
-    if payload is not None:
+    if payload is not None and not payload.get("streamed"):
         print(json.dumps(payload, indent=2))
     return code

@@ -138,13 +138,24 @@ class TestDiscovery:
         a_sh.chmod(0o755)
 
         # Act
-        dry_backup = discovery.dispatch_workstation(eng, True, "workstation-backup", ["/tmp"])
-        dry_audit = discovery.dispatch_workstation(eng, True, "workstation-audit", ["--clean"])
-        live_backup = discovery.dispatch_workstation(eng, False, "workstation-backup", ["/tmp"])
+        with patch("zcg.cli.discovery.sys.stdout.isatty", return_value=False):
+            dry_backup = discovery.dispatch_workstation(eng, True, "workstation-backup", ["/tmp"])
+            dry_audit = discovery.dispatch_workstation(eng, True, "workstation-audit", ["--clean"])
+            live_backup = discovery.dispatch_workstation(eng, False, "workstation-backup", ["/tmp"])
+        with patch("zcg.cli.discovery.sys.stdout.isatty", return_value=True):
+            tty_stream = discovery.dispatch_workstation(eng, False, "workstation-backup", ["/tmp"])
+            tty_json = discovery.dispatch_workstation(
+                eng, False, "workstation-backup", ["/tmp", "--json"]
+            )
 
         # Assert
         assert dry_backup["passed"] is True and "--dry-run" in dry_backup["output"]
         assert dry_audit["passed"] is True and "--clean" not in dry_audit["output"]
         assert live_backup["passed"] is True and "--dry-run" not in live_backup["output"]
+        assert live_backup["streamed"] is False
+        assert tty_stream["passed"] is True and tty_stream["streamed"] is True
+        assert "output" not in tty_stream
+        assert tty_json["passed"] is True and tty_json["streamed"] is False
+        assert "--json" not in tty_json["output"]
         with pytest.raises(CLIUsageError, match="Missing workstation script"):
             discovery.dispatch_workstation(missing_res_dir, False, "install-antigravity", [])

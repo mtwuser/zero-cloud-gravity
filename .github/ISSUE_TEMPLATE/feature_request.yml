@@ -1,27 +1,43 @@
 name: Feature or Stack Proposal
-description: Propose an orthogonal capability, template pack, or Horizon v2.0.0 enhancement
+description: Propose an orthogonal engine capability, declarative template pack, or Horizon v2.0.0 enhancement
 title: "[Feat]: "
 labels: ["enhancement"]
 body:
-  - type: input
+  - type: dropdown
     id: axis
     attributes:
       label: Architectural Plane & Stack Tier
-      description: e.g., zcg/mcp, human-stack, context-stack, framework-stack, plugin-stack
-      placeholder: "plugin-stack"
+      description: Which orthogonal axis or subsystem does this proposal extend?
+      options:
+        - "Human-Stack Cognitive & Persona Baselines (templates/human-stack/)"
+        - "Context-Stack Domain Rules & Skills (templates/context-stack/)"
+        - "Framework-Stack Security & Google Cloud IaC (templates/framework-stack/)"
+        - "Plugin-Stack Editable Dashboards & SDK (templates/plugin-stack/, src/zcg/cockpit/)"
+        - "Autonomous Native ASGI Web & API Engine (src/zcg/web/)"
+        - "Multi-Layer Governance, Topology & Work Ledgers (src/zcg/{governance,topology}/)"
+        - "Contextual MCP Server, rcap1 Compaction & Ephemeral Bots (src/zcg/{capsules,ephemeral,mcp}/)"
+        - "Ubuntu 26.04 Workstation Control Tower & External Recipes (scripts/workstation-*.sh)"
+        - "Horizon v2.0.0 — Cryptographic Networks, PublicationSeal, HKDF & Federated P2P Plugins"
     validations:
       required: true
   - type: textarea
     id: motivation
     attributes:
-      label: Problem Statement & Specification Scope
-      description: Describe the sovereign Zero-Cloud workflow or Google Antigravity integration goal.
+      label: Problem Statement & Sovereign Workflow Value
+      description: What recurring developer, organizational, or epistemic friction does this capability resolve?
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Proposed Orthogonal Design (`X × Y`) & Invariants
+      description: Outline how the capability preserves zero external runtime dependencies, `<= 384`-line modularity, and Antigravity's `<= 18 KB` `AGENTS.md` budget.
     validations:
       required: true
   - type: textarea
     id: verification
     attributes:
-      label: Proposed 1:1:1 Verification Contract
-      description: How will this capability be verified in tests/unit/, tests/imp/, and tests/e2e/?
+      label: Proposed `1:1:1` Specification & Verification Contract
+      description: Identify the target spec (`docs/architecture/01..06`) and how nominal, boundary (`N ± 1`), and error-guard paths will be tested across `tests/{unit,imp,e2e}/`.
     validations:
       required: true

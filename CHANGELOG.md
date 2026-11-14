@@ -4,6 +4,27 @@ All notable changes to **ZeroCloudGravity (`zero-cloud-gravity`)** are documente
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-11-14
+
+### Added
+- **Deterministic GitHub Actions CI & PR-First Open-Source Export (`.github/workflows/ci.yml`, `Makefile`)**:
+  - Added `.github/workflows/ci.yml` running the full 8-stage `./scripts/verify-repo.sh` verification suite (`ruff`, `mypy --strict`, `zcg lint-arch`, `shellcheck`, `zcg-mcp --self-test`, and `100.00%` `1:1` isolated unit + total statement/branch coverage on Python 3.14) across pushes and Pull Requests, activating the live `CI` status badge in `README.md`.
+  - Extended `make publish-oss` with `CREATE_PR=1` and `CONTRIB_BRANCH=contrib/<slug>` for tracker-free PR exports, and added `[OSS_DEV_ONLY_BLOCKED]`-guarded `make push-branch` and `make promote-master` targets strictly scoped to private `dev-<repo>` clones (`visibility_scope: "private:open-source:dev"`).
+- **Default Sovereign Node Vector Brand Emblem & Favicon (`src/zcg/web/static_files.py`, `src/zcg/web/templates.py`, `src/zcg/cockpit/surfaces.py`)**:
+  - Added built-in `ZCG_BRAND_LOGO_SVG` (`/static/img/logo.svg` with SHA-256 `ETag` caching and zero-code per-node `surfaces/web/static/img/logo.svg` Dual-World override) wired across `<link rel="icon">`, `base.html`, `plugin_shell.html`, and Sovereign Node Cockpits.
+
+### Changed
+- **Real-Time Interactive TTY Progress Streaming for Physical Workstation CLI Subcommands (`src/zcg/cli/discovery.py`, `src/zcg/cli/dispatcher.py`, `scripts/install-antigravity.sh`)**:
+  - Updated `zcg install-antigravity | workstation-sync | workstation-backup | workstation-audit | workstation-restore` to inherit the live terminal TTY (`sys.stdout.isatty()`) so download progress bars, colors, and interactive prompts render in real time without trailing JSON noise, while preserving structured JSON output when piped, invoked by agents/CI, or passed `--json`.
+- **Community Health, Three-Zone Contributor Isolation & Patronage Consolidation (`.github/FUNDING.md`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md`, `skills/{continue,release}/SKILL.md`)**:
+  - Relocated patronage documentation to `.github/FUNDING.md` (synced with `.github/FUNDING.yml` and `README.md`), enriched `CONTRIBUTING.md` with the 3-Zone Security Isolation architecture plus step-by-step `Path A (Fork -> PR)`, `Path B (Anonymized Root 0 Export via OSS_REMOTE_URL)` and `Path C (Sovereign Maintainer Release)` workflows, codified flexible direct-`master` and opt-in `push-branch` / `promote-master` private CI flows in `continue` and `release` skills, and upgraded structured issue/PR templates.
+
+### Fixed
+- **Pre-Release `C2` Audit Hardening (`src/zcg/mcp/federation.py`, `scripts/workstation-audit.sh`, `system/zcg-node.json`, `README.md`, `docs/`)**:
+  - Raised `AUDIT_CMD_TIMEOUT_SECONDS` to `180s` and handled `subprocess.TimeoutExpired` cleanly in `zcg-mcp` `audit_node_drift`, taught `scripts/workstation-audit.sh` to recognize coupled `${ZCG_WORKSTATION_DIR}/antigravity` Stow links without false-positive warnings, registered `knowledge-stewardship-portal` (`16/16`) in `system/zcg-node.json -> default_stack_templates`, and synchronized the `33`-subcommand CLI count across `README.md` and `docs/`.
+- **Deterministic Local-to-CI `ShellCheck` Verification Parity & `README.md` Quick-Verify Target (`requirements-dev.txt`, `scripts/verify-repo.sh`, `scripts/install-antigravity.sh`, `scripts/workstation-audit.sh`, `templates/plugin-stack/workstation-control-tower/assets/external/apt-repo/docker.sh`, `README.md`)**:
+  - Added `shellcheck-py>=0.10.0` to `requirements-dev.txt`, resolved `.venv/bin/shellcheck` as a mandatory check across all `7` shell entrypoints (including `scripts/workstation-sync.sh`) plus external APT/script recipes in `scripts/verify-repo.sh`, resolved `SC2016`, `SC2034`, `SC2329`, and `SC1091` diagnostics, and updated the `README.md` cheat-sheet target to `make setup-dev && make verify`.
+
 ## [1.0.0] - 2026-11-11
 
 ### Added

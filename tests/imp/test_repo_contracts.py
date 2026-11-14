@@ -8,7 +8,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import struct
+import subprocess
+import sys
 import tomllib
 from pathlib import Path
 
@@ -50,6 +53,7 @@ class TestRepoContracts:
         readme_txt = (REPO_DIR / "README.md").read_text(encoding="utf-8")
         changelog_txt = (REPO_DIR / "CHANGELOG.md").read_text(encoding="utf-8")
         dockerfile_txt = (REPO_DIR / "Dockerfile").read_text(encoding="utf-8")
+        makefile_txt = (REPO_DIR / "Makefile").read_text(encoding="utf-8")
 
         required_files = (
             "VERSION",
@@ -58,7 +62,6 @@ class TestRepoContracts:
             "CHANGELOG.md",
             "CONTRIBUTING.md",
             "SECURITY.md",
-            "FUNDING.md",
             "CODE_OF_CONDUCT.md",
             "ACCESSIBILITY.md",
             "Makefile",
@@ -78,7 +81,9 @@ class TestRepoContracts:
             "antigravity/.local/share/applications/antigravity-agents.desktop",
             "antigravity/.local/share/applications/antigravity-ide.desktop",
             "docs/README.md",
+            ".github/workflows/ci.yml",
             ".github/FUNDING.yml",
+            ".github/FUNDING.md",
             ".github/PULL_REQUEST_TEMPLATE.md",
             ".github/ISSUE_TEMPLATE/bug_report.yml",
             ".github/ISSUE_TEMPLATE/feature_request.yml",
@@ -97,6 +102,10 @@ class TestRepoContracts:
         assert "USER zcg" in dockerfile_txt
         assert "ZCG_NO_BROWSER=1" in dockerfile_txt
         assert 'ENTRYPOINT ["zcg-mcp"]' in dockerfile_txt
+        assert "push-branch:" in makefile_txt
+        assert "promote-master:" in makefile_txt
+        assert "[OSS_DEV_ONLY_BLOCKED]" in makefile_txt
+        assert "publish-oss:" in makefile_txt
 
     def test_one_to_one_to_one_spec_test_code_and_line_budgets_expected(self) -> None:
         """Verify 1:1:1 (Spec <-> Unit <-> Code) mapping, 0-byte __init__.py, and line caps."""
@@ -150,7 +159,7 @@ class TestRepoContracts:
             REPO_DIR / "CHANGELOG.md",
             REPO_DIR / "CONTRIBUTING.md",
             REPO_DIR / "SECURITY.md",
-            REPO_DIR / "FUNDING.md",
+            REPO_DIR / ".github/FUNDING.md",
             REPO_DIR / "CODE_OF_CONDUCT.md",
             REPO_DIR / "ACCESSIBILITY.md",
             *sorted((REPO_DIR / "docs").rglob("*.md")),
@@ -197,6 +206,7 @@ class TestRepoContracts:
         assert node_manifest["schema_version"] == NODE_MANIFEST_CONTRACT_REV
         assert len(global_skills) == EXPECTED_GLOBAL_SKILLS_COUNT
         assert len(tpl_catalog) == EXPECTED_TEMPLATES_COUNT
+        assert len(node_manifest["default_stack_templates"]) == EXPECTED_TEMPLATES_COUNT
         assert len(list((REPO_DIR / "templates").glob("*/*/README.md"))) == EXPECTED_TEMPLATES_COUNT
 
         cfg_dir = REPO_DIR / "antigravity/.gemini/config"
@@ -284,3 +294,72 @@ class TestRepoContracts:
             assert raw.startswith(PNG_SIGNATURE), f"Invalid PNG signature in {name}"
             assert dimensions[name] == EXPECTED_SCREENSHOT_DIMENSIONS
             assert "![CAP-" in guides_corpus and name in guides_corpus
+
+    def test_makefile_oss_dev_targets_positive_and_bipolar_guards_expected(
+        self, tmp_path: Path
+    ) -> None:
+        """Verify push-branch and promote-master succeed on dev-<repo> and block unsafe scopes."""
+        # Arrange
+        dev_repo = tmp_path / "dev-iso-engine"
+        pub_repo = tmp_path / "iso-engine"
+        for repo_dir in (dev_repo, pub_repo):
+            (repo_dir / "system").mkdir(parents=True)
+            shutil.copy2(REPO_DIR / "Makefile", repo_dir / "Makefile")
+            (repo_dir / "VERSION").write_text("1.0.0\n", encoding="utf-8")
+            (repo_dir / "src").symlink_to(REPO_DIR / "src", target_is_directory=True)
+            (repo_dir / "system/zcg-node.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "zcg-node-v1",
+                        "layer_id": "zero-cloud-gravity-workstation",
+                        "layer_role": "workstation",
+                        "entity_kind": "open-source",
+                        "precedence": 10,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "init", "-b", "master"], cwd=repo_dir, check=True)
+            subprocess.run(
+                ["git", "config", "user.email", "iso@example.org"], cwd=repo_dir, check=True
+            )
+            subprocess.run(["git", "config", "user.name", "ISO"], cwd=repo_dir, check=True)
+            subprocess.run(["git", "add", "."], cwd=repo_dir, check=True)
+            subprocess.run(["git", "commit", "-m", "chore: init"], cwd=repo_dir, check=True)
+
+        subprocess.run(
+            ["git", "remote", "add", "origin", "git@github.com:iso-org/dev-iso-engine.git"],
+            cwd=dev_repo,
+            check=True,
+        )
+        make_cmd = ["make", f"PYTHON={sys.executable}", "DRY_RUN=1"]
+
+        # Act
+        master_err = subprocess.run(
+            [*make_cmd, "push-branch"], cwd=dev_repo, capture_output=True, text=True
+        )
+        subprocess.run(["git", "checkout", "-b", "fix/iso-guard"], cwd=dev_repo, check=True)
+        push_ok = subprocess.run(
+            [*make_cmd, "push-branch"], cwd=dev_repo, capture_output=True, text=True
+        )
+        promo_ok = subprocess.run(
+            [*make_cmd, "promote-master"], cwd=dev_repo, capture_output=True, text=True
+        )
+        non_dev_err = subprocess.run(
+            [*make_cmd, "push-branch"], cwd=pub_repo, capture_output=True, text=True
+        )
+        subprocess.run(
+            ["git", "remote", "set-url", "origin", "git@github.com:iso-org/iso-engine.git"],
+            cwd=dev_repo,
+            check=True,
+        )
+        origin_err = subprocess.run(
+            [*make_cmd, "push-branch"], cwd=dev_repo, capture_output=True, text=True
+        )
+
+        # Assert
+        assert push_ok.returncode == 0 and "[push-branch DRY_RUN=1]" in push_ok.stdout
+        assert promo_ok.returncode == 0 and "[promote-master DRY_RUN=1]" in promo_ok.stdout
+        assert master_err.returncode != 0 and "[OSS_BRANCH_REQUIRED]" in master_err.stderr
+        assert non_dev_err.returncode != 0 and "[OSS_DEV_ONLY_BLOCKED]" in non_dev_err.stderr
+        assert origin_err.returncode != 0 and "[OSS_DEV_ORIGIN_MISMATCH]" in origin_err.stderr

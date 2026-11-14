@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.0.0) — Ubuntu Physical Workstation State Backup
+# ZeroCloudGravity (v1.0.1) — Ubuntu Physical Workstation State Backup
 # Usage: ./scripts/workstation-backup.sh [<workstation-dir>] [--dry-run] [--version] [--help]
 
 set -euo pipefail

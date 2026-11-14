@@ -1,4 +1,4 @@
-# ZeroCloudGravity v1.0.0 — Hardened Non-Root Contextual MCP Container (Ubuntu 24.04)
+# ZeroCloudGravity v1.0.1 — Hardened Non-Root Contextual MCP Container (Ubuntu 24.04)
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive \

@@ -242,6 +242,7 @@ class TestSurfaces:
         assert rt["regime"] == "OPTIMAL"
         assert rt["health_score"] == 1.0
         assert "data-zcg-surface='cockpit'" in html
+        assert "/static/img/logo.svg" in html
         assert "--zcg-bg" in html
         assert "<script src='/cockpit-shell.js' defer></script>" in html
         assert "onclick=" not in html

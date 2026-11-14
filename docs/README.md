@@ -2,7 +2,7 @@
 epistemic_grade: E2
 ---
 
-# Documentation Index — `ZeroCloudGravity` (`v1.0.0`)
+# Documentation Index — `ZeroCloudGravity` (`v1.0.1`)
 
 > **Navigable Knowledge Hub for Humans and AI Agents (3-Tier Progressive Disclosure)**
 >
@@ -38,7 +38,7 @@ docs/
 │   └── 06_web_and_api_application_engine.md                     ← src/zcg/web/ (15 modules): autonomous ASGI web/API engine, UI macros & capabilities/*
 └── reference/                                                   ← Tier 3B (E2): Enterprise matrices, CLI/MCP catalogs & extension playbooks (< 465 lines)
     ├── 01_stack_and_plugin_matrix.md                            ← 7-Axis Taxonomy, Cross-Dept Algebra (0..80), Human-Stack (85..95) & 16-Pack Catalog
-    └── 02_cli_mcp_and_security_reference.md                     ← 31 zcg subcommands, zcg-mcp JSON-RPC 2.0 catalog, Container/SSH mesh & Maintainer Guide
+    └── 02_cli_mcp_and_security_reference.md                     ← 33 zcg subcommands, zcg-mcp JSON-RPC 2.0 catalog, Container/SSH mesh & Maintainer Guide
 ```
 
 The table below maps each document in the 3-tier corpus to its scope and normative contracts:
@@ -60,7 +60,7 @@ The table below maps each document in the 3-tier corpus to its scope and normati
 | **Architecture 05 (`src/zcg/{capsules,ephemeral,mcp}/` — MCP, `rcap1` & Bots)** | **Contextual MCP Server, `rcap1` Compaction & Ephemeral Department Bots (`17` modules)**: `1:1:1` traceability table, `rcap1` (`L0 -> L1 -> L2 -> L3`) `zlib + HMAC-SHA256` single-envelope architecture, information-theoretic foundations & live `130k`-token benchmarks (`88.7%` `L0` / `67.0%` `L1`, `~16 ms`), `citation_receipt` (`CITATION_DRIFT_DETECTED`) & `Q1..Q4` obsolescence radar, zero-checkout `DMCP`/`GRCC` Git plumbing, `strictly-read-only` (`chmod 0o555`) Ephemeral Bots, and `R0..R2` MCP capability rings. | **[`docs/architecture/05_contextual_mcp_and_capsules.md`](architecture/05_contextual_mcp_and_capsules.md)** |
 | **Architecture 06 (`src/zcg/web/` — Autonomous Web Frontend & Backend API Engine)** | **Decoupled Python 3.14 Native ASGI Application Engine (`15` modules across `web/` & `web/capabilities/`)**: `1:1:1` traceability table, `0` governance coupling (`excluded_contexts`), `16`-channel `DeliveryChannel` (`Zone Z1..Z4 × Tier T1..T5`), Zone `CSP`/`CSRF`/signed cookies, typed `Request` (`urlencoded` + stdlib `multipart/form-data` `UploadFile`), composable `APIRouter` + OpenAPI 3.1, cascading `TemplateCatalog`, `14` UI & Collection macros (`components.py`: `render_card_grid`, `render_item_list`, `render_table`), `FallbackStaticCatalog`, generic capability routers (`capabilities/{crud,vault,telemetry_router}.py`), and `create_web_app`. | **[`docs/architecture/06_web_and_api_application_engine.md`](architecture/06_web_and_api_application_engine.md)** |
 | **Reference 01 (7-Axis Taxonomy, Cross-Dept Algebra, `Human-Stack` & `16` Packs)** | **7-Axis Multidimensional Taxonomy, Cross-Departmental Composition (`0..80`), `Human-Stack` (`85..95`) & `16`-Pack Catalog**: Disambiguation of all 7 orthogonal axes, Perspective Matrix (`Level 1..4`), LegalTech / Marketing / Cloud IaC walkthroughs, 4 composable `Human-Stack` facets (`domain-*:M1..M4`, `bridge-*`, `soft-*`, `hat-*`), 4 containment scopes, and links to all `16` `templates/*/*/README.md` specifications. | **[`docs/reference/01_stack_and_plugin_matrix.md`](reference/01_stack_and_plugin_matrix.md)** |
-| **Reference 02 (`zcg` CLI, `zcg-mcp` Catalog, Container Mesh & Extension Guide)** | **Complete CLI/MCP Reference, Multi-Service Container Mesh & Maintainer Playbook**: All 31 `zcg` subcommands, `zcg-mcp` JSON-RPC 2.0 schemas (`9` `zcg://*` resources, `9` tools, `3` prompts), Docker/Cloud Run/SSH federated MCP patterns, OWASP ASVS + `MCP-Sec` security error codes, and step-by-step Maintainer Extension Guide. | **[`docs/reference/02_cli_mcp_and_security_reference.md`](reference/02_cli_mcp_and_security_reference.md)** |
+| **Reference 02 (`zcg` CLI, `zcg-mcp` Catalog, Container Mesh & Extension Guide)** | **Complete CLI/MCP Reference, Multi-Service Container Mesh & Maintainer Playbook**: All 33 `zcg` subcommands, `zcg-mcp` JSON-RPC 2.0 schemas (`9` `zcg://*` resources, `9` tools, `3` prompts), Docker/Cloud Run/SSH federated MCP patterns, OWASP ASVS + `MCP-Sec` security error codes, and step-by-step Maintainer Extension Guide. | **[`docs/reference/02_cli_mcp_and_security_reference.md`](reference/02_cli_mcp_and_security_reference.md)** |
 
 ---
 

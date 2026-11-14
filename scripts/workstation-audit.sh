@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.0.0) — Read-Only Ubuntu Workstation Drift Audit
+# ZeroCloudGravity (v1.0.1) — Read-Only Ubuntu Workstation Drift Audit
 # Usage: ./scripts/workstation-audit.sh [<workstation-dir>] [--clean] [--version] [--help]
 
 set -euo pipefail
@@ -63,10 +63,10 @@ ZCG_RUNTIME_REAL="$(cd "${ZCG_RUNTIME_DIR}" 2>/dev/null && pwd || echo "${REPO_D
 export ZCG_ENGINE_DIR="${ZCG_RUNTIME_REAL}"
 
 if [[ -n "${NO_COLOR:-}" ]]; then
-  RED='' GREEN='' YELLOW='' BLUE='' CYAN='' NC='' BOLD=''
+  RED='' GREEN='' YELLOW='' BLUE='' NC='' BOLD=''
 else
   RED='\033[0;31m' GREEN='\033[0;32m' YELLOW='\033[1;33m'
-  BLUE='\033[0;34m' CYAN='\033[0;36m' NC='\033[0m' BOLD='\033[1m'
+  BLUE='\033[0;34m' NC='\033[0m' BOLD='\033[1m'
 fi
 
 ISSUES=0
@@ -114,7 +114,13 @@ audit_stow_module() {
   done < <(find "${base_dir}/${module_name}" -type f -not -path '*/.git/*' -not -path '*/__pycache__/*' -not -name '*.pyc' -printf '%P\n')
 }
 
-audit_stow_module "${ZCG_RUNTIME_REAL}" "${REPO_DIR}" "antigravity"
+ANTIGRAVITY_STOW_BASE="${ZCG_RUNTIME_REAL}"
+if [[ -d "${WORKSTATION_DIR}/antigravity" ]]; then
+  ANTIGRAVITY_STOW_BASE="${WORKSTATION_DIR}"
+elif [[ -n "${ZCG_WORKSTATION_DIR:-}" ]] && [[ -d "${ZCG_WORKSTATION_DIR}/antigravity" ]]; then
+  ANTIGRAVITY_STOW_BASE="$(cd "${ZCG_WORKSTATION_DIR}" && pwd)"
+fi
+audit_stow_module "${ANTIGRAVITY_STOW_BASE}" "${ZCG_RUNTIME_REAL}" "antigravity"
 for mod_path in "${WORKSTATION_DIR}"/*/; do
   [[ -d "${mod_path}" ]] || continue
   mod_name="$(basename "${mod_path}")"
@@ -245,7 +251,7 @@ if [[ -d "${EXT_DIR}" ]]; then
     fi
     # shellcheck disable=SC2034
     NAME="" DESCRIPTION="" CHECK="" CHECK_CMD="" URL="" PACKAGES="" INSTALL_CMD=""
-    setup_repo() { :; }
+    unset -f setup_repo
     # shellcheck source=/dev/null
     source "${pkg_file}"
     INSTALLED=false

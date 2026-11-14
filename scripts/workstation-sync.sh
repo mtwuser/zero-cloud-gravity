@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.0.0) — Unified Workstation & Engine Runtime Synchronizer
+# ZeroCloudGravity (v1.0.1) — Unified Workstation & Engine Runtime Synchronizer
 # Usage: ./scripts/workstation-sync.sh [sync | setup | status | --auto | --help | --version]
 
 set -euo pipefail

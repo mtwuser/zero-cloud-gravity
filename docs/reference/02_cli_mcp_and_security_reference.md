@@ -6,13 +6,13 @@ epistemic_grade: E2
 
 > **Normative Architecture**: [`docs/architecture/03_governance_and_work_ledger.md`](../architecture/03_governance_and_work_ledger.md) and [`docs/architecture/05_contextual_mcp_and_capsules.md`](../architecture/05_contextual_mcp_and_capsules.md)
 >
-> This reference documents all 31 `zcg` console subcommands, the `zcg-mcp` JSON-RPC 2.0 catalog (`9` resources, `9` tools, `3` prompts), Docker/Cloud Run/SSH federated MCP deployment patterns, OWASP ASVS + `MCP-Sec` security error contracts, and the Maintainer Extension Playbook.
+> This reference documents all 33 `zcg` console subcommands (`37` dispatcher tokens including shorthand aliases), the `zcg-mcp` JSON-RPC 2.0 catalog (`9` resources, `9` tools, `3` prompts), Docker/Cloud Run/SSH federated MCP deployment patterns, OWASP ASVS + `MCP-Sec` security error contracts, and the Maintainer Extension Playbook.
 
 ---
 
 ## 1. Complete `zcg` Console CLI Reference (`zcg [--repo-dir <dir>] [--dry-run] <subcommand>`)
 
-All 31 subcommands are partitioned into five deterministic capability families (`exit 0` success JSON, `exit 1` usage/validation error, `exit 2` RBAC/env-gate blocked):
+All 33 canonical subcommands are partitioned into five deterministic capability families (`exit 0` success, `exit 1` usage/validation error, `exit 2` RBAC/env-gate blocked):
 
 | Capability Family | Subcommand & Canonical Synopsis | Mutates Disk? | Primary Purpose |
 | :--- | :--- | :---: | :--- |
@@ -44,7 +44,7 @@ All 31 subcommands are partitioned into five deterministic capability families (
 | **`C3` Governance** | `zcg check-env-promotion [<dir>] --to-env <tst\|pre\|pro> [--files <csv>]` | Audit log | Evaluates progressive `dev -> tst -> pre -> pro` gates and $N$-departmental surface consensus. |
 | **`C3` Governance** | `zcg record-decision [<dir>] --item <ref> --decision <approve\|reject\|defer\|blocked> --reason <txt>` | Yes (`validator`+) | Records a signed governance decision in `WORKTASK.md` and `logs/governance_audit.jsonl`. |
 | **`Subtree`** | `zcg subtree <list\|pull\|pull-all\|register> [args]` | Git sync | Lists, registers (`layers/<name>`), or synchronizes mounted child/knowledge subtrees. |
-| **`Workstation`** | `zcg install-antigravity \| workstation-sync \| workstation-backup \| workstation-audit \| workstation-restore` | Host ops | Executes the corresponding Ubuntu 26.04 physical workstation script in `scripts/`. |
+| **`Workstation`** | `zcg install-antigravity \| workstation-sync \| workstation-backup \| workstation-audit \| workstation-restore [--json]` | Host ops | Executes the corresponding Ubuntu 26.04 physical workstation script in `scripts/` (streams live TTY progress/colors interactively; returns JSON when non-TTY or `--json`). |
 
 ---
 
@@ -64,7 +64,7 @@ All 31 subcommands are partitioned into five deterministic capability families (
 | `zcg://mcp/topology` | `R0` | Resource URI | Validated `system/zcg-node.json`, mounted layers, and `R0..W` capability rings. |
 | `zcg://mcp/diagnostics` | `R0` | Resource URI | Runtime JSONL telemetry summary (`logs/mcp_invocations.jsonl`, `mcp_compaction.jsonl`, `mcp_alerts.jsonl`). |
 | `get_layer_overview` | `R0` | `workspace_dir?`, `include_Subtrees?` | **4-Channel Executive Digest**: Channel 1 (`entity_identity`, `network_topology`, `work_orchestration`, `runtime_orchestration`), Channel 2 (`templates`), Channel 3 (`hooks`, `warnings`), Channel 4 (`deep_context_index`). |
-| `audit_node_drift` | `R1` | `workspace_dir?`, `scope` (`verify-repo` \| `system-audit` \| `all`) | Runs `scripts/verify-repo.sh` and/or `scripts/workstation-audit.sh` plus `citation_lifecycle_radar` (`Q1..Q4`). |
+| `audit_node_drift` | `R1` | `workspace_dir?`, `mode` (`verify-repo` \| `system-audit` \| `both`) | Runs `scripts/verify-repo.sh` and/or `scripts/workstation-audit.sh` (`180s` bounded timeout) plus `citation_lifecycle_radar` (`Q1..Q4`). |
 | `read_layer_document` | `R0` | `rel_path`, `layer?`, `branch_ref?`, `workspace_dir?` | Path-contained reader for `README.md`, `SYLLABUS.md`, `WORK*`, `docs/**`, `corporate/**`, `surfaces/**`, `roadmaps/**`, `templates/**`, and `.agents/{rules,skills}/` (with zero-checkout `branch_ref` `DMCP`). |
 | `query_governance_rules` | `R0` | `query`, `layer?`, `resolution` (`L0\|L1\|L2`), `min_epistemic_grade?`, `branch_ref?` | Searches rules/docs across layers, adaptive `consumer_viewpoint` (`M1..M4`), `citation_receipt`, and `rcap1` `capsule_token`. |
 | `unfold_context_capsule` | `R0` | `capsule_token`, `target_level` (`L0..L3`), `agent_tier`, `resonance_key?`, `verify_claims?` | Cryptographically verifies and unfolds `rcap1` envelopes hop-by-hop (`L0 -> L1 -> L2 -> L3`) and runs `verify_epistemic_context_claims`. |
@@ -89,7 +89,7 @@ Because `ZeroCloudGravity` has `0` external runtime dependencies (`pyproject.tom
     },
     "zcg-container-node": {
       "command": "docker",
-      "args": ["run", "-i", "--rm", "--read-only", "zero-cloud-gravity:1.0.0", "--layer-id", "prod-api-node", "--layer-role", "service-node"]
+      "args": ["run", "-i", "--rm", "--read-only", "zero-cloud-gravity:1.0.1", "--layer-id", "prod-api-node", "--layer-role", "service-node"]
     },
     "zcg-remote-ssh": {
       "command": "ssh",

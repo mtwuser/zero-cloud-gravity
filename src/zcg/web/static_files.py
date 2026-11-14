@@ -19,7 +19,20 @@ from zcg.web.security import ErrorSeverity, WebAppError
 
 ETAG_HEX_LEN: Final[int] = 16
 
+ZCG_BRAND_LOGO_SVG: Final[str] = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">'
+    '<rect x="3" y="3" width="58" height="58" rx="14" fill="#0f172a" '
+    'stroke="#38bdf8" stroke-width="2.5"/>'
+    '<polygon points="32,10 51,21 51,43 32,54 13,43 13,21" '
+    'fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>'
+    '<ellipse cx="32" cy="32" rx="16" ry="7" transform="rotate(-28 32 32)" '
+    'stroke="#38bdf8" stroke-width="2" stroke-opacity="0.85"/>'
+    '<circle cx="32" cy="32" r="5.5" fill="#22c55e" stroke="#f8fafc" stroke-width="1.6"/>'
+    "</svg>\n"
+)
+
 BUILTIN_STATIC_ASSETS: Final[dict[str, tuple[str, str]]] = {
+    "img/logo.svg": ("image/svg+xml; charset=utf-8", ZCG_BRAND_LOGO_SVG),
     "css/design-system.css": (
         "text/css; charset=utf-8",
         ":root {\n"
@@ -59,6 +72,8 @@ BUILTIN_STATIC_ASSETS: Final[dict[str, tuple[str, str]]] = {
     "css/components.css": (
         "text/css; charset=utf-8",
         ".zcg-icon { display: inline-block; vertical-align: -0.18em; flex-shrink: 0; }\n"
+        ".zcg-brand { display: flex; align-items: center; gap: 0.75rem; }\n"
+        ".zcg-brand-logo { width: 2.25rem; height: 2.25rem; flex-shrink: 0; display: block; }\n"
         ".zcg-card { background: var(--zcg-surface); border: 1px solid var(--zcg-border);"
         " border-radius: var(--zcg-radius); padding: 1rem 1.2rem; margin-bottom: 1rem; }\n"
         ".zcg-card__header { display: flex; justify-content: space-between;"

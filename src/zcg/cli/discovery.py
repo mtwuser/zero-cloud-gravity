@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -184,11 +185,28 @@ def dispatch_workstation(
     script_path = repo_dir / _WORKSTATION_SCRIPT_MAP[subcmd]
     if not script_path.is_file():
         raise CLIUsageError(f"Missing workstation script: {script_path}")
+    force_json = "--json" in rest
     cmd_args = [
-        a for a in rest if not (dry_run and subcmd == "workstation-audit" and a == "--clean")
+        a
+        for a in rest
+        if a != "--json" and not (dry_run and subcmd == "workstation-audit" and a == "--clean")
     ]
     if dry_run and subcmd != "workstation-audit":
         cmd_args = [*cmd_args, "--dry-run"]
+    if not force_json and sys.stdout.isatty():
+        tty_proc = subprocess.run(  # noqa: S603
+            [str(script_path), *cmd_args],
+            check=False,
+            env={**os.environ, "ZCG_ENGINE_DIR": str(repo_dir)},
+        )
+        return {
+            "subcommand": subcmd,
+            "script": str(script_path),
+            "dry_run": dry_run,
+            "exit_code": tty_proc.returncode,
+            "passed": tty_proc.returncode == 0,
+            "streamed": True,
+        }
     proc = subprocess.run(  # noqa: S603
         [str(script_path), *cmd_args],
         capture_output=True,
@@ -202,6 +220,7 @@ def dispatch_workstation(
         "dry_run": dry_run,
         "exit_code": proc.returncode,
         "passed": proc.returncode == 0,
+        "streamed": False,
         "output": proc.stdout.strip(),
         "stderr": proc.stderr.strip(),
     }

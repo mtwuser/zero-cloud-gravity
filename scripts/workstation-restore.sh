@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.0.0) — Ubuntu Physical Workstation Restore & Provisioner
+# ZeroCloudGravity (v1.0.1) — Ubuntu Physical Workstation Restore & Provisioner
 # Usage: ./scripts/workstation-restore.sh [<workstation-dir>] [--all | --antigravity | --packages | --stow | --nvm | --gnome | --external] [--dry-run]
 
 set -euo pipefail

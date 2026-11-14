@@ -348,7 +348,8 @@ def render_node_cockpit_html(
     )  # fmt: skip
     json_str = json.dumps(cockpit_data, ensure_ascii=False)
     return (
-        f"<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'/><title>{lid} — Zero-Cloud"
+        f"<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'/><link rel='icon' "
+        f"type='image/svg+xml' href='/static/img/logo.svg'/><title>{lid} — Zero-Cloud"
         f" Node Cockpit ({sub_url})</title><style>:root{{--zcg-bg:#0b1020;--zcg-surface:#151d36;"
         "--zcg-accent:#38bdf8;--zcg-text:#f8fafc;--zcg-muted:#94a3b8;--zcg-border:#334155}"
         "body{font-family:system-ui,sans-serif;background:var(--zcg-bg);color:var(--zcg-text);"
@@ -366,8 +367,10 @@ def render_node_cockpit_html(
         "code{background:#090d16;padding:6px 10px;border-radius:6px;font-size:12px;color:#e2e8f0;"
         "display:block;overflow-x:auto;margin:4px 0}.zcg-provenance-footer code{display:inline;"
         "padding:2px 6px}</style></head><body data-zcg-surface='cockpit'><header class='bar' "
-        "data-zone='Z1'><div><h2 id='title' style='margin:0'></h2><small id='sub' style='color:"
-        "var(--zcg-muted)'></small></div><div id='envs'></div></header><main class='grid' "
+        "data-zone='Z1'><div style='display:flex;align-items:center;gap:12px'><img "
+        "src='/static/img/logo.svg' alt='ZeroCloudGravity' width='36' height='36'/><div>"
+        "<h2 id='title' style='margin:0'></h2><small id='sub' style='color:"
+        "var(--zcg-muted)'></small></div></div><div id='envs'></div></header><main class='grid' "
         "data-zone='Z3'><section class='card vcard' id='v_panel'><h3 id='v_hdr' style='margin-top:"
         "0'></h3><div id='v_btns'></div><div id='v_out'></div></section><section class='card' "
         "data-zone='Z2'><h3>1-Hop Node Relationship Summary (Z2)</h3><div id='rel'></div></section>"

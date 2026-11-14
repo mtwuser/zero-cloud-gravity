@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - "feat/**"
+      - "feature/**"
+      - "fix/**"
+      - "release/**"
+  pull_request:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Deterministic 8-Stage Verification Gate (Python 3.14)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          allow-prereleases: true
+
+      - name: Install system verification tools (GNU Stow & ShellCheck)
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends stow shellcheck
+
+      - name: Create isolated virtual environment & install dev toolchain
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --upgrade pip -r requirements-dev.txt -e .
+
+      - name: Run 8-stage ZeroCloudGravity verification suite (100.00% isolated coverage)
+        env:
+          ZCG_NO_BROWSER: "1"
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: ./scripts/verify-repo.sh

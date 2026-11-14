@@ -59,15 +59,19 @@ git tag -a vX.Y.Z -m "Release vX.Y.Z"
 git push origin <branch> --follow-tags
 ```
 
-- **Dual-Remote Private Dev Workspace (`dev-<repo>` $\rightarrow$ Private `origin` + Public Open-Source `upstream`)**:
-  When releasing an Open-Source upstream repository, **always execute the release from `ZCG_DEV_REPO_DIR` (`dev-zero-cloud-gravity`, `entity_kind: "open-source"`), NEVER from a personal or corporate runtime clone (`~/<user-pc>`)** (`OSS_PERSONAL_REPO_PUBLISH_BLOCKED`). Push the full working commit (with `WORKTASK.md`, `WORKROAD.md`, `BACKLOG.md`, `roadmaps/`) to private `origin`, then run `make publish-oss RELEASE_VERSION=X.Y.Z` (which enforces `entity_kind == "open-source"`, `--release-version X.Y.Z == VERSION`, zero unversioned `[Unreleased]` entries, `check-authority --op release`, and immutable remote tags; external contributors must use `make publish-oss CREATE_PR=1`) to export the clean, tracker-free release snapshot and tag `vX.Y.Z` to public `upstream`, and sync the local workstation runtime:
+- **Dual-Remote Private Dev Workspace (`dev-<repo>` $\rightarrow$ Private CI Gate $\rightarrow$ Public Open-Source Snapshot)**:
+  When releasing an Open-Source upstream repository, **always execute `/release` from `ZCG_DEV_REPO_DIR` (`dev-zero-cloud-gravity`, `entity_kind: "open-source"` on verified linear `master`), NEVER from a personal or corporate runtime clone (`~/<user-pc>`)** (`OSS_PERSONAL_REPO_PUBLISH_BLOCKED`). Follow the two-step CI-verified export so a public tag never needs re-patching:
+  1. **Step A — Seal & Validate Release Commit on Private `origin` First**: Commit the release bump (`CHANGELOG.md`, `VERSION`, `pyproject.toml`, `README.md`), tag `vX.Y.Z` locally, push to private `origin` (`git push origin <branch> --follow-tags`), and confirm private GitHub Actions (`8/8` gates) turns green.
+  2. **Step B — Export Sterile Single-Commit Snapshot to Public `upstream` + Sync `$HOME`**: Run `make publish-oss RELEASE_VERSION=X.Y.Z` (authorized directly for the repository admin via GitHub Ruleset bypass while external contributors use Fork Pull Requests or `make publish-oss CREATE_PR=1 CONTRIB_BRANCH=contrib/<slug> OSS_REMOTE_URL=<fork-url>`), which exports `1` tracker-free commit (`git archive HEAD` minus `WORK*.md`, `BACKLOG.md`, `roadmaps/`) + annotated tag `vX.Y.Z` onto public `master` and syncs `$HOME`:
 ```bash
-### Release vX.Y.Z (dev-<repo> -> Private Origin + Public Open-Source Upstream)
+### Step A — Seal & Push Release Candidate to Private Origin (Wait for Green Private CI)
 cd <DEV_REPO_PATH>
-git add -A
+git add -u
 git commit -m "chore(release): publish vX.Y.Z"
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
 git push origin <branch> --follow-tags
+
+### Step B — Export Verified Snapshot to Public Open-Source Upstream (Once Private CI is Green)
+cd <DEV_REPO_PATH>
 make publish-oss RELEASE_VERSION=X.Y.Z
-~/.local/bin/zcg-sync --sync
 ```

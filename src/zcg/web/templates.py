@@ -88,6 +88,7 @@ BUILTIN_TEMPLATES: Final[dict[str, str]] = {
         '  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
         '  <meta name="zcg-csrf-token" content="{{ csrf_token }}">\n'
         "  <title>{{ title }}</title>\n"
+        '  <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">\n'
         '  <link rel="stylesheet" href="/static/css/design-system.css">\n'
         '  <link rel="stylesheet" href="/static/css/layout.css">\n'
         '  <link rel="stylesheet" href="/static/css/components.css">\n'
@@ -95,7 +96,9 @@ BUILTIN_TEMPLATES: Final[dict[str, str]] = {
         "</head>\n<body>\n"
         '  <a class="zcg-skip-link" href="#main-content">Skip to main content</a>\n'
         '  <header class="zcg-z1-header">'
-        "{% block header %}<h1>{{ title }}</h1>{% endblock %}</header>\n"
+        '{% block header %}<div class="zcg-brand">'
+        '<img class="zcg-brand-logo" src="/static/img/logo.svg" alt="ZeroCloudGravity" '
+        'width="36" height="36"><h1>{{ title }}</h1></div>{% endblock %}</header>\n'
         '  <nav class="zcg-z2-nav" aria-label="Primary navigation">'
         "{% block nav %}{% endblock %}</nav>\n"
         '  <main id="main-content" class="zcg-z3-main">'
@@ -114,12 +117,16 @@ BUILTIN_TEMPLATES: Final[dict[str, str]] = {
         "{% endblock %}\n"
         "{% block header %}\n"
         '  <div class="zcg-plugin-header">\n'
-        "    <div>\n"
-        "      {{ shell_kicker_html }}\n"
-        "      <h1>{{ layer_id }} — {{ panel_title }}</h1>\n"
-        '      <p class="zcg-plugin-subtitle">Plugin: <code>{{ plugin_id }}</code> · '
+        '    <div class="zcg-brand">\n'
+        '      <img class="zcg-brand-logo" src="/static/img/logo.svg" alt="ZeroCloudGravity" '
+        'width="38" height="38">\n'
+        "      <div>\n"
+        "        {{ shell_kicker_html }}\n"
+        "        <h1>{{ layer_id }} — {{ panel_title }}</h1>\n"
+        '        <p class="zcg-plugin-subtitle">Plugin: <code>{{ plugin_id }}</code> · '
         "Overlay: <code>{{ use_case_overlay }}</code> · "
         "Modules: <code>{{ enabled_modules_csv }}</code></p>\n"
+        "      </div>\n"
         "    </div>\n"
         '    <div class="zcg-plugin-actions">{{ header_actions_html }}</div>\n'
         "  </div>\n"
