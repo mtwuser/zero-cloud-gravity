@@ -19,9 +19,11 @@ from zcg.cli.commands import (
 )
 from zcg.cli.discovery import (
     C1_DISCOVERY_SUBCOMMANDS,
+    OSS_SUBCOMMANDS,
     SUBTREE_SUBCOMMANDS,
     WORKSTATION_SUBCOMMANDS,
     dispatch_c1,
+    dispatch_oss,
     dispatch_subtree,
     dispatch_workstation,
 )
@@ -39,7 +41,8 @@ def dispatch_zcg_cli(
     try:
         if subcmd in C1_DISCOVERY_SUBCOMMANDS:
             c1_res = dispatch_c1(repo_dir, eff_dry, subcmd, rest)
-            code = 1 if subcmd == "lint-arch" and not c1_res.get("passed", True) else 0
+            gate_cmds = ("lint-arch", "lint-skills", "check-handoff")
+            code = 1 if subcmd in gate_cmds and not c1_res.get("passed", True) else 0
             return code, c1_res, None
         if subcmd in C2_LIFECYCLE_SUBCOMMANDS:
             return 0, dispatch_c2(repo_dir, eff_dry, subcmd, rest), None
@@ -50,6 +53,8 @@ def dispatch_zcg_cli(
         if subcmd in WORKSTATION_SUBCOMMANDS:
             ws_res = dispatch_workstation(repo_dir, eff_dry, subcmd, rest)
             return (0 if ws_res["passed"] else 1), ws_res, None
+        if subcmd in OSS_SUBCOMMANDS:
+            return 0, dispatch_oss(repo_dir, eff_dry, rest), None
         raise CLIUsageError(f"Unknown subcommand: {subcmd}")
     except CLIAuthorityBlockedError as exc:
         return 2, exc.payload, exc.message
@@ -76,6 +81,7 @@ def main(argv: list[str] | None = None) -> int:
                 *C3_GOVERNANCE_SUBCOMMANDS,
                 *SUBTREE_SUBCOMMANDS,
                 *WORKSTATION_SUBCOMMANDS,
+                *OSS_SUBCOMMANDS,
             )
             help_doc = {
                 "usage": "zcg [--repo-dir <dir>] [--dry-run] <subcommand> [args]",

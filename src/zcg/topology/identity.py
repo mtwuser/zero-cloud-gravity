@@ -21,6 +21,7 @@ from zcg.core.constants import (
     MCP_OPERATING_MODES,
     NODE_MANIFEST_REL_PATH,
     OSS_WORKSTATION_IDS,
+    PROJECT_ZCG_MK_REL_PATH,
     PUBLIC_GOV_MAX_PRECEDENCE,
     PUBLIC_GOV_MAX_ROOT_PRECEDENCE,
     PUBLIC_GOV_PREFIXES,
@@ -39,13 +40,13 @@ def resolve_default_parent_dir(workspace_dir: Path, parent_dir: Path | None = No
     if parent_dir is not None:
         return parent_dir.resolve()
     ws = workspace_dir.resolve()
-    mk = ws / "Makefile"
-    if mk.is_file() and (
-        m := re.search(r"^PARENT_DIR\s*\?=\s*(.+)$", mk.read_text(encoding="utf-8"), re.MULTILINE)
-    ):
-        cand = Path(m.group(1).strip())
-        if cand.is_dir() and cand.resolve() != ws and (cand / NODE_MANIFEST_REL_PATH).is_file():
-            return cand.resolve()
+    for mk in (ws / "Makefile", ws / PROJECT_ZCG_MK_REL_PATH):
+        if mk.is_file() and (
+            m := re.search(r"^(?:ZCG_)?PARENT_DIR\s*\?=\s*(.+)$", mk.read_text("utf-8"), re.M)
+        ):
+            cand = Path(m.group(1).strip())
+            if cand.is_dir() and cand.resolve() != ws and (cand / NODE_MANIFEST_REL_PATH).is_file():
+                return cand.resolve()
     if ws.parent.name == "layers" and (ws.parent.parent / NODE_MANIFEST_REL_PATH).is_file():
         return ws.parent.parent.resolve()
     wm = load_node_manifest(ws)

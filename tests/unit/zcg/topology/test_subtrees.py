@@ -10,7 +10,6 @@ import os
 import subprocess
 from pathlib import Path
 
-from zcg.core.blueprints import render_layer_makefile
 from zcg.core.constants import (
     MAKEFILE_ROLE_HEADER_PREFIX,
     NODE_MANIFEST_CONTRACT_REV,
@@ -18,6 +17,7 @@ from zcg.core.constants import (
     TEMPLATE_MANIFEST_CONTRACT_REV,
 )
 from zcg.core.manifests import sha256_file
+from zcg.core.surface_composer import render_layer_makefile
 from zcg.topology import subtrees
 
 

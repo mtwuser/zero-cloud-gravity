@@ -27,6 +27,8 @@ from zcg.core.manifests import (
     load_node_manifest,
 )
 from zcg.governance.bootstrap import bootstrap_node_workspace
+from zcg.governance.capabilities import enforce_capability_gate
+from zcg.topology.posture import inspect_remote_node_manifest
 
 _SPINOUT_SKIP_EXACT: frozenset[str] = frozenset(
     {
@@ -67,17 +69,21 @@ def resolve_linked_node_dir(workspace_dir: Path, target_id: str) -> Path | None:
 def link_node(
     workspace_dir: Path,
     *,
-    target_id: str,
+    target_id: str = "",
+    from_source: str = "",
+    from_branch: str = "master",
     relation: str = "lateral-peer",
     target_ref: str = "",
     cockpit_url: str = "",
     shared_packs: list[str] | None = None,
     description: str = "",
+    actor_email: str | None = None,
+    parent_dir: Path | None = None,
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """Upsert a zero-copy declarative node connection in system/zcg-node.json -> linked_nodes."""
-    clean_id = target_id.strip()
-    if not KEBAB_ID_RE.match(clean_id):
+    clean_from = from_source.strip()
+    if not clean_from and not KEBAB_ID_RE.match(target_id.strip()):
         raise ValueError(f"Invalid target_id {target_id!r}: must match kebab-case")
     clean_rel = relation.strip() or "lateral-peer"
     if clean_rel not in VALID_NODE_LINK_RELATIONS:
@@ -90,6 +96,10 @@ def link_node(
         raise ValueError(f"Missing node manifest: {manifest_path}")
     manifest = load_node_manifest(ws)
     own_id = str(manifest.get("layer_id") or ws.name).strip()
+    inspected = inspect_remote_node_manifest(clean_from, branch=from_branch) if clean_from else None
+    clean_id = target_id.strip() or (str(inspected["layer_id"]) if inspected else "")
+    if not KEBAB_ID_RE.match(clean_id):
+        raise ValueError(f"Invalid target_id {clean_id!r}: must match kebab-case")
     if clean_id == own_id:
         raise ValueError(f"Cannot link node {own_id!r} to itself")
 
@@ -98,7 +108,7 @@ def link_node(
         if not KEBAB_ID_RE.match(pack):
             raise ValueError(f"Invalid shared_pack {pack!r}: must match kebab-case")
 
-    raw_ref = target_ref.strip()
+    raw_ref = target_ref.strip() or clean_from
     local_cand: Path | None = None
     if raw_ref and not _is_remote_ref(raw_ref):
         cand_p = Path(raw_ref).expanduser()
@@ -106,8 +116,16 @@ def link_node(
     elif not raw_ref and (ws.parent / clean_id / NODE_MANIFEST_REL_PATH).is_file():
         local_cand = (ws.parent / clean_id).resolve()
 
-    if local_cand is not None and (local_cand / NODE_MANIFEST_REL_PATH).is_file():
-        tm = load_node_manifest(local_cand)
+    tm: dict[str, Any] | None = (
+        dict(inspected["manifest"])
+        if inspected is not None
+        else (
+            load_node_manifest(local_cand)
+            if local_cand is not None and (local_cand / NODE_MANIFEST_REL_PATH).is_file()
+            else None
+        )
+    )
+    if tm is not None:
         t_role = str(tm.get("layer_role") or "project")
         t_prec = int(tm.get("precedence", ROLE_DEFAULT_PRECEDENCE.get(t_role, 80)))
         t_port = int(tm.get("cockpit_port") or (DEFAULT_PLUGIN_BASE_PORT + t_prec))
@@ -137,6 +155,17 @@ def link_node(
         )
     )
     eff_url = cockpit_url.strip() or def_url
+    enforce_capability_gate(
+        ws,
+        operation="link",
+        actor_email=actor_email,
+        parent_dir=parent_dir,
+        link_target=clean_id,
+        link_relation=clean_rel,
+        link_target_role=t_role,
+        link_cockpit_url=eff_url,
+        dry_run=dry_run,
+    )
     entry: dict[str, Any] = {
         "node_id": clean_id,
         "relation": clean_rel,
@@ -164,7 +193,14 @@ def link_node(
     return {"linked_node": entry, "total_linked_nodes": len(existing), "dry_run": dry_run}
 
 
-def unlink_node(workspace_dir: Path, *, target_id: str, dry_run: bool = False) -> dict[str, Any]:
+def unlink_node(
+    workspace_dir: Path,
+    *,
+    target_id: str,
+    actor_email: str | None = None,
+    parent_dir: Path | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
     """Remove a declarative node connection from system/zcg-node.json -> linked_nodes."""
     clean_id = target_id.strip()
     if not KEBAB_ID_RE.match(clean_id):
@@ -173,6 +209,9 @@ def unlink_node(workspace_dir: Path, *, target_id: str, dry_run: bool = False) -
     manifest_path = ws / NODE_MANIFEST_REL_PATH
     if not manifest_path.is_file():
         raise ValueError(f"Missing node manifest: {manifest_path}")
+    enforce_capability_gate(
+        ws, operation="unlink", actor_email=actor_email, parent_dir=parent_dir, dry_run=dry_run
+    )
     manifest = load_node_manifest(ws)
     before = [x for x in manifest.get("linked_nodes", []) if isinstance(x, dict)]
     kept = [x for x in before if str(x.get("node_id") or "").strip() != clean_id]

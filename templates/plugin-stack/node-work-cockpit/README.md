@@ -21,10 +21,10 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 ## 2. Core Node Cockpit Capabilities
 
-The `node-work-cockpit` plugin provides the standard operational surface for engineering, infrastructure, and knowledge (`osa-*`) nodes:
+The `node-work-cockpit` plugin provides the standard operational surface for engineering, infrastructure, and knowledge (`sci-*`, `gov-*`, `geo-*`, `org-*`) nodes:
 
 1. **Deterministic Task Lifecycle (`make task -> make verify -> make complete`)**: Wires the node's `Makefile` to `zcg` work-ledger state transitions (`WORKTASK.md`, `WORKROAD.md`, `BACKLOG.md`, `CHANGELOG.md`).
-2. **Self-Contained Intranet Cockpit (`zcg generate-intranet`)**: Renders a static, zero-dependency HTML dashboard summarizing node identity, mounted stack lineage, active `WORKTASK.md` lots, and verification status (`ZCG_NO_BROWSER=1`).
+2. **Self-Contained Sovereign Node Cockpit (`zcg apply-project . --service-action activate` · `GET /dashboard`)**: Serves a zero-dependency Native ASGI dashboard summarizing node identity, mounted stack lineage, active `WORKTASK.md` lots, and verification status (`ZCG_NO_BROWSER=1`).
 3. **Contextual MCP Capsule Exposure**: Exposes the node's `docs/` and `.agents/rules/` surfaces to `zcg-mcp` (`get_layer_overview`, `audit_node_drift`, `unfold_context_capsule`).
 
 ---

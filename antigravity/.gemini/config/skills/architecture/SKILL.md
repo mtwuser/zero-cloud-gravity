@@ -61,6 +61,20 @@ Classify every computation or routing mechanism into one of three architectural 
 | **2. Bounded-Contract Determinism** | Closed invariants, state machines, schemas, cryptographic receipts, and RBAC/environment gates. | Exact constant/enum set membership (`VALID_*`, `*_CONTRACT_REV`), SHA-256 `citation_receipt` verification, and deterministic precedence (`0..100`). | Fuzzy numeric thresholds (`effective_prec >= 85`), substring guessing, or silent schema normalizers/fallbacks. |
 | **3. Discovery & Ranking Heuristics** | Open-vocabulary natural-language search and advisory upward promotion target suggestion. | Token-overlap / BM25 scoring (`query_governance_rules` over `rcap1` capsules) and stem/keyword routing (`_route_novel_item` in `promotion_engine.py`), always gated by Regime 1–2 validation. | Using unvalidated heuristic scores to mutate manifests, bypass RBAC, or override `Lex Superior`. |
 
+### 1.5. 3-Lens Architectural Design Gate & 4-Pillar Ecosystem Reuse
+
+Validate every new subsystem or specification against **3 Design Lenses** and verify reuse of native capabilities across the **4-Pillar Ecosystem Radar** before introducing custom infrastructure:
+
+| Design Lens / Ecosystem Pillar | Constructive Design Mandate (`Reuse Native Platform Primitives First`) | Canonical Architectural Surface |
+| :--- | :--- | :--- |
+| **Lens 1 — Structural & Taxonomic Symmetry** | Model orthogonal `X × Y` axes (`entity_kind × layer_role × stack_groups`), enforce `< 385`-line source targets, and maintain `1:1:1` (`Spec <-> Source <-> Unit Test`) tables. | `docs/architecture/*.md`, `src/zcg/core/*` |
+| **Lens 2 — Capability & Airlock Security** | Compile least-privilege workspace boundaries (`R0..R3`), enforce `loopback-only` + `non_workspace_file_access: "deny"` on sovereign `wallet` (`R3`) nodes, and keep global `$HOME` configs untouched by consumer projects. | `.agents/antigravity-permissions.json`, `system/zcg-node.json` |
+| **Lens 3 — Human Cognitive Ergonomics** | Rank cross-node topology by `Daily Conscious Horizon` (`Pinned -> 1-Hop Hierarchy -> Peers & B2B -> Public Admin -> Knowledge -> Fleet`) and adapt depth to `M1..M4`. | `node_context.py`, `orientation_ui.py`, `docs/guides/*.md` |
+| **Pillar 1 — Google Antigravity 2.0** | Emit native `.agents/plugins/<pack>/plugin.json`, `.agents/plugins.json`, `.agents/skills.json` `"entries"`, frontmatter-free `AGENTS.md`, and `SessionStart` / `Stop` (`continuationActive`) hooks. | `antigravity_sync.py`, `antigravity/.gemini/config/hooks.json` |
+| **Pillar 2 — GitHub Platform & MCP Registry** | Expose `stdio` / `pypi` MCP servers via root `server.json` (`2025-12-11` schema) + `README.md` `<!-- mcp-name: ... -->`, and automate supply-chain updates via `.github/dependabot.yml`. | `server.json`, `README.md`, `.github/dependabot.yml` |
+| **Pillar 3 — Google Cloud, Gemini & LiteRT** | Align cloud IaC packs with current `google-genai` SDK contracts, least-privilege Cloud Run/BigQuery patterns, and optional local `LiteRT` inference boundaries. | `templates/framework-stack/google-cloud-iac/` |
+| **Pillar 4 — Python 3.14+ & Open Web/Crypto** | Build on `PEP 703/649/695`, Native ASGI (`0` framework lock-in), `RFC 6761` `*.localhost` zero-root subdomains, and standard `Ed25519` / `ChaCha20-Poly1305` primitives. | `src/zcg/web/*`, `src/zcg/cockpit/*` |
+
 ---
 
 ## 2. Cluster Boundary & `1:1:1` Module Decomposition Design

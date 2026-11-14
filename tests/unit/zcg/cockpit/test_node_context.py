@@ -233,9 +233,31 @@ class TestNodeContext:
                         "layer_role": "knowledge",
                         "cockpit_url": "http://127.0.0.1:8720",
                     },
+                    {
+                        "node_id": "gov-iso",
+                        "relation": "statutory-feed",
+                        "layer_role": "knowledge",
+                        "cockpit_url": "http://127.0.0.1:8701",
+                    },
+                    {
+                        "node_id": "partner-b2b",
+                        "relation": "service-contract",
+                        "layer_role": "department",
+                        "cockpit_url": "http://127.0.0.1:8735",
+                    },
                     "skip",
                 ],
             }
+        }
+        pin_manifest = {
+            "pinned_places": [
+                {
+                    "node_id": "pin-ext",
+                    "layer_role": "pinned",
+                    "url": "https://status.example.org/",
+                },
+                "skip-pin",
+            ]
         }
 
         # Act
@@ -244,7 +266,9 @@ class TestNodeContext:
         kc_empty = node_context.collect_knowledge_connections(empty_ws, {}, {})
         kc_rich = node_context.collect_knowledge_connections(rich_ws, manifest, fed_sc)
         links_none = node_context.build_cross_node_links("self-id", {}, {})
-        links_full = node_context.build_cross_node_links("self-id", net_sc, fed_sc)
+        links_full = node_context.build_cross_node_links(
+            "self-id", net_sc, fed_sc, manifest=pin_manifest
+        )
 
         # Assert
         assert h_empty["governed_host_roots"] == ["system"]
@@ -264,17 +288,29 @@ class TestNodeContext:
         ]
         assert kc_rich["study_guides"] == ["docs/guide.md"]
         assert links_none == []
-        assert len(links_full) == 6
+        assert len(links_full) == 9
         scopes = {it["node_id"]: it["scope_tag"] for it in links_full}
+        groups = {it["node_id"]: it["horizon_group"] for it in links_full}
         urls = {it["node_id"]: it["url"] for it in links_full}
         assert "self-dir" not in scopes
-        assert scopes["root-0"] == "Private Local"
+        assert groups["pin-ext"] == "Pinned" and urls["pin-ext"] == "https://status.example.org"
+        assert groups["root-0"] == "1-Hop Hierarchy" and scopes["root-0"] == "Private Local"
         assert scopes["proj-1"] == "Private Local"
         assert scopes["dept-b"] == "Private/Intranet"
         assert urls["dept-b"] == "http://dev.dept-b.self-id.localhost:8722/dashboard"
-        assert scopes["org-pub"] == "Public/Corpus"
-        assert scopes["org-fleet"] == "Public/Corpus"
+        assert groups["partner-b2b"] == "Peers & B2B"
+        assert groups["gov-iso"] == "Public Admin"
+        assert groups["org-pub"] == "Knowledge" and scopes["org-pub"] == "Public/Corpus"
+        assert groups["org-fleet"] == "Knowledge" and scopes["org-fleet"] == "Public/Corpus"
+        assert groups["fleet-1"] == "Fleet"
+        assert [it["horizon_group"] for it in links_full[:5]] == [
+            "Pinned",
+            "1-Hop Hierarchy",
+            "1-Hop Hierarchy",
+            "1-Hop Hierarchy",
+            "Peers & B2B",
+        ]
         assert (
-            json.loads(json.dumps(links_full))[0]["url"]
+            json.loads(json.dumps(links_full))[1]["url"]
             == "http://dev.root-0.localhost:8790/dashboard"
         )

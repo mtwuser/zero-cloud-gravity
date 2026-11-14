@@ -72,11 +72,11 @@ zcg bootstrap-workspace ~/Projects/lab-thermo \
 
 # 2. Register E3 scientific knowledge corpora as local read-only subtrees in layers/*:
 cd ~/Projects/lab-thermo
-zcg subtree register --id sci-physics --source ~/Projects/sci-physics
-zcg subtree register --id sci-maths --source ~/Projects/sci-maths
+zcg subtree register sci-physics https://github.com/mtwuser/sci-physics.git
+zcg subtree register sci-maths https://github.com/mtwuser/sci-maths.git
 
 # 3. Consult compacted E3 capsules (< 20 ms) & verify 100% isolated AAA coverage:
-make consult LAYER=sci-physics
+make consult LAYER=sci-physics QUERY="2019 BIPM SI base constants"
 make verify
 ```
 
@@ -97,9 +97,9 @@ The table below summarizes the four structural guarantees provided by ZeroCloudG
 | **3. Three-Stage Stewardship & Sibling Isolation** | Evolves cleanly across `private-incubation` $\rightarrow$ `public-community` $\rightarrow$ `sovereign-authority` (`canonical_authority_url`), with strict sibling isolation in `~/Projects/`. | Allows open communities to curate seed atlases (`gov-es`, `sci-*`) today and hand over canonical URLs to official ministries or consortia with `0` consumer breakage. |
 | **4. `Private <-> Public` Twin Boundary** | A private government (`gov-es-root`, `2`) or enterprise (`corp-alpha-root`, `10`) governs its public twin (`gov-es` or `org-alpha`, `20`) via `root_0_public_approved: true`. | Publishes enacted statutes or public API docs on `.knowledge.local` while keeping internal drafts, `corporate/ledgers/`, and HR/SecOps layers `100%` private. |
 
-### 3.2. Certified Baseline Across the `6` Public Open-Source Knowledge Corpora (`v1.0.0`)
+### 3.2. Certified Baseline Across the `7` Public Open-Source Knowledge Corpora
 
-All six canonical public corpora ship pre-registered in `DEFAULT_PUBLIC_KNOWLEDGE_REGISTRY` (`stewardship_stage: "public-community"`, `CC-BY-4.0` docs + `MIT` config) with verified `rcap1` compaction:
+All seven canonical public corpora ship pre-registered in `DEFAULT_PUBLIC_KNOWLEDGE_REGISTRY` (`stewardship_stage: "public-community"`, `CC-BY-4.0` docs + `MIT` config) with verified `rcap1` compaction:
 
 | Public `Knowledge` ID | `knowledge_domain` & Cockpit Host | Authoritative `E3 / E2` Baseline Scope | Certified `L1 / L3` Compaction |
 | :--- | :--- | :--- | :---: |
@@ -109,6 +109,7 @@ All six canonical public corpora ship pre-registered in `DEFAULT_PUBLIC_KNOWLEDG
 | **`sci-physics`** | `scientific-epistemic` (`sci-physics.knowledge.local:8720`) | `IUPAP` $\beta/\text{Kn}/\text{Re}/\text{Ma}/\text{Bi}$ cut-points, all `7` exact `2019 BIPM` SI constants, Noether/Maxwell, Gibbs/Carnot/phase rule & Fourier/Fick/Arrhenius. | **`95.0%`** |
 | **`sci-biology`** | `scientific-epistemic` (`sci-biology.knowledge.local:8720`) | `IUBS` bioenergetics, Michaelis-Menten & Monod washout, `[35.0 °C, 40.0 °C]` window, $a_w < 0.60$ stasis, `BSL-1..4`, lignocellulose & `RD 630/2013` flora. | **`93.3%`** |
 | **`sci-engineering`** | `scientific-epistemic` (`sci-engineering.knowledge.local:8720`) | `V-Model` & $\text{FoS} \ge 1.50$, `IEC 61508/61511` `SIL 1..4`, `AISI 316L` $\text{PREN} \ge 24.0$, `ISO 3310-1`, `PED` `0.50 bar(g)`, `ISO 20816-3` & `NAMUR NE 43` / `PT100`. | **`96.6%`** |
+| **`sci-economic`** | `scientific-epistemic` (`sci-economic.knowledge.local:8720`, `social` trunk) | `SNA` / `ESA` national accounts, double-entry accounting invariants, risk-adjusted portfolio & drawdown bounds, liquidity reserve cut-points & discounted cash-flow models (`E2`). | **`94.0%+`** |
 
 ### 3.3. Dedicated Web View (`Knowledge Stewardship Portal :8720` · `Z1..Z4`) & Live Capture (`[CAP-04]`)
 

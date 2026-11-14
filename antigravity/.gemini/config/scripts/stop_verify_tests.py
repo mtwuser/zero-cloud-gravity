@@ -112,6 +112,9 @@ def run_tests(venv_python: Path, workspace_path: str) -> tuple[bool, str]:
 def main() -> None:
     """Verify tests pass across modified workspaces before stopping."""
     payload = json.load(sys.stdin)
+    if bool(payload.get("continuationActive", False)):
+        json.dump({"decision": "stop"}, sys.stdout)
+        return
     if payload.get("terminationReason", "") not in ("NO_TOOL_CALL", "model_stop"):
         json.dump({"decision": "stop"}, sys.stdout)
         return

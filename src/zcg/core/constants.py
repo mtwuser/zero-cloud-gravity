@@ -13,6 +13,12 @@ REPO_DIR: Path = Path(__file__).resolve().parent.parent.parent.parent
 NODE_MANIFEST_REL_PATH: str = "system/zcg-node.json"
 NODE_MANIFEST_CONTRACT_REV: str = "zcg-node-v1"
 TEMPLATE_MANIFEST_CONTRACT_REV: str = "zcg-template-v1"
+SKILLS_MANIFEST_CONTRACT_REV: str = "zcg-skills-v1"
+PERMISSIONS_MANIFEST_CONTRACT_REV: str = "zcg-agy-permissions-v1"
+SKILLS_MANIFEST_REL_PATH: str = ".agents/skills.json"
+PLUGINS_MANIFEST_REL_PATH: str = ".agents/plugins.json"
+ANTIGRAVITY_PERMISSIONS_REL_PATH: str = ".agents/antigravity-permissions.json"
+PROJECT_ZCG_MK_REL_PATH: str = ".agents/zcg.mk"
 MCP_JSONRPC_PROTOCOL_REV: str = "2024-11-05"
 MISSING_VERSION_SENTINEL: str = "unversioned"
 
@@ -139,9 +145,12 @@ CANONICAL_SCIENCE_TRUNKS: dict[str, tuple[str, ...]] = {
     "engineering": ("civil", "industrial", "mechanical", "electrical", "telecom", "aerospace",
         "chemical", "materials", "metallurgy", "bioprocess", "mechatronics", "control",
         "software", "security"),
-    "social": ("economics", "sociology", "demographics", "education", "pedagogy", "jurisprudence"),
+    "social": (
+        "economic", "economics", "sociology", "demographics",
+        "education", "pedagogy", "jurisprudence",
+    ),
     "humanities": ("philosophy", "ethics", "history", "linguistics", "arts"),
-}  # fmt: skip  # fmt: skip
+}  # fmt: skip
 _GH_PUB: str = "https://github.com/mtwuser"
 _SCI_AUTH: str = "https://github.com/consortium-sci"
 DEFAULT_PUBLIC_KNOWLEDGE_REGISTRY: dict[str, dict[str, str]] = {
@@ -164,6 +173,9 @@ DEFAULT_PUBLIC_KNOWLEDGE_REGISTRY: dict[str, dict[str, str]] = {
         "canonical_trunk": "engineering", "stewardship_stage": "public-community",
         "public_url": f"{_GH_PUB}/sci-engineering.git",
         "canonical_authority_url": f"{_SCI_AUTH}/sci-engineering.git"},
+    "sci-economic": {"knowledge_domain": "scientific-epistemic", "canonical_trunk": "social",
+        "stewardship_stage": "public-community", "public_url": f"{_GH_PUB}/sci-economic.git",
+        "canonical_authority_url": f"{_SCI_AUTH}/sci-economic.git"},
 }  # fmt: skip
 
 VALID_ROSTER_ROLES: tuple[str, ...] = ("owner", "maintainer", "validator", "member")
@@ -178,123 +190,97 @@ WORK_ORCHESTRATION_TRACKERS: tuple[str, ...] = (
     "WORKROAD.md", "WORKTASK.md", "WORKVALI.md", "BACKLOG.md",
 )  # fmt: skip
 MAKEFILE_ROLE_HEADER_PREFIX: str = "# Zero-Cloud Node Makefile"
+MAKEFILE_PROJECT_HEADER_PREFIX: str = "# Zero-Cloud Project Makefile"
 MAKEFILE_CUSTOM_TARGETS_MARKER: str = "# --- Custom Targets ---"
+MAKEFILE_COMPOSABLE_BLOCKS: dict[str, tuple[str, ...]] = {
+    "base": ("status", "sync", "diff", "task", "complete", "consult", "link", "unlink",
+        "apply-template", "mcp-test"),
+    "hierarchy": ("horizon", "upstream-diff", "delegate", "promote", "authority", "roster",
+        "decision", "env-gate"),
+    "plugin_ops": ("install-plugin", "uninstall-plugin", "activate-plugin", "deactivate-plugin",
+        "switch-env", "deploy-plugin", "plugin"),
+    "workstation_host_ops": ("workstation-sync", "workstation-backup", "workstation-audit",
+        "workstation-restore", "workstation-update-agy"),
+}  # fmt: skip
+PROJECT_ZCG_MK_TARGETS: tuple[str, ...] = (
+    "zcg-help", "zcg-status", "zcg-sync", "zcg-diff",
+    "zcg-task", "zcg-complete", "zcg-consult", "zcg-promote",
+)  # fmt: skip
 MAKEFILE_DOMAIN_TAXONOMY: dict[str, tuple[str, ...]] = {
     "universal_base_local": ("status", "task", "complete", "sync", "diff"),
     "business_inter_layer": ("consult", "promote", "link", "unlink", "env-gate", "authority"),
     "layer_hierarchy_governance": ("horizon", "delegate", "decision", "roster", "upstream-diff"),
-    "technical_and_plugin_ops": (
-        "apply-template", "mcp-test", "install-plugin", "uninstall-plugin", "activate-plugin",
-        "deactivate-plugin", "switch-env", "provision-plugin", "deploy-plugin", "restart-plugin",
-        "healthcheck-plugin", "teardown-plugin",
-    ),
-    "workstation_host_ops": (
-        "install-antigravity", "workstation-sync", "backup-system",
-        "audit-system", "restore-system",
-    ),
+    "technical_and_plugin_ops": ("apply-template", "mcp-test",
+        *MAKEFILE_COMPOSABLE_BLOCKS["plugin_ops"]),
+    "workstation_host_ops": MAKEFILE_COMPOSABLE_BLOCKS["workstation_host_ops"],
 }  # fmt: skip
-_FULL_NODE_TARGETS: tuple[str, ...] = (
-    "status", "apply-template", "task", "complete", "consult", "link", "unlink", "horizon", "sync",
-    "upstream-diff", "diff", "authority", "roster", "env-gate", "decision", "promote", "delegate",
-    "mcp-test", "install-plugin", "uninstall-plugin", "activate-plugin", "deactivate-plugin",
-    "switch-env", "provision-plugin", "deploy-plugin", "restart-plugin", "healthcheck-plugin",
-    "teardown-plugin",
+_NODE_GOV_TARGETS: tuple[str, ...] = (
+    *MAKEFILE_COMPOSABLE_BLOCKS["base"], *MAKEFILE_COMPOSABLE_BLOCKS["hierarchy"],
+    *MAKEFILE_COMPOSABLE_BLOCKS["plugin_ops"],
 )  # fmt: skip
 LAYER_ROLE_MAKEFILE_TARGETS: dict[str, tuple[str, ...]] = {
-    "workstation": (*_FULL_NODE_TARGETS, *MAKEFILE_DOMAIN_TAXONOMY["workstation_host_ops"]),
-    "corporate": tuple(t for t in _FULL_NODE_TARGETS if t != "complete"),
-    "domain-policy": _FULL_NODE_TARGETS, "department": _FULL_NODE_TARGETS,
-    "squad": _FULL_NODE_TARGETS, "knowledge": _FULL_NODE_TARGETS,
-    "project": tuple(
-        t for t in _FULL_NODE_TARGETS
-        if t not in (*MAKEFILE_DOMAIN_TAXONOMY["layer_hierarchy_governance"], "mcp-test")
-    ),
+    "workstation": (*_NODE_GOV_TARGETS, *MAKEFILE_COMPOSABLE_BLOCKS["workstation_host_ops"]),
+    "corporate": tuple(t for t in _NODE_GOV_TARGETS if t != "complete"),
+    "domain-policy": _NODE_GOV_TARGETS, "department": _NODE_GOV_TARGETS,
+    "squad": _NODE_GOV_TARGETS, "knowledge": _NODE_GOV_TARGETS,
+    "project": (*(t for t in MAKEFILE_COMPOSABLE_BLOCKS["base"] if t != "mcp-test"),
+        "promote", "authority", "env-gate"),
 }  # fmt: skip
 
-_ZCG_RUN: str = "\t@$(ZCG_BIN)"
-_PF: str = "$(CURDIR) $(PARENT_FLAG)"
+_ZCG_RUN, _PF = "\t@$(ZCG_BIN)", "$(CURDIR) $(PARENT_FLAG)"
 _PLUGIN_SVC: str = (
     f"{_ZCG_RUN} apply-project {_PF} $(if $(PLUGIN),--template $(PLUGIN),) "
     "$(if $(ENV),--env $(ENV),) $(if $(EMAIL),--email $(EMAIL),) --service-action"
 )
 LAYER_MAKEFILE_RECIPES: dict[str, str] = {
-    "status": f"{_ZCG_RUN} status {_PF}",
-    "apply-template": (
-        f"{_ZCG_RUN} apply-project $(CURDIR) "
-        "--template $(if $(TEMPLATE),$(TEMPLATE),software-engineering) --include-defaults"
-    ),
+    "status": f"{_ZCG_RUN} status {_PF}", "horizon": f"{_ZCG_RUN} inspect-horizon {_PF}",
+    "diff": f"{_ZCG_RUN} diff-project {_PF}", "mcp-test": f"{_ZCG_RUN} list-templates $(CURDIR)",
+    "unlink": f"{_ZCG_RUN} unlink $(CURDIR) --target $(TARGET)",
+    "apply-template": (f"{_ZCG_RUN} apply-project $(CURDIR) "
+        "--template $(if $(TEMPLATE),$(TEMPLATE),software-engineering) --include-defaults"),
     "task": f'{_ZCG_RUN} start-task $(CURDIR) --task "$(TASK)" $(if $(TICKET),--ticket $(TICKET),)',
-    "complete": (
-        f"{_ZCG_RUN} complete-task $(CURDIR) "
+    "complete": (f"{_ZCG_RUN} complete-task $(CURDIR) "
         "$(if $(PARENT_SYNC),--parent-dir $(PARENT_DIR),$(PARENT_FLAG)) "
         '--task "$(TASK)" $(if $(DELIVERABLE),--deliverable "$(DELIVERABLE)",) '
-        '$(if $(SUMMARY),--summary "$(SUMMARY)",) $(if $(CREATE_PR),--create-pr,)'
-    ),
-    "consult": (
-        f'{_ZCG_RUN} consult-layer {_PF} --layer $(if $(LAYER),$(LAYER),self) --query "$(QUERY)" '
-        "$(if $(PATH_TARGET),--path $(PATH_TARGET),) $(if $(TIER),--tier $(TIER),)"
-    ),
-    "link": (
-        f"{_ZCG_RUN} link $(CURDIR) --target $(TARGET) $(if $(REL),--relation $(REL),) "
-        "$(if $(REF),--ref $(REF),) $(if $(URL),--url $(URL),) $(if $(PACKS),--packs $(PACKS),)"
-    ),
-    "unlink": f"{_ZCG_RUN} unlink $(CURDIR) --target $(TARGET)",
-    "horizon": f"{_ZCG_RUN} inspect-horizon {_PF}",
-    "sync": (
-        f"{_ZCG_RUN} sync-layer {_PF} $(if $(TEMPLATE),--templates $(TEMPLATE),) "
-        "$(if $(STRATEGY),--strategy $(STRATEGY),)"
-    ),
-    "upstream-diff": (
-        f"{_ZCG_RUN} compare-upstream {_PF} $(if $(TEMPLATE),--template $(TEMPLATE),) "
-        "$(if $(APPLY_SAFE),--apply-safe,)"
-    ),
-    "diff": f"{_ZCG_RUN} diff-project {_PF}",
-    "authority": (
-        f"{_ZCG_RUN} check-authority {_PF} --op $(if $(OP),$(OP),release) "
-        "$(if $(EMAIL),--email $(EMAIL),)"
-    ),
-    "roster": (
-        f"{_ZCG_RUN} manage-roster $(CURDIR) $(if $(ADD),--add $(ADD),) "
-        "$(if $(REMOVE),--remove $(REMOVE),) $(if $(ROLE),--role $(ROLE),)"
-    ),
-    "env-gate": (
-        f"{_ZCG_RUN} check-env-promotion {_PF} --to-env $(if $(ENV),$(ENV),tst) "
-        "$(if $(FILES),--files $(FILES),) $(if $(EMAIL),--email $(EMAIL),)"
-    ),
-    "decision": (
-        f'{_ZCG_RUN} record-decision $(CURDIR) --item "$(ITEM)" '
-        '--decision $(DEC) --reason "$(REASON)"'
-    ),
-    "promote": (
-        f"{_ZCG_RUN} promote-from-project $(CURDIR) --source $(SOURCE) "
+        '$(if $(SUMMARY),--summary "$(SUMMARY)",) $(if $(CREATE_PR),--create-pr,)'),
+    "consult": (f'{_ZCG_RUN} consult-layer {_PF} --layer $(if $(LAYER),$(LAYER),self) '
+        '--query "$(QUERY)" $(if $(PATH_TARGET),--path $(PATH_TARGET),) '
+        "$(if $(TIER),--tier $(TIER),)"),
+    "link": (f"{_ZCG_RUN} link $(CURDIR) $(if $(FROM),--from $(FROM),--target $(TARGET)) "
+        "$(if $(REL),--relation $(REL),) $(if $(REF),--ref $(REF),) "
+        "$(if $(URL),--url $(URL),) $(if $(PACKS),--packs $(PACKS),)"),
+    "sync": (f"{_ZCG_RUN} sync-layer {_PF} $(if $(TEMPLATE),--templates $(TEMPLATE),) "
+        "$(if $(STRATEGY),--strategy $(STRATEGY),)"),
+    "upstream-diff": (f"{_ZCG_RUN} compare-upstream {_PF} $(if $(TEMPLATE),--template $(TEMPLATE),)"
+        " $(if $(APPLY_SAFE),--apply-safe,)"),
+    "authority": (f"{_ZCG_RUN} check-authority {_PF} --op $(if $(OP),$(OP),release) "
+        "$(if $(EMAIL),--email $(EMAIL),)"),
+    "roster": (f"{_ZCG_RUN} manage-roster $(CURDIR) $(if $(ADD),--add $(ADD),) "
+        "$(if $(REMOVE),--remove $(REMOVE),) $(if $(ROLE),--role $(ROLE),)"),
+    "env-gate": (f"{_ZCG_RUN} check-env-promotion {_PF} --to-env $(if $(ENV),$(ENV),tst) "
+        "$(if $(FILES),--files $(FILES),) $(if $(EMAIL),--email $(EMAIL),)"),
+    "decision": (f'{_ZCG_RUN} record-decision $(CURDIR) --item "$(ITEM)" '
+        '--decision $(DEC) --reason "$(REASON)"'),
+    "promote": (f"{_ZCG_RUN} promote-from-project $(CURDIR) --source $(SOURCE) "
         "$(if $(TARGET_REPO),--upstream-dir $(TARGET_REPO),"
         "$(if $(PARENT_DIR),--upstream-dir $(PARENT_DIR),)) "
         "$(if $(LAYER),--to-layer $(LAYER),) $(if $(TEMPLATE),--to-template $(TEMPLATE),) "
-        "$(PR_FLAGS)"
-    ),
-    "delegate": (
-        f'{_ZCG_RUN} delegate-to-child $(CURDIR) --to-child $(CHILD) --task "$(TASK)" '
+        "$(PR_FLAGS)"),
+    "delegate": (f'{_ZCG_RUN} delegate-to-child $(CURDIR) --to-child $(CHILD) --task "$(TASK)" '
         "$(if $(TICKET),--ticket $(TICKET),) $(if $(PRIORITY),--priority $(PRIORITY),) "
         "$(if $(SURFACE),--surface $(SURFACE),) $(if $(SOURCE),--source $(SOURCE),) "
-        "$(if $(CREATE_PR),--create-pr,)"
-    ),
-    "mcp-test": f"{_ZCG_RUN} list-templates $(CURDIR)",
+        "$(if $(CREATE_PR),--create-pr,)"),
     "install-plugin": f"{_PLUGIN_SVC} install", "uninstall-plugin": f"{_PLUGIN_SVC} uninstall",
     "activate-plugin": f"{_PLUGIN_SVC} activate", "deactivate-plugin": f"{_PLUGIN_SVC} deactivate",
-    "switch-env": f"{_PLUGIN_SVC} switch-env", "provision-plugin": f"{_PLUGIN_SVC} provision",
-    "deploy-plugin": f"{_PLUGIN_SVC} deploy", "restart-plugin": f"{_PLUGIN_SVC} restart",
-    "healthcheck-plugin": f"{_PLUGIN_SVC} healthcheck",
-    "teardown-plugin": f"{_PLUGIN_SVC} teardown",
-    "install-antigravity": (
-        f"{_ZCG_RUN} install-antigravity $(if $(MODE),$(MODE),--agents) $(if $(FORCE),--force,)"
-    ),
-    "workstation-sync": (
-        f"{_ZCG_RUN} workstation-sync $(if $(MODE),$(MODE),sync) "
-        "$(if $(PROFILE),--profile $(PROFILE),) $(if $(LANG),--lang $(LANG),)"
-    ),
-    "backup-system": f"{_ZCG_RUN} workstation-backup $(CURDIR)",
-    "audit-system": f"{_ZCG_RUN} workstation-audit $(CURDIR) $(if $(CLEAN),--clean,)",
-    "restore-system": f"{_ZCG_RUN} workstation-restore $(CURDIR) $(if $(MODE),$(MODE),)",
+    "switch-env": f"{_PLUGIN_SVC} switch-env", "deploy-plugin": f"{_PLUGIN_SVC} deploy",
+    "plugin": f"{_PLUGIN_SVC} $(if $(ACTION),$(ACTION),healthcheck)",
+    "workstation-update-agy": (f"{_ZCG_RUN} install-antigravity $(if $(MODE),$(MODE),--agents) "
+        "$(if $(FORCE),--force,)"),
+    "workstation-sync": (f"{_ZCG_RUN} workstation-sync $(if $(MODE),$(MODE),sync) "
+        "$(if $(PROFILE),--profile $(PROFILE),) $(if $(LANG),--lang $(LANG),)"),
+    "workstation-backup": f"{_ZCG_RUN} workstation-backup $(CURDIR)",
+    "workstation-audit": f"{_ZCG_RUN} workstation-audit $(CURDIR) $(if $(CLEAN),--clean,)",
+    "workstation-restore": f"{_ZCG_RUN} workstation-restore $(CURDIR) $(if $(MODE),$(MODE),)",
 }  # fmt: skip
 
 DEFAULT_SQUAD_ONBOARDING_SPEC: tuple[str, str, str, str] = (
@@ -338,12 +324,13 @@ VALID_AGENT_TIERS: tuple[str, ...] = ("flash_lite", "flash", "inherit", "pro")
 VALID_DELEGATION_DIRS: tuple[str, ...] = ("corporate", "docs", "roadmaps")
 VALID_DELEGATION_SURFACES: tuple[str, ...] = (*VALID_TRACKER_FILES, "rules", *VALID_DELEGATION_DIRS)
 CONSUMER_ALLOWED_OPS: tuple[str, ...] = (
-    "status", "list-templates", "diff-project", "lint-arch", "apply-project",
-    "check-authority", "inspect-horizon", "compare-upstream", "consult-layer",
+    "status", "list-templates", "diff-project", "lint-arch", "lint-skills", "check-handoff",
+    "apply-project", "check-authority", "inspect-horizon", "compare-upstream", "consult-layer",
 )  # fmt: skip
 MAINTAINER_ALLOWED_OPS: tuple[str, ...] = (
-    "sync-layer", "scaffold-template", "scaffold-plugin-module",
-    "delegate-to-child", "link", "unlink", "spinout-project",
+    "sync-layer", "scaffold-template", "scaffold-plugin-module", "delegate-to-child",
+    "link", "unlink", "spinout-project", "install-plugin", "uninstall-plugin",
+    "activate-plugin", "deactivate-plugin", "deploy-plugin",
 )  # fmt: skip
 VALIDATOR_ALLOWED_OPS: tuple[str, ...] = ("check-env-promotion", "record-decision")
 OWNER_RESTRICTED_OPS: tuple[str, ...] = (
@@ -367,16 +354,16 @@ CAPSULE_REF_NAMESPACE: str = "refs/zcg/capsules"
 MATERIALIZED_RULE_RE: re.Pattern[str] = re.compile(r"^layer-(\d{2})-([a-z0-9-]+)\.md$")
 COMMAND_CONSCIOUSNESS_TIERS: dict[str, tuple[str, ...]] = {
     "c1_tactical_fast": (
-        "status", "task", "diff", "audit-system", "activate-plugin",
-        "deactivate-plugin", "switch-env", "healthcheck-plugin",
+        "status", "task", "diff", "workstation-audit", "activate-plugin",
+        "deactivate-plugin", "switch-env", "plugin",
     ),
     "c2_deliberate_audit": (
         "sync", "horizon", "upstream-diff", "consult", "link", "unlink", "apply-template",
-        "mcp-test", "workstation-sync", "backup-system", "install-plugin", "uninstall-plugin",
-        "provision-plugin", "deploy-plugin", "restart-plugin", "teardown-plugin",
+        "mcp-test", "workstation-sync", "workstation-backup", "install-plugin",
+        "uninstall-plugin", "deploy-plugin",
     ),
     "c3_sovereign_human": (
         "complete", "promote", "delegate", "decision", "roster", "authority",
-        "env-gate", "install-antigravity", "restore-system",
+        "env-gate", "workstation-update-agy", "workstation-restore",
     ),
 }  # fmt: skip

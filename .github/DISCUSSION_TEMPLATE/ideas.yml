@@ -1,0 +1,35 @@
+title: "[Idea]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share an early-stage architectural idea, stack pack concept, or community corpus proposal for **ZeroCloudGravity (`zero-cloud-gravity`)** before drafting a formal Issue Proposal. Please keep all examples ISO-neutral (`corp-iso-root`, `alex-pc`).
+  - type: dropdown
+    id: plane
+    attributes:
+      label: Target Architectural Plane
+      description: Where would this idea live in the ZeroCloudGravity ecosystem?
+      options:
+        - "Core Zero-Dependency Engine (src/zcg/)"
+        - "Human-Stack or Context-Stack Rules & Skills"
+        - "Plugin-Stack Native zcg.web Surfaces & Cockpits"
+        - "External Tool / Framework Integration & Security"
+        - "Public Epistemic Knowledge Corpus (sci-*, gov-*, geo-*)"
+        - "Workstation Automation & Developer Experience"
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Concept & Friction Addressed
+      description: Concisely describe the operational, organizational, or epistemic problem this idea solves.
+    validations:
+      required: true
+  - type: textarea
+    id: alignment
+    attributes:
+      label: Alignment with Zero-Dependency & Sovereign Principles (Optional)
+      description: Note how the idea preserves zero mandatory runtime dependencies, clean layer boundaries, and sovereign local control.
+    validations:
+      required: false

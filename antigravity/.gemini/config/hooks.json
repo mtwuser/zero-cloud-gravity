@@ -1,4 +1,13 @@
 {
+  "session-orientation": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "./scripts/session_start_orientation.py",
+        "timeout": 5
+      }
+    ]
+  },
   "pre-tool-guard": {
     "PreToolUse": [
       {

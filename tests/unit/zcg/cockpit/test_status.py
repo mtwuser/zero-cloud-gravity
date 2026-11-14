@@ -37,6 +37,8 @@ class TestStatus:
         proj.mkdir()
         proj_st = status.inspect_workspace_status(engine, proj)
         assert proj_st["layer_role"] == "project"
+        assert proj_st["posture"]["governance_posture"] == "sovereign"
+        assert proj_st["surface_origin"]["origin_mode"] == "loopback"
         assert proj_st["active_cockpit"] is None
         assert proj_st["horizon"] is None
         assert proj_st["workspace_mode"] == "technical"

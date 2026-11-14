@@ -24,8 +24,8 @@ The following table summarizes the canonical metadata declared in [`template.jso
 The `corporate-root-hub` plugin equips `corporate_root` repositories with cross-portfolio visibility and governance enforcement:
 
 1. **Multi-Node Topology Aggregation**: Discovers and audits federated child nodes (`node` / `subnode`) registered in the corporate portfolio, aggregating `WORKROAD.md` and `WORKTASK.md` completion states.
-2. **RBAC & Stage-Gate Enforcement**: Integrates `zcg roster`, `zcg decision`, and `zcg env-gate` into the hub's intranet cockpit (`zcg generate-intranet`) with `ZCG_NO_BROWSER=1` headless safety.
-3. **1-Hop Directive Delegation (`zcg delegate`)**: Dispatches bounded work directives from the corporate hub to child repositories with deterministic receipt tracking.
+2. **RBAC & Stage-Gate Enforcement**: Integrates `zcg manage-roster`, `zcg record-decision`, and `zcg check-env-promotion` into the hub's intranet cockpit (`zcg apply-project . --service-action activate` / `GET /dashboard`) with `ZCG_NO_BROWSER=1` headless safety.
+3. **1-Hop Directive Delegation (`zcg delegate-to-child` / `make delegate`)**: Dispatches bounded work directives from the corporate hub to child repositories with deterministic receipt tracking.
 
 ---
 

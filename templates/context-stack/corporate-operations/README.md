@@ -22,8 +22,8 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 The `corporate-operations` specialization governs enterprise hubs (`corporate_root`) and their child operational nodes:
 
-1. **1-Hop Downward Delegation & Portfolio Traceability**: Coordinate cross-repository initiatives from `roadmaps/` $\rightarrow$ `WORKROAD.md` $\rightarrow$ `WORKTASK.md` via `zcg delegate`, maintaining deterministic parent-child linkage without hidden multi-hop mutations.
-2. **RBAC Roster & Decision Ledger Integrity**: Validate operator clearance (`0..100`) and environment stage gates (`dev | pre | pro`) via `zcg roster`, `zcg decision`, and `zcg env-gate`.
+1. **1-Hop Downward Delegation & Portfolio Traceability**: Coordinate cross-repository initiatives from `roadmaps/` $\rightarrow$ `WORKROAD.md` $\rightarrow$ `WORKTASK.md` via `zcg delegate-to-child` (`make delegate`), maintaining deterministic parent-child linkage without hidden multi-hop mutations.
+2. **RBAC Roster & Decision Ledger Integrity**: Validate operator clearance (`0..100`) and environment stage gates (`dev | pre | pro`) via `zcg manage-roster` (`make roster`), `zcg record-decision` (`make decision`), and `zcg check-env-promotion` (`make env-gate`).
 3. **Statutory & Corporate Policy Parity**: Keep `corporate/**/*.md` (`< 465` lines) synchronized with mounted `gov-iso` and `org-type` reference corpora.
 
 ---

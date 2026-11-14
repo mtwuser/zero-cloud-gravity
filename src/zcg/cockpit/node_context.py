@@ -15,12 +15,7 @@ from pathlib import Path
 from typing import Any, Final
 
 from zcg.cockpit.provenance import normalize_repo_web_url
-from zcg.core.constants import (
-    DEFAULT_PUBLIC_KNOWLEDGE_REGISTRY,
-    GIT_CMD_TIMEOUT_SECONDS,
-    INDIVIDUAL_MIN_PRECEDENCE,
-    VALID_KNOWLEDGE_PREFIXES,
-)
+from zcg.core import constants
 from zcg.core.manifests import canonicalize_local_node_url
 
 GOVERNED_HOST_DIRS: Final[tuple[str, ...]] = ("bash", "git", "system", "antigravity")
@@ -65,38 +60,37 @@ def classify_exposure_posture(
     manifest: Mapping[str, Any], *, active_env: str = "dev"
 ) -> dict[str, str]:
     """Classify a node's privacy boundary and cockpit audience from manifest + environment."""
-    prec = int(manifest.get("precedence", 50))
-    lrole = str(manifest.get("layer_role") or "department")
-    is_ind = manifest.get("entity_kind") == "individual" or prec >= INDIVIDUAL_MIN_PRECEDENCE
+    prec, lrole = (
+        int(manifest.get("precedence", 50)),
+        str(manifest.get("layer_role") or "department"),
+    )
+    is_ind = (
+        manifest.get("entity_kind") == "individual" or prec >= constants.INDIVIDUAL_MIN_PRECEDENCE
+    )
     vis = str(manifest.get("visibility") or ("public" if lrole == "knowledge" else "private"))
     clean_env = active_env.strip().lower() or "dev"
     if vis == "public" and clean_env == "pro":
         return _posture(
-            "public-live",
-            "Public Sovereign Surface (pro · External Live)",
+            "public-live", "Public Sovereign Surface (pro · External Live)",
             "External Visitors & Peer Nodes",
             "Public web/knowledge surface; runtime SQLite WAL stays outside Git.",
-        )
+        )  # fmt: skip
     if vis == "public":
         return _posture(
-            "public-preview",
-            f"Public Twin Preview ({clean_env} · Local Staging)",
+            "public-preview", f"Public Twin Preview ({clean_env} · Local Staging)",
             "Pre-Release Curators",
             "Public-target repository inspected locally prior to 'pro' promotion.",
-        )
+        )  # fmt: skip
     if is_ind:
         return _posture(
-            "private-personal",
-            "Private Local Node (Loopback Only)",
-            "Sovereign Individual Only",
+            "private-personal", "Private Local Node (Loopback Only)", "Sovereign Individual Only",
             "Personal configs, study tracks, and branches never leave this machine.",
-        )
+        )  # fmt: skip
     return _posture(
-        "private-intranet",
-        "Private Enterprise Intranet (RBAC Scoped)",
+        "private-intranet", "Private Enterprise Intranet (RBAC Scoped)",
         "Authorized Internal Members",
         "Internal holding, fiduciary policy, or departmental operations surface.",
-    )
+    )  # fmt: skip
 
 
 def build_cockpit_passport_data(
@@ -174,8 +168,9 @@ def inspect_context_branches(ws: Path, *, view_archetype: str) -> dict[str, Any]
             "refs/heads",
         ]  # fmt: skip
         res = subprocess.run(  # noqa: S603
-            cmd, check=False, capture_output=True, text=True, timeout=GIT_CMD_TIMEOUT_SECONDS
-        )
+            cmd, check=False, capture_output=True, text=True,
+            timeout=constants.GIT_CMD_TIMEOUT_SECONDS,
+        )  # fmt: skip
         for line in res.stdout.splitlines():
             bname, _, head_mark = line.partition("|")
             if clean_b := bname.strip():
@@ -208,26 +203,19 @@ def collect_workstation_host_summary(ws: Path, manifest: Mapping[str, Any]) -> d
     present_dirs = [d for d in GOVERNED_HOST_DIRS if (ws / d).is_dir()]
     return {
         "os_kernel": f"{platform.system()} {platform.release()}",
-        "architecture": platform.machine() or "unknown",
+        "architecture": platform.machine() or "unknown", "cpu_cores": os.cpu_count() or 1,
         "python_version": platform.python_version(),
-        "cpu_cores": os.cpu_count() or 1,
         "global_profile": str(manifest.get("global_profile") or "universal-base"),
         "interaction_language": str(manifest.get("interaction_language") or "en"),
         "governed_host_roots": present_dirs or ["system"],
-    }
+    }  # fmt: skip
 
 
 def _resolve_corpus_entry(
-    lid: str,
-    stage: str,
-    *,
-    raw_cockpit: str = "",
-    raw_repo: str = "",
-    raw_local: str = "",
-    lrole: str = "knowledge",
-    ldz: str = "",
+    lid: str, stage: str, *, raw_cockpit: str = "", raw_repo: str = "",
+    raw_local: str = "", lrole: str = "knowledge", ldz: str = "",
     reg: Mapping[str, Any] | None = None,
-) -> dict[str, str]:
+) -> dict[str, str]:  # fmt: skip
     if raw_cockpit.strip():
         c_u = canonicalize_local_node_url(
             raw_cockpit, node_id=lid, layer_role=lrole, local_dev_zone=ldz
@@ -237,7 +225,8 @@ def _resolve_corpus_entry(
         }  # fmt: skip
     reg_e = reg.get(lid) if isinstance(reg, Mapping) else None
     reg_u = str(reg_e.get("public_url") or "") if isinstance(reg_e, Mapping) else ""
-    def_u = str((DEFAULT_PUBLIC_KNOWLEDGE_REGISTRY.get(lid) or {}).get("public_url") or "")
+    def_reg = constants.DEFAULT_PUBLIC_KNOWLEDGE_REGISTRY
+    def_u = str((def_reg.get(lid) or {}).get("public_url") or "")
     cand = raw_repo.strip() or reg_u.strip() or def_u.strip()
     web_u = normalize_repo_web_url(cand) or (
         cand.rstrip("/") if cand.startswith(("https://", "http://")) else ""
@@ -269,20 +258,16 @@ def collect_knowledge_connections(
             str(m.get("layer_id") or m.get("name") or "corpus"),
             str(m.get("stewardship_stage") or "mounted"),
             raw_repo=str(m.get("public_url") or m.get("repository") or ""),
-            raw_local=str(m.get("active_endpoint") or ""),
-            ldz=ldz, reg=reg,
+            raw_local=str(m.get("active_endpoint") or ""), ldz=ldz, reg=reg,
         )
         for m in raw_mounts if isinstance(m, Mapping)
     ]  # fmt: skip
-    if reg is not None:
-        for kid, kmeta in reg.items():
-            if isinstance(kmeta, Mapping) and not any(x["layer_id"] == kid for x in mounts):
-                mounts.append(
-                    _resolve_corpus_entry(
-                        str(kid), str(kmeta.get("stewardship_stage") or "registry"),
-                        raw_repo=str(kmeta.get("public_url") or ""), ldz=ldz, reg=reg,
-                    )
-                )  # fmt: skip
+    for kid, kmeta in reg.items() if reg is not None else ():
+        if isinstance(kmeta, Mapping) and not any(x["layer_id"] == kid for x in mounts):
+            mounts.append(_resolve_corpus_entry(
+                str(kid), str(kmeta.get("stewardship_stage") or "registry"),
+                raw_repo=str(kmeta.get("public_url") or ""), ldz=ldz, reg=reg,
+            ))  # fmt: skip
     for lnk in manifest.get("linked_nodes") or []:
         if isinstance(lnk, Mapping) and (
             lnk.get("layer_role") == "knowledge"
@@ -290,14 +275,12 @@ def collect_knowledge_connections(
         ):
             lid = str(lnk.get("node_id") or "")
             if lid and not any(x["layer_id"] == lid for x in mounts):
-                mounts.append(
-                    _resolve_corpus_entry(
-                        lid, f"linked:{lnk.get('relation', 'corpus')}",
-                        raw_cockpit=str(lnk.get("cockpit_url") or ""),
-                        raw_repo=str(lnk.get("target_ref") or ""),
-                        lrole=str(lnk.get("layer_role") or "knowledge"), ldz=ldz, reg=reg,
-                    )
-                )  # fmt: skip
+                mounts.append(_resolve_corpus_entry(
+                    lid, f"linked:{lnk.get('relation', 'corpus')}",
+                    raw_cockpit=str(lnk.get("cockpit_url") or ""),
+                    raw_repo=str(lnk.get("target_ref") or ""),
+                    lrole=str(lnk.get("layer_role") or "knowledge"), ldz=ldz, reg=reg,
+                ))  # fmt: skip
     docs_dir = ws / "docs"
     guides = (
         [str(p.relative_to(ws)) for p in sorted(docs_dir.rglob("*.md"))]
@@ -306,19 +289,34 @@ def collect_knowledge_connections(
     return {"mounts": mounts, "study_guides": guides}
 
 
+def _classify_horizon_group(direction: str, node_id: str, role: str) -> tuple[int, str]:
+    if direction == "★ Pinned":
+        return 0, "Pinned"
+    if direction in ("↑ Governor", "↓ Sub-Node", "↔ Peer"):
+        return 1, "1-Hop Hierarchy"
+    if node_id.startswith(constants.PUBLIC_GOV_PREFIXES):
+        return 3, "Public Admin"
+    if (
+        role == "knowledge" or node_id.startswith(constants.VALID_KNOWLEDGE_PREFIXES)
+        or direction.startswith("Link:knowledge")
+    ):  # fmt: skip
+        return 4, "Knowledge"
+    return (2, "Peers & B2B") if direction.startswith("Link:") else (5, "Fleet")
+
+
 def build_cross_node_links(
-    layer_id: str, net_scope: Mapping[str, Any], fed_scope: Mapping[str, Any]
-) -> list[dict[str, str]]:
-    """Build directional cross-node navigation items with explicit role and exposure labels."""
+    layer_id: str, net_scope: Mapping[str, Any], fed_scope: Mapping[str, Any],
+    manifest: Mapping[str, Any] | None = None,
+) -> list[dict[str, str]]:  # fmt: skip
+    """Build directional cross-node navigation items ordered by Daily Conscious Horizon weight."""
     rel = net_scope.get("network_representation_links")
-    links_map = rel if isinstance(rel, Mapping) else {}
     raw_topo = fed_scope.get("intranet_topology")
+    links_map = rel if isinstance(rel, Mapping) else {}
     topo_m = raw_topo if isinstance(raw_topo, Mapping) else {}
+    own_root = str(net_scope.get("governing_root_id") or layer_id)
     ldz = str(
         (topo_m.get("domain_governance") or {}).get("local_dev_zone")
-        or str(net_scope.get("governing_root_id") or layer_id)
-        .removeprefix("corp-")
-        .removesuffix("-root")
+        or own_root.removeprefix("corp-").removesuffix("-root")
     )
     raw_own = str(topo_m.get("local_subdomain_dashboard_url") or topo_m.get("localhost_url") or "")
     own_base = canonicalize_local_node_url(
@@ -332,52 +330,53 @@ def build_cross_node_links(
         str(f.get("workspace_id", "")): str(f.get("localhost_url", "")).removesuffix("/dashboard")
         for f in flt_list
     }
-    items: list[dict[str, str]] = []
+    ranked_items: list[tuple[int, int, dict[str, str]]] = []
     seen: set[str] = {layer_id}
 
     def _add(direction: str, node_id: str, role: str, base_url: str) -> None:
-        raw_cand = flt_urls.get(node_id) or base_url
-        eff_base = canonicalize_local_node_url(
-            raw_cand, node_id=node_id, layer_role=role, local_dev_zone=ldz
-        )
+        raw_cand = (flt_urls.get(node_id) or base_url).strip()
+        is_ext = raw_cand.startswith("https://") and ".localhost" not in raw_cand
+        eff_base = (
+            raw_cand.rstrip("/") if is_ext else canonicalize_local_node_url(
+                raw_cand.removesuffix("/dashboard"), node_id=node_id,
+                layer_role=role, local_dev_zone=ldz,
+            )
+        )  # fmt: skip
         if not node_id or node_id in seen or not eff_base or eff_base == own_base:
             return
         seen.add(node_id)
-        is_pub = role == "knowledge" or node_id.startswith((*VALID_KNOWLEDGE_PREFIXES, "pub-"))
+        pub_pfx = (*constants.VALID_KNOWLEDGE_PREFIXES, "pub-")
         stag = (
-            "Public/Corpus" if is_pub
+            "Public/Corpus" if (role == "knowledge" or node_id.startswith(pub_pfx))
             else ("Private Local" if role in ("workstation", "project") else "Private/Intranet")
         )  # fmt: skip
-        items.append(
-            {"direction": direction, "node_id": node_id, "role": role,
-             "scope_tag": stag, "url": f"{eff_base}/dashboard"}
-        )  # fmt: skip
+        rank, hgrp = _classify_horizon_group(direction, node_id, role)
+        ranked_items.append((
+            rank, len(ranked_items),
+            {"direction": direction, "node_id": node_id, "role": role, "scope_tag": stag,
+             "horizon_group": hgrp, "url": eff_base if is_ext else f"{eff_base}/dashboard"},
+        ))  # fmt: skip
 
-    parent = links_map.get("parent_home_node")
-    if isinstance(parent, Mapping):
+    pins = (manifest.get("pinned_places") or []) if isinstance(manifest, Mapping) else ()
+    for pin in (p for p in pins if isinstance(p, Mapping)):
         _add(
-            "↑ Governor", str(parent.get("node_id", "")),
-            str(parent.get("layer_role", "root")), str(parent.get("cockpit_url", "")),
+            "★ Pinned", str(pin.get("node_id") or pin.get("label") or ""),
+            str(pin.get("layer_role") or "pinned"),
+            str(pin.get("url") or pin.get("cockpit_url") or ""),
         )  # fmt: skip
+    if isinstance(parent := links_map.get("parent_home_node"), Mapping):
+        _add("↑ Governor", str(parent.get("node_id", "")), str(parent.get("layer_role", "root")),
+             str(parent.get("cockpit_url", "")))  # fmt: skip
     for direction, key, fb_role in (
-        ("↓ Sub-Node", "downward_child_nodes", "child"),
-        ("↔ Peer", "lateral_peers", "peer"),
-    ):
-        for entry in links_map.get(key) or []:
-            if isinstance(entry, Mapping):
-                _add(
-                    direction, str(entry.get("node_id", "")),
-                    str(entry.get("layer_role", fb_role)), str(entry.get("cockpit_url", "")),
-                )  # fmt: skip
-    for lnk in links_map.get("linked_nodes") or []:
-        if isinstance(lnk, Mapping):
-            _add(
-                f"Link:{lnk.get('relation', 'link')}", str(lnk.get("node_id", "")),
-                str(lnk.get("layer_role", "linked")), str(lnk.get("cockpit_url", "")),
-            )  # fmt: skip
+        ("↓ Sub-Node", "downward_child_nodes", "child"), ("↔ Peer", "lateral_peers", "peer"),
+    ):  # fmt: skip
+        for entry in (e for e in (links_map.get(key) or []) if isinstance(e, Mapping)):
+            _add(direction, str(entry.get("node_id", "")), str(entry.get("layer_role", fb_role)),
+                 str(entry.get("cockpit_url", "")))  # fmt: skip
+    for lnk in (e for e in (links_map.get("linked_nodes") or []) if isinstance(e, Mapping)):
+        _add(f"Link:{lnk.get('relation', 'link')}", str(lnk.get("node_id", "")),
+             str(lnk.get("layer_role", "linked")), str(lnk.get("cockpit_url", "")))  # fmt: skip
     for flt in flt_list:
-        _add(
-            "Fleet", str(flt.get("workspace_id", "")),
-            str(flt.get("environment", "dev")), str(flt.get("localhost_url", "")),
-        )  # fmt: skip
-    return items
+        _add("Fleet", str(flt.get("workspace_id", "")), str(flt.get("environment", "dev")),
+             str(flt.get("localhost_url", "")))  # fmt: skip
+    return [item for _r, _i, item in sorted(ranked_items, key=lambda t: (t[0], t[1]))]

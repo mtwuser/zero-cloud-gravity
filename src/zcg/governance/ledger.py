@@ -13,7 +13,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from zcg.core.blueprints import is_makefile_outdated
 from zcg.core.constants import (
     CAPSULE_REF_NAMESPACE,
     DEFAULT_CONTEXT_BRANCH_PREFIXES,
@@ -31,6 +30,7 @@ from zcg.core.constants import (
     WORK_ORCHESTRATION_TRACKERS,
 )  # fmt: skip
 from zcg.core.manifests import load_node_manifest
+from zcg.core.surface_composer import is_makefile_outdated
 from zcg.governance.authority import append_tracker_line, record_governance_event
 from zcg.topology.identity import resolve_node_entity_identity
 

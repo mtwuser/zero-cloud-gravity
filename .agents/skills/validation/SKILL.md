@@ -33,9 +33,9 @@ Verify initial page rendering, cache-bypass reload, layout integrity, and CSS to
 | 1.1 | Navigate to URL | Page loads, no blank screen, no 500 |
 | 1.2 | Hard reload (Ctrl+Shift+R) | Same result on cache-bypass |
 | 1.3 | Visual scan | Layout correct, no broken elements, no overflow |
-| 1.4 | Framework chrome | Header/footer/nav visible (`data-osa="framework"` present on header, main, footer in DOM when using OSA/Cockpit surfaces) |
-| 1.5 | CSS tokens | DevTools → Elements → verify CSS custom properties (`var(--osa-*)`) active on elements |
-| 1.6 | Debug markers | Dev-mode indicators visible if enabled (`data-osa-debug` overlay when `DEBUG=true`) |
+| 1.4 | Framework chrome | Header/footer/nav visible (`data-zcg-surface="cockpit"` present on Zero-Cloud Cockpit/Plugin shell surfaces) |
+| 1.5 | CSS tokens | DevTools → Elements → verify CSS custom properties (`var(--zcg-*)`) active on elements |
+| 1.6 | Orientation & probes | Orientation markers (`data-zcg-view-indicator`) and `/healthz` liveness probe respond cleanly |
 
 ### 2.2. `V2` — Interaction Check
 

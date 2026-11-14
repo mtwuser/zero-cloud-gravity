@@ -16,7 +16,6 @@ from zcg.core.blueprints import resolve_template_lineage_chain, resolve_workspac
 from zcg.core.constants import (
     BASE_SKILL_TAXONOMY,
     COMMAND_CONSCIOUSNESS_TIERS,
-    LAYER_ROLE_MAKEFILE_TARGETS,
     MAKEFILE_DOMAIN_TAXONOMY,
     NODE_MANIFEST_REL_PATH,
     REPO_DIR,
@@ -28,10 +27,12 @@ from zcg.core.epistemics import (
     resolve_effective_interaction_language,
 )
 from zcg.core.manifests import iter_layer_template_dirs, load_node_manifest
+from zcg.core.surface_composer import compose_node_makefile_targets
 from zcg.governance.horizon import diff_project_against_layers, inspect_layer_horizon
 from zcg.governance.ledger import inspect_git_governance_state, summarize_work_orchestration_ledger
 from zcg.topology.identity import resolve_node_entity_identity
 from zcg.topology.network import discover_network_topology
+from zcg.topology.posture import resolve_governance_posture, resolve_surface_origin
 
 PRIORITY_TRACKER_CANDIDATES: tuple[str, ...] = (
     "WORKTASK.md",
@@ -87,7 +88,13 @@ def inspect_workspace_status(
 
     g_stat = _git_lines("status", "--short", "--branch")
     g_log = _git_lines("log", "--oneline", "-5")
-    mk_t = list(LAYER_ROLE_MAKEFILE_TARGETS.get(role, LAYER_ROLE_MAKEFILE_TARGETS["project"]))
+    posture_info = resolve_governance_posture(ws, m, parent_dir=parent_dir)
+    mk_t = compose_node_makefile_targets(
+        role,
+        active_templates=seeds,
+        allow_external_links=bool(posture_info["allow_external_peer_links"]),
+        search_roots=s_roots,
+    )
     ent_id = resolve_node_entity_identity(ws, m, parent_dir=parent_dir)
     net_topo = discover_network_topology(ws, m, parent_dir=parent_dir)
     work_orch = summarize_work_orchestration_ledger(ws, parent_dir=parent_dir)
@@ -140,6 +147,8 @@ def inspect_workspace_status(
         "layer_role": role,
         "active_cockpit": cockpit,
         "entity_identity": ent_id,
+        "posture": posture_info,
+        "surface_origin": resolve_surface_origin(m),
         "network_topology": net_topo["network_topology"],
         "node_connection_summary": net_topo["node_connection_summary"],
         "sync_topology": net_topo["sync_topology"],

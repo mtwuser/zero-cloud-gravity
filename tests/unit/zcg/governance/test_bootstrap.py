@@ -8,13 +8,18 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+from contextlib import contextmanager
 from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
 
 from zcg.core.constants import MAKEFILE_CUSTOM_TARGETS_MARKER, NODE_MANIFEST_REL_PATH
 from zcg.governance import bootstrap, scaffolder
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class TestBootstrap:
@@ -56,9 +61,11 @@ class TestBootstrap:
             layer_role="workstation",
             entity_kind="open-source",
         )
+        scaffolder.scaffold_template_pack(repo, template_name="universal-base", kind="human-stack")
         scaffolder.scaffold_template_pack(repo, template_name="base-pack", kind="context-stack")
         scaffolder.scaffold_template_pack(repo, template_name="academic-base", kind="context-stack")
         scaffolder.scaffold_template_pack(repo, template_name="science-base", kind="context-stack")
+        scaffolder.scaffold_template_pack(repo, template_name="business-base", kind="context-stack")
         scaffolder.scaffold_template_pack(
             repo, template_name="software-engineering", kind="context-stack"
         )
@@ -69,6 +76,13 @@ class TestBootstrap:
         scaffolder.scaffold_template_pack(
             repo, template_name="node-work-cockpit", kind="plugin-stack"
         )
+        scaffolder.scaffold_template_pack(
+            repo, template_name="workstation-control-tower", kind="plugin-stack"
+        )
+        wct_tpl = repo / "templates/workstation-control-tower/template.json"
+        wct_doc = json.loads(wct_tpl.read_text("utf-8"))
+        wct_doc["target_role"] = "workstation"
+        wct_tpl.write_text(json.dumps(wct_doc), "utf-8")
 
         # Act — validation guards
         with pytest.raises(ValueError, match="Invalid layer_id"):
@@ -104,7 +118,7 @@ class TestBootstrap:
                 layer_id="squad-iso",
                 layer_role="squad",
                 parent_dir=corp,
-                templates=["software-engineering", "node-work-cockpit"],
+                templates=["base-pack", "software-engineering", "node-work-cockpit"],
                 home_dir=home,
                 dry_run=True,
             )
@@ -149,8 +163,69 @@ class TestBootstrap:
             scaffold_own_template=False,
             home_dir=home,
         )
+        # 4. Purpose-driven & --from-parent (local and remote) cascading inheritance
+        managed_dept = tmp_path / "dept-managed-local"
+        loc_parent_res = bootstrap.bootstrap_node_workspace(
+            repo,
+            managed_dept,
+            layer_id="dept-managed-local",
+            purpose="enterprise-network",
+            layer_role="department",
+            from_parent=str(corp),
+            home_dir=home,
+            dry_run=True,
+        )
+
+        @contextmanager
+        def _fake_rem_parent(*_a: object, **_kw: object) -> Iterator[tuple[Path, str]]:
+            yield (corp, "git-remote")
+
+        rem_dept = tmp_path / "dept-managed-remote"
+        with patch("zcg.governance.bootstrap.posture.open_parent_source", _fake_rem_parent):
+            rem_parent_res = bootstrap.bootstrap_node_workspace(
+                repo,
+                rem_dept,
+                layer_id="dept-managed-remote",
+                purpose="enterprise-network",
+                layer_role="department",
+                from_parent="https://example.org/corp-iso.git",
+                home_dir=home,
+            )
+
+        # 5. Personal Root 0 workstation -> R3 wallet squad excludes workstation-control-tower
+        alex_pc = tmp_path / "alex-pc"
+        pc_res = bootstrap.bootstrap_node_workspace(
+            repo,
+            alex_pc,
+            layer_id="alex-pc",
+            purpose="individual-sovereign",
+            home_dir=home,
+        )
+        alex_wallet = tmp_path / "alex-wallet"
+        wallet_res = bootstrap.bootstrap_node_workspace(
+            repo,
+            alex_wallet,
+            layer_id="alex-wallet",
+            purpose="individual-sovereign",
+            layer_role="squad",
+            precedence=88,
+            parent_dir=alex_pc,
+            templates=["science-base", "node-work-cockpit"],
+            home_dir=home,
+        )
         # Assert
         assert "README.md" not in re_ind["baseline_files_created"]
+        assert loc_parent_res["purpose"] == "enterprise-network"
+        assert loc_parent_res["manifest"]["governance_posture"] == "managed"
+        assert rem_parent_res["manifest"]["governance_posture"] == "managed"
+        assert (
+            rem_parent_res["manifest"]["upstream_layer"]["repository"]
+            == "https://example.org/corp-iso.git"
+        )
+        assert "workstation-control-tower" in pc_res["manifest"]["default_stack_templates"]
+        assert "workstation-control-tower" not in wallet_res["copied_templates"]
+        assert "workstation-control-tower" not in wallet_res["manifest"]["default_stack_templates"]
+        assert len(wallet_res["manifest"]["surface_bindings"]) >= 1
 
     def test_sync_node_workspace_backfill_pruning_and_makefile_expected(
         self, tmp_path: Path
@@ -165,10 +240,18 @@ class TestBootstrap:
             layer_role="workstation",
             entity_kind="open-source",
         )
+        scaffolder.scaffold_template_pack(repo, template_name="universal-base", kind="human-stack")
         scaffolder.scaffold_template_pack(repo, template_name="science-base", kind="context-stack")
         scaffolder.scaffold_template_pack(
             repo, template_name="node-work-cockpit", kind="plugin-stack"
         )
+        scaffolder.scaffold_template_pack(
+            repo, template_name="workstation-control-tower", kind="plugin-stack"
+        )
+        wct_tpl = repo / "templates/workstation-control-tower/template.json"
+        wct_doc = json.loads(wct_tpl.read_text("utf-8"))
+        wct_doc["target_role"] = "workstation"
+        wct_tpl.write_text(json.dumps(wct_doc), "utf-8")
 
         ws = tmp_path / "squad-iso"
         with pytest.raises(ValueError, match="Invalid sync strategy"):
@@ -191,7 +274,11 @@ class TestBootstrap:
         m_data = json.loads(m_path.read_text("utf-8"))
         m_data["schema_version"] = "old-rev"
         m_data.pop("governing_root_id", None)
-        m_data["default_stack_templates"] = ["squad-iso", "node-work-cockpit"]
+        m_data["default_stack_templates"] = [
+            "squad-iso",
+            "workstation-control-tower",
+            "node-work-cockpit",
+        ]
         m_path.write_text(json.dumps(m_data), "utf-8")
 
         ag_rule = ws / ".agents/rules/squad-iso.md"
@@ -222,8 +309,36 @@ class TestBootstrap:
         assert len(live_sync["plugin_services_redeployed"]) == 1
         assert MAKEFILE_CUSTOM_TARGETS_MARKER in mk_file.read_text("utf-8")
 
-        # Keep-local sync when governing_root_id is already backfilled
+        # Keep-local sync when governing_root_id is already backfilled, plus workstation self-sync
         kl_sync = bootstrap.sync_node_workspace(
             repo, ws, templates=["science-base"], strategy="keep-local"
         )
         assert kl_sync["synced_templates"] == ["science-base"]
+        assert (
+            "workstation-control-tower"
+            not in json.loads(m_path.read_text("utf-8"))["default_stack_templates"]
+        )
+        ws_root = tmp_path / "alex-pc-sync"
+        bootstrap.bootstrap_node_workspace(
+            repo, ws_root, layer_id="alex-pc-sync", purpose="individual-sovereign", home_dir=home
+        )
+        pc_sync = bootstrap.sync_node_workspace(repo, ws_root)
+        assert "workstation-control-tower" in (pc_sync["applied_template"] or "")
+
+        scaffolder.scaffold_template_pack(
+            repo, template_name="corporate-root-hub", kind="plugin-stack"
+        )
+        crh_tpl = repo / "templates/corporate-root-hub/template.json"
+        crh_tpl.write_text(
+            json.dumps({**json.loads(crh_tpl.read_text("utf-8")), "target_role": "corporate"}),
+            "utf-8",
+        )
+        repo_m = json.loads((repo / NODE_MANIFEST_REL_PATH).read_text("utf-8"))
+        repo_m["default_stack_templates"] = [
+            "universal-base",
+            "workstation-control-tower",
+            "corporate-root-hub",
+        ]
+        (repo / NODE_MANIFEST_REL_PATH).write_text(json.dumps(repo_m), "utf-8")
+        oss_sync = bootstrap.sync_node_workspace(repo, repo, dry_run=True)
+        assert "corporate-root-hub" in (oss_sync["applied_template"] or "")

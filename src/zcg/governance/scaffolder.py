@@ -11,22 +11,8 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+from zcg.core import constants
 from zcg.core.blueprints import render_lineage_markdown, resolve_template_lineage_chain
-from zcg.core.constants import (
-    BUILTIN_COCKPIT_PLUGINS,
-    CANONICAL_STARTER_TEMPLATES,
-    DEFAULT_INTERACTION_LANGUAGE,
-    KEBAB_ID_RE,
-    NODE_MANIFEST_CONTRACT_REV,
-    NODE_MANIFEST_REL_PATH,
-    OWNER_WRITABLE_MODE_BIT,
-    ROLE_DEFAULT_PRECEDENCE,
-    TEMPLATE_MANIFEST_CONTRACT_REV,
-    VALID_ENTITY_KINDS,
-    VALID_INTERACTION_LANGUAGES,
-    VALID_LAYER_ROLES,
-    VALID_TEMPLATE_KINDS,
-)
 from zcg.core.manifests import (
     discover_layer_template_names,
     ensure_rule_file_frontmatter,
@@ -35,6 +21,8 @@ from zcg.core.manifests import (
     resolve_template_dest_dir,
     resolve_template_dir,
 )
+from zcg.core.surface_composer import materialize_agent_companion_files
+from zcg.governance.antigravity_sync import sync_workspace_antigravity_surfaces
 from zcg.governance.consensus import collect_layer_effective_bindings
 
 MIN_PRECEDENCE, MAX_PRECEDENCE, DEFAULT_BOT_TTL_SECONDS = 0, 100, 300
@@ -78,18 +66,21 @@ def configure_node_manifest(
     dry_run: bool = False,
 ) -> dict[str, Any]:  # fmt: skip
     """Parameterize system/zcg-node.json (zcg-node-v1) for a Zero-Cloud Node."""
-    if not KEBAB_ID_RE.match(layer_id):
+    if not constants.KEBAB_ID_RE.match(layer_id):
         raise ValueError(f"Invalid layer_id {layer_id!r}: must be kebab-case")
-    if layer_role not in VALID_LAYER_ROLES:
-        raise ValueError(f"Invalid layer_role {layer_role!r}: must be one of {VALID_LAYER_ROLES}")
-    if entity_kind is not None and entity_kind not in VALID_ENTITY_KINDS:
-        raise ValueError(f"Invalid entity_kind {entity_kind!r}: must be in {VALID_ENTITY_KINDS}")
-    if interaction_language is not None and interaction_language not in VALID_INTERACTION_LANGUAGES:
+    if layer_role not in constants.VALID_LAYER_ROLES:
+        raise ValueError(f"Invalid layer_role {layer_role!r}")
+    if entity_kind is not None and entity_kind not in constants.VALID_ENTITY_KINDS:
+        raise ValueError(f"Invalid entity_kind {entity_kind!r}")
+    if interaction_language and interaction_language not in constants.VALID_INTERACTION_LANGUAGES:
         raise ValueError(f"Invalid interaction_language {interaction_language!r}")
-    eff_prec = precedence if precedence is not None else ROLE_DEFAULT_PRECEDENCE[layer_role]
+    eff_prec = (
+        precedence if precedence is not None else constants.ROLE_DEFAULT_PRECEDENCE[layer_role]
+    )
     if eff_prec < MIN_PRECEDENCE or eff_prec > MAX_PRECEDENCE:
         raise ValueError(f"Invalid precedence {eff_prec}: must be 0..100")
-    manifest_path, base_m = repo_dir / NODE_MANIFEST_REL_PATH, load_node_manifest(repo_dir)
+    manifest_path = repo_dir / constants.NODE_MANIFEST_REL_PATH
+    base_m = load_node_manifest(repo_dir)
     up_default = {
         "layer_id": "mtwuser/zero-cloud-gravity", "branch": "master",
         "repository": "https://github.com/mtwuser/zero-cloud-gravity.git",
@@ -100,34 +91,31 @@ def configure_node_manifest(
         "default_stack_templates": discover_layer_template_names(repo_dir),
         "baseline_guardrails": [], "surface_bindings": [],
         "environments": {}, "federated_mcps": [], **base_m,
-        "schema_version": NODE_MANIFEST_CONTRACT_REV, "layer_id": layer_id,
+        "schema_version": constants.NODE_MANIFEST_CONTRACT_REV, "layer_id": layer_id,
         "layer_role": layer_role, "precedence": eff_prec,
         "description": description or base_m.get("description") or def_desc,
     }  # fmt: skip
-    for key, val in (
+    opt_fields = (
         ("entity_kind", entity_kind), ("governing_root_id", governing_root_id),
         ("interaction_language", interaction_language),
-    ):  # fmt: skip
-        if val is not None:
-            manifest[key] = val
+    )  # fmt: skip
+    manifest = {**manifest, **{k: v for k, v in opt_fields if v is not None}}
     raw_up = manifest.get("upstream_layer")
-    upstream = {**up_default, **(dict(raw_up) if isinstance(raw_up, dict) else {})}
-    for key, val in (
-        ("repository", upstream_url), ("layer_id", upstream_id), ("branch", upstream_branch),
-    ):  # fmt: skip
-        if val is not None:
-            upstream[key] = val
-    manifest["upstream_layer"] = upstream
+    up_opts = (("repository", upstream_url), ("layer_id", upstream_id), ("branch", upstream_branch))
+    manifest["upstream_layer"] = {
+        **up_default, **(dict(raw_up) if isinstance(raw_up, dict) else {}),
+        **{k: v for k, v in up_opts if v is not None},
+    }  # fmt: skip
     ensure_canonical_environments(manifest, layer_id)
     if prune_default_templates:
+        starters = constants.CANONICAL_STARTER_TEMPLATES
         manifest["default_stack_templates"] = [
-            t for t in manifest.get("default_stack_templates", [])
-            if t not in CANONICAL_STARTER_TEMPLATES
+            t for t in manifest.get("default_stack_templates", []) if t not in starters
         ]  # fmt: skip
         manifest["surface_bindings"] = [
             b for b in manifest.get("surface_bindings", [])
             if isinstance(b, dict) and not any(
-                f"/{p}/" in str(r) for p in CANONICAL_STARTER_TEMPLATES
+                f"/{p}/" in str(r) for p in starters
                 for r in [*b.get("rule_files", []), *b.get("canonical_templates", [])]
             )
         ]  # fmt: skip
@@ -145,10 +133,10 @@ def scaffold_template_pack(
     globs: list[str] | None = None, dry_run: bool = False,
 ) -> dict[str, Any]:  # fmt: skip
     """Scaffold a sovereign or polymorphic template pack under templates/<template_name>/."""
-    if not KEBAB_ID_RE.match(template_name):
+    if not constants.KEBAB_ID_RE.match(template_name):
         raise ValueError(f"Invalid template_name {template_name!r}: must be kebab-case")
-    if kind not in VALID_TEMPLATE_KINDS:
-        raise ValueError(f"Invalid template kind {kind!r}: must be one of {VALID_TEMPLATE_KINDS}")
+    if kind not in constants.VALID_TEMPLATE_KINDS:
+        raise ValueError(f"Invalid template kind {kind!r}")
     eff_rule = rule_filename or "policy.md"
     if not eff_rule.endswith(".md") or "/" in eff_rule or ".." in eff_rule:
         raise ValueError(f"Invalid rule_filename {eff_rule!r}: must be a simple .md filename")
@@ -179,7 +167,7 @@ def scaffold_template_pack(
     }  # fmt: skip
     rt_extra = {"runtime_service": rt_svc} if kind == "plugin-stack" else {}
     tpl_manifest = {
-        "schema_version": TEMPLATE_MANIFEST_CONTRACT_REV, "template_id": template_name,
+        "schema_version": constants.TEMPLATE_MANIFEST_CONTRACT_REV, "template_id": template_name,
         "kind": kind, "target_role": "domain-policy" if kind == "context-stack" else "squad",
         "description": desc, "recommended_surface_bindings": [binding_entry], **rt_extra,
     }  # fmt: skip
@@ -209,13 +197,13 @@ def scaffold_template_pack(
     }
     if not dry_run:
         for rel_path, content in files_to_write.items():
-            full_path = repo_dir / rel_path
-            full_path.parent.mkdir(parents=True, exist_ok=True)
-            full_path.write_text(content, encoding="utf-8")
-        if (m_path := repo_dir / NODE_MANIFEST_REL_PATH).is_file():
+            (full_p := repo_dir / rel_path).parent.mkdir(parents=True, exist_ok=True)
+            full_p.write_text(content, encoding="utf-8")
+        if (m_path := repo_dir / constants.NODE_MANIFEST_REL_PATH).is_file():
             m = load_node_manifest(repo_dir)
-            def_st = m.get("default_stack_templates", [])
-            m["default_stack_templates"] = merge_unique_strings(def_st, [template_name])
+            m["default_stack_templates"] = merge_unique_strings(
+                m.get("default_stack_templates", []), [template_name]
+            )  # fmt: skip
             if register_binding:
                 m["surface_bindings"] = [*m.get("surface_bindings", []), binding_entry]
             m_path.write_text(json.dumps(m, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -232,7 +220,8 @@ def apply_templates_to_project(
 ) -> dict[str, Any]:  # fmt: skip
     """Materialize template packs and 0..N layer rules/bindings into a target project."""
     eff_eng = engine_dir or repo_dir
-    c_prec, s_prec = ROLE_DEFAULT_PRECEDENCE["corporate"], ROLE_DEFAULT_PRECEDENCE["service-node"]
+    r_prec = constants.ROLE_DEFAULT_PRECEDENCE
+    c_prec, s_prec = r_prec["corporate"], r_prec["service-node"]
     root_m = load_node_manifest(repo_dir) or {
         "layer_id": "root", "layer_role": "corporate", "precedence": c_prec,
     }  # fmt: skip
@@ -242,9 +231,7 @@ def apply_templates_to_project(
             s for s in sorted(layers_dir.iterdir()) if s.is_dir() and not s.name.startswith(".")
         )
         for sub in subs:
-            sub_m = load_node_manifest(sub) or {
-                "layer_id": sub.name, "layer_role": "department", "precedence": s_prec,
-            }  # fmt: skip
+            sub_m = load_node_manifest(sub) or {"layer_id": sub.name, "precedence": s_prec}
             cand_layers.append((sub.name, sub, sub_m))
     if layers_filter and "all" not in layers_filter:
         allowed = set(layers_filter)
@@ -269,16 +256,16 @@ def apply_templates_to_project(
             fb_d = next(by_o, None) or resolve_template_dir(eff_eng, raw_ref)
             found_d = next(by_l, None) if sep else fb_d
             if found_d is None:
-                if raw_ref in BUILTIN_COCKPIT_PLUGINS:
+                if raw_ref in constants.BUILTIN_COCKPIT_PLUGINS:
                     continue
                 raise ValueError(f"Template {raw_ref!r} not found in selected layers")
             resolved_templates.append((found_d.name, found_d))
     else:
         for tpl_str in def_tpls:
-            cand_d = resolve_template_dir(repo_dir, tpl_str) or resolve_template_dir(
-                eff_eng, tpl_str
-            )
-            if cand_d is not None:
+            if (
+                cand_d := resolve_template_dir(repo_dir, tpl_str)
+                or resolve_template_dir(eff_eng, tpl_str)
+            ) is not None:
                 resolved_templates.append((cand_d.name, cand_d))
     resolved_tpl_name = ",".join(t[0] for t in resolved_templates)
     mat_templates = resolve_template_lineage_chain(resolved_templates, (repo_dir, eff_eng))
@@ -286,6 +273,7 @@ def apply_templates_to_project(
     copied_files, agents_dir = list[str](), target_project_dir / ".agents"
 
     def _copy_file(src: Path, dest: Path, *, overwrite: bool = True, fm: bool = False) -> None:
+        copied_files.append(str(dest.relative_to(target_project_dir)))
         if dry_run:
             return
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -294,7 +282,7 @@ def apply_templates_to_project(
         shutil.copy2(src, dest)
         if fm:
             ensure_rule_file_frontmatter(dest)
-        dest.chmod(dest.stat().st_mode | OWNER_WRITABLE_MODE_BIT)
+        dest.chmod(dest.stat().st_mode | constants.OWNER_WRITABLE_MODE_BIT)
 
     def _iter_f(d: Path) -> Iterable[Path]:
         return (p for p in sorted(d.rglob("*")) if p.is_file()) if d.is_dir() else ()
@@ -303,19 +291,15 @@ def apply_templates_to_project(
         for sub_name in ("rules", "skills"):
             for src_f in _iter_f(tpl_dir / sub_name):
                 dest = agents_dir / sub_name / src_f.relative_to(tpl_dir / sub_name)
-                copied_files.append(str(dest.relative_to(target_project_dir)))
                 _copy_file(src_f, dest, fm=(sub_name == "rules" and dest.suffix == ".md"))
         gov_src = tpl_dir / "governance"
         gov_fs = [*sorted(gov_src.glob("*.md")), *sorted(gov_src.glob("Makefile"))]
         for gf in gov_fs if gov_src.is_dir() else ():
             dest_g = (agents_dir if gf.name == "SESSION.md" else target_project_dir) / gf.name
             if not dest_g.exists():
-                copied_files.append(str(dest_g.relative_to(target_project_dir)))
                 _copy_file(gf, dest_g, overwrite=False)
         for af in _iter_f(tpl_dir / "assets"):
-            dest_a = agents_dir / "assets" / tpl_name / af.relative_to(tpl_dir / "assets")
-            copied_files.append(str(dest_a.relative_to(target_project_dir)))
-            _copy_file(af, dest_a)
+            _copy_file(af, agents_dir / "assets" / tpl_name / af.relative_to(tpl_dir / "assets"))
     lineage_rows: list[str] = []
     for name, ldir, m in cand_layers:
         prec, lid = int(m.get("precedence", s_prec)), str(m.get("layer_id", name))
@@ -328,21 +312,18 @@ def apply_templates_to_project(
             if not dry_run:
                 dest_rule.unlink(missing_ok=True)
             for sf in sorted((ldir / "antigravity/.gemini/config/skills").glob("*/SKILL.md")):
-                dest_sk = agents_dir / "skills" / sf.parent.name / "SKILL.md"
-                copied_files.append(str(dest_sk.relative_to(target_project_dir)))
-                _copy_file(sf, dest_sk)
+                _copy_file(sf, agents_dir / "skills" / sf.parent.name / "SKILL.md")
         elif layer_agents.is_file():
-            copied_files.append(str(dest_rule.relative_to(target_project_dir)))
             _copy_file(layer_agents, dest_rule, fm=True)
     pruned_plugins: list[str] = []
+    known_tpls = {
+        **dict(iter_layer_template_dirs(eff_eng)), **dict(iter_layer_template_dirs(repo_dir))
+    }  # fmt: skip
     if not layers_filter or "all" in layers_filter:
         if not dry_run and (agents_dir / "rules").is_dir():
             for l_rf in (agents_dir / "rules").glob("layer-*.md"):
                 if f".agents/rules/{l_rf.name}" not in copied_files:
                     l_rf.unlink(missing_ok=True)
-        known_tpls = {
-            **dict(iter_layer_template_dirs(eff_eng)), **dict(iter_layer_template_dirs(repo_dir))
-        }  # fmt: skip
         for t_name, t_dir in ((k, v) for k, v in sorted(known_tpls.items()) if k not in seen_names):
             r_files = [
                 agents_dir / "rules" / rf.name for rf in (t_dir / "rules").glob("*.md")
@@ -363,19 +344,29 @@ def apply_templates_to_project(
                         rf.unlink(missing_ok=True)
                     for sd in (*s_dirs, a_dir):
                         shutil.rmtree(sd, ignore_errors=True)
+    comp_files = materialize_agent_companion_files(
+        target_project_dir, repo_dir=repo_dir, engine_dir=eff_eng, root_manifest=root_m,
+        active_templates=mat_templates, known_templates=list(known_tpls.items()),
+        copied_files=copied_files, dry_run=dry_run,
+    )  # fmt: skip
+    p_dir = repo_dir if repo_dir.resolve() != target_project_dir.resolve() else None
+    agy_files = sync_workspace_antigravity_surfaces(
+        target_project_dir, active_templates=mat_templates,
+        known_templates=list(known_tpls.items()), parent_dir=p_dir, dry_run=dry_run,
+    )  # fmt: skip
     lineage_dest, session_dest = agents_dir / "LAYER_LINEAGE.md", agents_dir / "SESSION.md"
-    copied_files.extend([str(lineage_dest.relative_to(target_project_dir)), ".agents/SESSION.md"])
+    rel_lin = str(lineage_dest.relative_to(target_project_dir))
+    copied_files.extend([*comp_files, *agy_files, rel_lin, ".agents/SESSION.md"])
     if not dry_run:
         lineage_dest.parent.mkdir(parents=True, exist_ok=True)
-        lang = str(root_m.get("interaction_language") or DEFAULT_INTERACTION_LANGUAGE)
-        lineage_md = render_lineage_markdown(
-            resolved_tpl_name, lineage_rows, interaction_language=lang
+        lang = str(root_m.get("interaction_language") or constants.DEFAULT_INTERACTION_LANGUAGE)
+        lineage_dest.write_text(
+            render_lineage_markdown(resolved_tpl_name, lineage_rows, interaction_language=lang),
+            encoding="utf-8",
         )
-        lineage_dest.write_text(lineage_md, encoding="utf-8")
         if not session_dest.exists():
-            lbl = resolved_tpl_name or "default"
-            s_md = f"# Session State Log\n\n## Session Log\n\n- Initialized (`{lbl}`).\n"
-            session_dest.write_text(s_md, encoding="utf-8")
+            s_md = f"# Session State Log\n\n## Session Log\n\n- Initialized (`{resolved_tpl_name or 'default'}`).\n"  # noqa: E501
+            session_dest.write_text(s_md, "utf-8")
     return {
         "target_project_dir": str(target_project_dir), "dry_run": dry_run,
         "applied_template": resolved_tpl_name or None, "pruned_plugins": pruned_plugins,

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.mtwuser/zero-cloud-gravity",
+  "title": "ZeroCloudGravity Sovereign MCP Server",
+  "description": "Zero-cloud sovereign governance, epistemic rcap1 capsules, drift auditing, and ephemeral sandboxes.",
+  "repository": {
+    "url": "https://github.com/mtwuser/zero-cloud-gravity",
+    "source": "github"
+  },
+  "version": "1.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "zero-cloud-gravity",
+      "version": "1.1.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

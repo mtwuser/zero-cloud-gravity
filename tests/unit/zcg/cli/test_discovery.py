@@ -6,6 +6,7 @@ Specification: docs/architecture/03_governance_and_work_ledger.md
 from __future__ import annotations
 
 import json
+import stat
 from pathlib import Path
 from unittest.mock import patch
 
@@ -45,9 +46,15 @@ class TestDiscovery:
         assert len(lt_res["federated_mcps"]) == 1
         assert len(lt_res["ephemeral_bots"]) == 1
 
-        # 2. status, inspect-horizon, compare-upstream
+        # 2. status, inspect-remote, inspect-horizon, compare-upstream
         with patch("zcg.cli.discovery.inspect_workspace_status", return_value={"ok": "status"}):
             assert discovery.dispatch_c1(repo, False, "status", []) == {"ok": "status"}
+        with pytest.raises(CLIUsageError, match="Usage: zcg inspect-remote"):
+            discovery.dispatch_c1(repo, False, "inspect-remote", [])
+        insp_res = discovery.dispatch_c1(
+            repo, False, "inspect-remote", [str(repo), "--branch", "master"]
+        )
+        assert insp_res["layer_id"] == "corp-iso"
         with patch(
             "zcg.cli.discovery.horizon.inspect_layer_horizon", return_value={"ok": "horizon"}
         ):
@@ -60,10 +67,17 @@ class TestDiscovery:
                 == "cmp"
             )
 
-        # 3. diff-project & lint-arch on manifested node vs unmanifested project
+        # 3. diff-project, lint-arch, lint-skills, and check-handoff
         assert "in_sync" in discovery.dispatch_c1(repo, False, "diff-project", [str(repo)])
         assert "in_sync" in discovery.dispatch_c1(repo, False, "diff-project", [str(proj)])
         assert discovery.dispatch_c1(repo, False, "lint-arch", [str(proj), "--no-tests"])["passed"]
+        assert discovery.dispatch_c1(repo, False, "lint-skills", [str(repo)])["passed"] is True
+        with pytest.raises(CLIUsageError, match="Usage: zcg check-handoff"):
+            discovery.dispatch_c1(repo, False, "check-handoff", [str(repo)])
+        ho_res = discovery.dispatch_c1(
+            repo, False, "check-handoff", [str(repo), "--text", "- Verify frontend in pre"]
+        )
+        assert ho_res["passed"] is True
 
         # 4. check-authority allowed vs blocked
         with patch(
@@ -132,15 +146,19 @@ class TestDiscovery:
         missing_res_dir.mkdir()
         b_sh = eng / "scripts/workstation-backup.sh"
         b_sh.write_text('#!/usr/bin/env bash\necho "args:$*"\nexit 0\n', encoding="utf-8")
-        b_sh.chmod(0o755)
+        b_sh.chmod(stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
         a_sh = eng / "scripts/workstation-audit.sh"
         a_sh.write_text('#!/usr/bin/env bash\necho "audit:$*"\nexit 0\n', encoding="utf-8")
-        a_sh.chmod(0o755)
+        a_sh.chmod(stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+        s_sh = eng / "scripts/stage-showcase.sh"
+        s_sh.write_text('#!/usr/bin/env bash\necho "showcase:$*"\nexit 0\n', encoding="utf-8")
+        s_sh.chmod(stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 
         # Act
         with patch("zcg.cli.discovery.sys.stdout.isatty", return_value=False):
             dry_backup = discovery.dispatch_workstation(eng, True, "workstation-backup", ["/tmp"])
             dry_audit = discovery.dispatch_workstation(eng, True, "workstation-audit", ["--clean"])
+            dry_stage = discovery.dispatch_workstation(eng, True, "stage-showcase", [])
             live_backup = discovery.dispatch_workstation(eng, False, "workstation-backup", ["/tmp"])
         with patch("zcg.cli.discovery.sys.stdout.isatty", return_value=True):
             tty_stream = discovery.dispatch_workstation(eng, False, "workstation-backup", ["/tmp"])
@@ -149,8 +167,10 @@ class TestDiscovery:
             )
 
         # Assert
+        assert "stage-showcase" in discovery.WORKSTATION_SUBCOMMANDS
         assert dry_backup["passed"] is True and "--dry-run" in dry_backup["output"]
         assert dry_audit["passed"] is True and "--clean" not in dry_audit["output"]
+        assert dry_stage["passed"] is True and "--dry-run" in dry_stage["output"]
         assert live_backup["passed"] is True and "--dry-run" not in live_backup["output"]
         assert live_backup["streamed"] is False
         assert tty_stream["passed"] is True and tty_stream["streamed"] is True
@@ -159,3 +179,39 @@ class TestDiscovery:
         assert "--json" not in tty_json["output"]
         with pytest.raises(CLIUsageError, match="Missing workstation script"):
             discovery.dispatch_workstation(missing_res_dir, False, "install-antigravity", [])
+
+    def test_dispatch_oss_usage_and_option_forwarding_expected(self, tmp_path: Path) -> None:
+        """Verify dispatch_oss rejects invalid actions and forwards OSS release options."""
+        # Arrange
+        ws = tmp_path / "dev-iso-engine"
+        ws.mkdir()
+
+        # Act
+        with pytest.raises(CLIUsageError, match="Usage: zcg oss"):
+            discovery.dispatch_oss(ws, False, [])
+        with pytest.raises(CLIUsageError, match="Usage: zcg oss"):
+            discovery.dispatch_oss(ws, False, ["unknown-action"])
+        with patch(
+            "zcg.cli.discovery.oss_contrib.run_oss_action", return_value={"action": "publish"}
+        ) as mock_run:
+            res = discovery.dispatch_oss(
+                ws,
+                True,
+                [
+                    "publish",
+                    str(ws),
+                    "--release-version",
+                    "1.0.1",
+                    "--contrib-branch",
+                    "contrib/iso",
+                    "--create-pr",
+                    "--verify",
+                ],
+            )
+
+        # Assert
+        assert res == {"action": "publish"}
+        mock_run.assert_called_once()
+        assert mock_run.call_args.kwargs["create_pr"] is True
+        assert mock_run.call_args.kwargs["verify"] is True
+        assert mock_run.call_args.kwargs["dry_run"] is True

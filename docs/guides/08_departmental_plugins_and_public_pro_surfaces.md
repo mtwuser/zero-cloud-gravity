@@ -34,7 +34,7 @@ zcg scaffold-plugin-module ~/Projects/corp-alpha-org/dept-tech-eng/templates/alp
   partner-inquiries
 
 # Install and promote the corporate portal onto the public twin org-alpha (:8720) in 'pro':
-zcg apply-project ~/Projects/osa-knowledge/org-alpha \
+zcg apply-project ~/Projects/org-alpha \
   --parent-dir ~/Projects/corp-alpha-org/dept-tech-eng \
   --template alpha-public-portal --service-action deploy --env pro
 ```

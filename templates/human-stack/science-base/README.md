@@ -20,7 +20,7 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 ## 2. Core Epistemic & Scientific Invariants
 
-The `science-base` rule corpus enforces formal scientific method and mathematical precision across research, knowledge (`osa-*`), and software repositories:
+The `science-base` rule corpus enforces formal scientific method and mathematical precision across research, knowledge (`sci-*`, `gov-*`, `geo-*`, `org-*`), and software repositories:
 
 1. **Arboreal Taxonomy (`Trunk -> Branch -> Specialty`)**: Route rules concisely through `.agents/rules/*.md` and index domain corpora under `docs/{guides,architecture,reference}/` (`< 465` lines).
 2. **Universal `1:1:1` Symbiosis (`Theory/Spec <-> Test <-> Implementation`)**: Read specifications first, verification tests second, and implementation last; declare `Specification: docs/architecture/<spec>.md` in every unit test module.

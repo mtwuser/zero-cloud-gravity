@@ -25,7 +25,17 @@ from zcg.cli.parser import (
 from zcg.cockpit.status import inspect_workspace_status
 from zcg.core.constants import NODE_MANIFEST_REL_PATH
 from zcg.core.manifests import discover_templates_catalog, load_node_manifest
-from zcg.governance import arch_linter, authority, bootstrap, horizon, promotion
+from zcg.governance import (
+    arch_linter,
+    authority,
+    bootstrap,
+    capabilities,
+    handoff,
+    horizon,
+    oss_contrib,
+    promotion,
+)
+from zcg.topology.posture import inspect_remote_node_manifest
 from zcg.topology.subtrees import (
     inspect_mounted_children_drifts,
     sync_mounted_children_into_parent,
@@ -34,10 +44,13 @@ from zcg.topology.subtrees import (
 C1_DISCOVERY_SUBCOMMANDS: tuple[str, ...] = (
     "list-templates",
     "status",
+    "inspect-remote",
     "inspect-horizon",
     "compare-upstream",
     "diff-project",
     "lint-arch",
+    "lint-skills",
+    "check-handoff",
     "check-authority",
     "consult-layer",
 )
@@ -48,13 +61,16 @@ WORKSTATION_SUBCOMMANDS: tuple[str, ...] = (
     "workstation-backup",
     "workstation-audit",
     "workstation-restore",
+    "stage-showcase",
 )
+OSS_SUBCOMMANDS: tuple[str, ...] = ("oss",)
 _WORKSTATION_SCRIPT_MAP: dict[str, str] = {
     "install-antigravity": "scripts/install-antigravity.sh",
     "workstation-sync": "scripts/workstation-sync.sh",
     "workstation-backup": "scripts/workstation-backup.sh",
     "workstation-audit": "scripts/workstation-audit.sh",
     "workstation-restore": "scripts/workstation-restore.sh",
+    "stage-showcase": "scripts/stage-showcase.sh",
 }
 
 
@@ -91,6 +107,11 @@ def dispatch_c1(repo_dir: Path, dry_run: bool, subcmd: str, rest: list[str]) -> 
     if subcmd == "status":
         tdir, opts = parse_pos_and_options(repo_dir, subcmd, rest, ("--parent-dir",))
         return inspect_workspace_status(repo_dir, tdir, parent_dir=opt_path(opts, "parent_dir"))
+    if subcmd == "inspect-remote":
+        if not rest or rest[0].startswith("-"):
+            raise CLIUsageError("Usage: zcg inspect-remote <git-url-or-path> [--branch <ref>]")
+        opts = parse_cli_options(subcmd, rest[1:], ("--branch",))
+        return inspect_remote_node_manifest(rest[0], branch=str(opts.get("branch", "master")))
     if subcmd == "inspect-horizon":
         tdir, opts = parse_pos_and_options(repo_dir, subcmd, rest, ("--parent-dir", "--email"))
         return horizon.inspect_layer_horizon(
@@ -120,6 +141,33 @@ def dispatch_c1(repo_dir: Path, dry_run: bool, subcmd: str, rest: list[str]) -> 
     if subcmd == "lint-arch":
         tdir, opts = parse_pos_and_options(repo_dir, subcmd, rest, (), ("--no-tests",))
         return arch_linter.lint_architecture(tdir, check_tests=not bool(opts.get("no_tests")))
+    if subcmd == "lint-skills":
+        tdir, opts = parse_pos_and_options(repo_dir, subcmd, rest, ("--parent-dir", "--target-dir"))
+        return capabilities.lint_skills_security(
+            tdir,
+            target_dir=opt_path(opts, "target_dir"),
+            parent_dir=opt_path(opts, "parent_dir"),
+        )
+    if subcmd == "check-handoff":
+        vf_h = ("--text", "--source", "--target-dir", "--parent-dir", "--email")
+        bf_h = ("--single-axis", "--stage-proposal")
+        tdir, opts = parse_pos_and_options(repo_dir, subcmd, rest, vf_h, bf_h)
+        txt, src = opt_str(opts, "text") or "", opt_str(opts, "source")
+        if not txt and not src:
+            raise CLIUsageError(
+                "Usage: zcg check-handoff [<dir>] (--text <txt> | --source <rel-path>)"
+            )
+        return handoff.check_handoff_symmetry(
+            tdir,
+            directive_text=txt,
+            source_rel_path=src,
+            receiver_dir=opt_path(opts, "target_dir"),
+            parent_dir=opt_path(opts, "parent_dir"),
+            single_axis_per_item=bool(opts.get("single_axis")),
+            stage_proposal=bool(opts.get("stage_proposal")),
+            actor_email=opt_str(opts, "email") or "",
+            dry_run=dry_run,
+        )
     if subcmd == "check-authority":
         vf: tuple[str, ...] = ("--op", "--email", "--file", "--parent-dir")
         tdir, opts = parse_pos_and_options(repo_dir, subcmd, rest, vf)
@@ -224,3 +272,31 @@ def dispatch_workstation(
         "output": proc.stdout.strip(),
         "stderr": proc.stderr.strip(),
     }
+
+
+def dispatch_oss(repo_dir: Path, dry_run: bool, rest: list[str]) -> dict[str, Any]:
+    """Execute isolated OSS engine workflows (push-branch, promote-master, publish)."""
+    if not rest or rest[0] not in oss_contrib.VALID_OSS_ACTIONS:
+        raise CLIUsageError(
+            "Usage: zcg oss <push-branch|promote-master|publish> [<dir>] "
+            "[--remote-url <u>] [--release-version <v>] [--contrib-branch <b>] "
+            "[--create-pr] [--verify]"
+        )
+    action = rest[0]
+    tdir, opts = parse_pos_and_options(
+        repo_dir,
+        f"oss {action}",
+        rest[1:],
+        ("--remote-url", "--release-version", "--contrib-branch"),
+        ("--create-pr", "--verify"),
+    )
+    return oss_contrib.run_oss_action(
+        tdir,
+        action,
+        remote_url=str(opts.get("remote_url") or oss_contrib.DEFAULT_OSS_REMOTE_URL),
+        release_version=opt_str(opts, "release_version"),
+        contrib_branch=str(opts.get("contrib_branch") or ""),
+        create_pr=bool(opts.get("create_pr")),
+        verify=bool(opts.get("verify")),
+        dry_run=dry_run,
+    )

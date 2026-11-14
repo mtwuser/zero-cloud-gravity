@@ -26,7 +26,7 @@ class TestNetwork:
     ) -> None:
         """Verify foreign org-* siblings never leak into public-community knowledge registries."""
         # Arrange
-        know_hub = tmp_path / "osa-knowledge"
+        know_hub = tmp_path / "public-knowledge"
         sci_maths = know_hub / "sci-maths"
         _write_manifest(
             sci_maths,

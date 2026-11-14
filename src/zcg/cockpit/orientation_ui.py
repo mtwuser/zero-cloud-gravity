@@ -91,7 +91,7 @@ def build_node_dashboard_enrichment(
         f"{render_icon('activity')} Health</a>"
     )
     b_info = inspect_context_branches(ws, view_archetype=view_archetype)
-    nav_items = build_cross_node_links(layer_id, net_sc, fed_sc)
+    nav_items = build_cross_node_links(layer_id, net_sc, fed_sc, manifest=manifest)
     post_icon = render_icon("globe" if exp["posture"].startswith("public") else "lock")
 
     orient_s = (
@@ -108,10 +108,13 @@ def build_node_dashboard_enrichment(
     )
     pills = "".join(
         f"<a class='zcg-btn zcg-btn--secondary zcg-btn--sm' href='{html.escape(it['url'])}' "
-        f"title='Target role: {html.escape(it['role'])} ({html.escape(it['scope_tag'])})'>"
+        f"data-horizon-group='{html.escape(it.get('horizon_group', 'Fleet'))}' "
+        f"title='{html.escape(it.get('horizon_group', 'Fleet'))} · "
+        f"Target role: {html.escape(it['role'])} ({html.escape(it['scope_tag'])})'>"
         f"{render_icon('layers')} {html.escape(it['direction'])}: "
         f"<strong>{html.escape(it['node_id'])}</strong> "
-        f"<small>[{html.escape(it['scope_tag'])}]</small></a>"
+        f"<small>[{html.escape(it.get('horizon_group', 'Fleet'))} · "
+        f"{html.escape(it['scope_tag'])}]</small></a>"
         for it in nav_items
     )
     nav_s = (

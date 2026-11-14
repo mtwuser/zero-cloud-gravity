@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 
 from zcg.core import blueprints
-from zcg.core.constants import MAKEFILE_ROLE_HEADER_PREFIX, NODE_MANIFEST_REL_PATH
+from zcg.core.constants import NODE_MANIFEST_REL_PATH
 
 
 class TestBlueprints:
@@ -86,31 +86,6 @@ class TestBlueprints:
             == "node-work-cockpit"
         )
 
-    def test_render_layer_makefile_and_is_makefile_outdated_expected(self, tmp_path: Path) -> None:
-        """Verify corporate and department Makefile rendering and outdated detection."""
-        # Arrange
-        engine_dir = tmp_path / "engine"
-        engine_dir.mkdir()
-        parent_dir = tmp_path / "corp-root"
-        parent_dir.mkdir()
-        ws_dir = tmp_path / "dept-ops"
-        ws_dir.mkdir()
-
-        # Act
-        corp_mk = blueprints.render_layer_makefile("corp-root", "corporate", engine_dir, engine_dir)
-        dept_mk = blueprints.render_layer_makefile("dept-ops", "department", parent_dir, engine_dir)
-        (ws_dir / "Makefile").write_text(dept_mk, encoding="utf-8")
-        up_to_date = blueprints.is_makefile_outdated(ws_dir, "department")
-        (ws_dir / "Makefile").write_text(f"{MAKEFILE_ROLE_HEADER_PREFIX}\nall:\n", encoding="utf-8")
-        stale = blueprints.is_makefile_outdated(ws_dir, "department")
-
-        # Assert
-        assert "CONTRIB_REPO ?=" in corp_mk
-        assert "make complete" not in corp_mk
-        assert f"PARENT_DIR ?= {parent_dir.resolve()}" in dept_mk
-        assert up_to_date is False
-        assert stale is True
-
     def test_render_onboarding_readme_and_lineage_across_roles_expected(self) -> None:
         """Verify onboarding README and LAYER_LINEAGE cover academic, knowledge, root, and squad."""
         # Arrange
@@ -124,6 +99,15 @@ class TestBlueprints:
             "user-pc",
             entity_kind="individual",
             interaction_language="es",
+        )
+        rm_wallet = blueprints.render_layer_onboarding_readme(
+            "alex-wallet",
+            "squad",
+            88,
+            "alex-wallet",
+            ["science-base"],
+            "alex-pc",
+            entity_kind="individual",
         )
         rm_know = blueprints.render_layer_onboarding_readme(
             "sci-maths", "knowledge", 20, "sci-maths", ["science-base"]
@@ -139,8 +123,9 @@ class TestBlueprints:
         )
 
         # Assert
-        assert "`direct`" in rm_acad and "Spanish (es)" in rm_acad
-        assert "Two-Level Personal" in rm_acad
+        assert "`direct`" in rm_acad and "Spanish (es)" in rm_acad and "SYLLABUS.md" in rm_acad
+        assert "Two-Level Personal" in rm_acad and "Two-Level Personal" in rm_wallet
+        assert "Sovereign Personal Pillar Rules" in rm_wallet and "SYLLABUS.md" not in rm_wallet
         assert "Epistemic Knowledge & Spec Atlas" in rm_know
         assert "Knowledge Twin" in rm_corp
         assert "Roster, Surface Bindings & Child Topology" in rm_squad and "`none`" in rm_squad

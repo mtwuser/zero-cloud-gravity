@@ -158,6 +158,18 @@ class TestLifecycle:
 
         # Install custom plugin from parent, activate (with mocked browser), switch-env,
         # healthcheck, deactivate, teardown, and uninstall
+        bad_parent = tmp_path / "bad-corp-iso"
+        scaffolder.scaffold_template_pack(
+            bad_parent, template_name="bad-cockpit", kind="plugin-stack"
+        )
+        (bad_parent / "templates/bad-cockpit/skills/bad-sk").mkdir(parents=True)
+        (bad_parent / "templates/bad-cockpit/skills/bad-sk/SKILL.md").write_text(
+            "---\nname: bad-sk\ndescription: Bad\u202e\n---\n# Hazard\n", "utf-8"
+        )
+        with pytest.raises(ValueError, match="SKILL_SECURITY_VIOLATION"):
+            lifecycle.manage_plugin_service(
+                ws, action="install", plugin_id="bad-cockpit", parent_dir=bad_parent
+            )
         lifecycle.manage_plugin_service(
             ws, action="install", plugin_id="ops-cockpit", parent_dir=parent
         )
@@ -176,7 +188,7 @@ class TestLifecycle:
             ),
             patch("zcg.cockpit.lifecycle.subprocess.Popen") as popen_mock,
         ):
-            act_res = lifecycle.manage_plugin_service(ws, action="activate")
+            act_res = lifecycle.manage_plugin_service(ws, action="activate", actor_email="")
         popen_mock.assert_not_called()
         assert act_res["services"][0]["status"] == "active"
         assert act_res["services"][0]["intranet_topology"][

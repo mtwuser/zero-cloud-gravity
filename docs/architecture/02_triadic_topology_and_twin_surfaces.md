@@ -4,20 +4,21 @@ epistemic_grade: E3
 
 # Architecture 02 — Triadic Topology, Subtrees & Private-Public Twin Surfaces (`src/zcg/topology/`)
 
-> **Normative Specification — Subsystem 2 (`src/zcg/topology/{identity,network,subtrees}.py`)**
+> **Normative Specification — Subsystem 2 (`src/zcg/topology/{identity,network,posture,subtrees}.py`)**
 >
-> This specification defines filesystem path containment (`PATH_CONTAINMENT_VIOLATION`), the triadic **`Node × Layer × Network`** topological model, `1-hop` upward/downward/lateral connection discovery, `Private <-> Public` twin attestation (`root_0_public_approved`), 3-stage `knowledge` stewardship with strict sibling isolation, and `layers/*` subtree synchronization in `src/zcg/topology/`.
+> This specification defines filesystem path containment (`PATH_CONTAINMENT_VIOLATION`), the triadic **`Node × Layer × Network`** topological model, setup `--purpose` archetypes, `sovereign` vs. `managed` governance posture (including the `R3`-isolated `wallet` personal pillar), `SurfaceOriginResolver`, `1-hop` upward/downward/lateral connection discovery, `Private <-> Public` twin attestation (`root_0_public_approved`), 3-stage `knowledge` stewardship with strict sibling isolation, and `layers/*` subtree synchronization in `src/zcg/topology/`.
 
 ---
 
 ## 1. `1:1:1` Source $\leftrightarrow$ Unit Test $\leftrightarrow$ Responsibility Matrix (`src/zcg/topology/`)
 
-All three modules in `src/zcg/topology/` depend exclusively on `src/zcg/core/` and enforce strict workspace path containment:
+All four modules in `src/zcg/topology/` depend exclusively on `src/zcg/core/` and enforce strict workspace path containment:
 
 | Implementation Module | Isolated `1:1` Unit Suite | Primary Symbols & Normative Scope |
 | :--- | :--- | :--- |
 | [src/zcg/topology/identity.py](../../src/zcg/topology/identity.py) | [tests/unit/zcg/topology/test_identity.py](../../tests/unit/zcg/topology/test_identity.py) | `ensure_contained_path` (`PATH_CONTAINMENT_VIOLATION`), `resolve_layer_entity_identity` (`operating_state`, `mcp_operating_mode`, `visibility_scope`, `private_public_twin`, `can_expose_to_oss`), `classify_inter_layer_relationship` (`5` MCP communication modes), and `resolve_knowledge_mount_endpoints` (`3`-tier resolution cascade). |
 | [src/zcg/topology/network.py](../../src/zcg/topology/network.py) | [tests/unit/zcg/topology/test_network.py](../../tests/unit/zcg/topology/test_network.py) | `discover_network_topology` (`own_network_*`, `root_composite_*`, `upward_governor`, `downward_governed_nodes`, `lateral_peers`, `knowledge_nodes`, `linked_nodes`, and strict `public-community` sibling isolation). |
+| [src/zcg/topology/posture.py](../../src/zcg/topology/posture.py) | [tests/unit/zcg/topology/test_posture.py](../../tests/unit/zcg/topology/test_posture.py) | `resolve_purpose_archetype` (`6` setup `--purpose` archetypes), `resolve_governance_posture` (`sovereign` vs. `managed`, 4-pillar personal constellation & `wallet` `R3` airlock), `resolve_surface_origin` (`loopback \| intranet-gateway \| cloud-ephemeral`), `open_parent_source`, and repository-name-agnostic `inspect_remote_node_manifest`. |
 | [src/zcg/topology/subtrees.py](../../src/zcg/topology/subtrees.py) | [tests/unit/zcg/topology/test_subtrees.py](../../tests/unit/zcg/topology/test_subtrees.py) | `inspect_mounted_children_drifts`, `sync_mounted_children_into_parent` (`layers/<name>/` rollup & `[x]` task completion reconciliation). |
 
 ---
@@ -65,7 +66,7 @@ Public, organizational, and personal `knowledge` twins (`gov-*`, `sci-*`, `geo-*
 | Stewardship Stage | Endpoint Resolution Cascade (`resolve_knowledge_mount_endpoints`) | Sibling Isolation & Network Discovery Contract (`discover_network_topology`) |
 | :--- | :--- | :--- |
 | **`1. private-incubation`** | `local-mcp-clone` (`layers/<id>/` or sibling clone) $\rightarrow$ `private-mirror-remote` | Internal organizational corpus (e.g., `org-acme` under `governing_root_id: "acme"`); discovered as part of the governing `Root 0`'s composite network (`root_composite_nodes_count`). |
-| **`2. public-community`** | `local-mcp-clone` $\rightarrow$ `private-mirror-remote` $\rightarrow$ `public-canonical-remote` (`https://github.com/mtwuser/<id>.git`) | Community-stewarded open corpus (`DEFAULT_PUBLIC_KNOWLEDGE_REGISTRY`: `gov-es`, `geo-es`, `sci-maths`, `sci-physics`, `sci-biology`, `sci-engineering`). **Strictly isolated from sibling `public-community` clones in `~/Projects/`**: `discover_network_topology` never auto-links sibling `public-community` repositories (`own_network_nodes_count: 1`, `lateral_peers: []`) unless explicitly declared in `mounted_layers`. |
+| **`2. public-community`** | `local-mcp-clone` $\rightarrow$ `private-mirror-remote` $\rightarrow$ `public-canonical-remote` (`https://github.com/mtwuser/<id>.git`) | Community-stewarded open corpus (`DEFAULT_PUBLIC_KNOWLEDGE_REGISTRY`: `gov-es`, `geo-es`, `sci-maths`, `sci-physics`, `sci-biology`, `sci-engineering`, `sci-economic`). **Strictly isolated from sibling `public-community` clones in `~/Projects/`**: `discover_network_topology` never auto-links sibling `public-community` repositories (`own_network_nodes_count: 1`, `lateral_peers: []`) unless explicitly declared in `mounted_layers`. |
 | **`3. sovereign-authority`** | `local-mcp-clone` $\rightarrow$ `canonical_authority_url` (official ministry / standards body) | Official statutory or scientific consortium repository (`canonical_authority_verified: True`). |
 
 ---
@@ -78,3 +79,16 @@ Public, organizational, and personal `knowledge` twins (`gov-*`, `sci-*`, `geo-*
 3. **`external-root0-to-oss-sanitized`**: Anonymized template/rule promotion from a `Root 0` (`can_expose_to_oss: True`) to Open Source (`zero-cloud-gravity`).
 4. **`external-peer-root0-pr-and-readonly-mcp`**: Horizontal collaboration between two sovereign `Root 0` entities via `.agents/proposals/from-peer-root-<id>/`.
 5. **`blocked-must-route-via-governing-root0`**: Blocks direct external promotion from subordinate internal tiers (`CROSS_TIER_PROMOTION_BYPASS`).
+
+---
+
+## 6. Setup `--purpose` Archetypes, `Sovereign` vs. `Managed` Posture & `SurfaceOriginResolver`
+
+`src/zcg/topology/posture.py` resolves purpose-driven setup defaults, workspace autonomy boundaries, canonical browser origins, and repository-name-agnostic remote `zcg-node-v1` manifests:
+
+| Contract Function | Input Axes & Guards | Normative Output & Security Invariants |
+| :--- | :--- | :--- |
+| **`resolve_purpose_archetype`** | `purpose` $\in$ `{individual-sovereign, enterprise-network, public-institution, knowledge-commons, standalone-project, b2b-consortium}` $\times$ optional `layer_role` | Resolves `(default_role, default_entity_kind, default_governance_posture, default_templates)` without name heuristics; flips subordinate corporate/public tiers (`department`, `domain-policy`, `squad`, `project`) to `managed`. |
+| **`resolve_governance_posture`** | `(workspace_dir, manifest, parent_dir)` | Classifies `governance_posture` (`sovereign` vs. `managed`), `workspace_isolation_ok` (flags corporate `managed` clones placed inside an `individual` `Root 0` tree), and the 4-pillar personal constellation (`pc`, `tutor`, `work`, `wallet` where `wallet` enforces `default_surface_ring: "R3"`, `allow_external_peer_links: False`, `allow_cross_workspace_1hop_read: False`, and `settlement_airlock_via: "work"`). |
+| **`resolve_surface_origin`** | `(manifest, active_env, port, forwarded_proto, forwarded_host, env_vars)` | Resolves `loopback` (`http://<env>.<slug>.localhost:<port>` for local / Antigravity `Remote Control`), `intranet-gateway` (`https://<env>.<canonical_domain>`), or `cloud-ephemeral` (`ZCG_SURFACE_PUBLIC_ORIGIN` / validated `forwarded_host` for Antigravity `Remote Agents` & Cloud Run), rejecting header-injection hosts (`INVALID_SURFACE_ORIGIN_HOST`). |
+| **`open_parent_source` & `inspect_remote_node_manifest`** | `(source_ref, branch, timeout_seconds)` | Opens or inspects `system/zcg-node.json` from a local directory or shallow `git clone --depth 1` in an auto-cleaned ephemeral `TemporaryDirectory` (`GIT_TERMINAL_PROMPT=0`) for cascading `--from-parent` bootstrap and `zcg inspect-remote`, rejecting leading-dash option injection (`UNSAFE_GIT_REMOTE_REF`). |

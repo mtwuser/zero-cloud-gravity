@@ -29,13 +29,18 @@ from zcg.core.constants import (
     VALID_PLUGIN_SERVICE_ACTIONS,
     VALID_RUNTIME_PERSISTENCE_MODES,
 )  # fmt: skip
-from zcg.core.manifests import load_node_manifest, resolve_template_dir
+from zcg.core.manifests import iter_layer_template_dirs, load_node_manifest, resolve_template_dir
+from zcg.governance.antigravity_sync import sync_workspace_antigravity_surfaces
 from zcg.governance.authority import resolve_git_user_email
+from zcg.governance.capabilities import enforce_capability_gate, lint_skills_security
 from zcg.governance.consensus import evaluate_environment_promotion
 from zcg.governance.scaffolder import apply_templates_to_project
 
 SURFACE_RENDER_ACTIONS: tuple[str, ...] = (
     "install", "provision", "deploy", "activate", "restart", "deactivate", "switch-env",
+)  # fmt: skip
+CAPABILITY_GATED_PLUGIN_ACTIONS: tuple[str, ...] = (
+    "install", "uninstall", "activate", "deactivate", "deploy",
 )  # fmt: skip
 
 
@@ -206,6 +211,16 @@ def manage_plugin_service(
     ]
     services_out: list[dict[str, Any]] = []
     for tpl_id, tpl_dir, rs, tj_doc in resolved_plugins:
+        if clean_act in CAPABILITY_GATED_PLUGIN_ACTIONS:
+            enforce_capability_gate(
+                ws, operation=clean_act, actor_email=actor_email,
+                parent_dir=parent_dir, plugin_id=tpl_id, dry_run=dry_run,
+            )  # fmt: skip
+        if clean_act == "install" and tpl_dir != ws:
+            sec_res = lint_skills_security(ws, target_dir=tpl_dir, parent_dir=parent_dir)
+            if not sec_res["passed"]:
+                first_rule = sec_res["violations"][0]["rule"]
+                raise ValueError(f"SKILL_SECURITY_VIOLATION ({tpl_id}): {first_rule}")
         rt_rel, rt_file = f".agents/runtime/{tpl_id}.json", ws / f".agents/runtime/{tpl_id}.json"
         intranet_topo = resolve_node_intranet_topology(
             manifest, layer_id=layer_id, active_env=clean_env, workspace_dir=ws
@@ -320,15 +335,37 @@ def manage_plugin_service(
         )  # fmt: skip
         state_payload = {**base_payload, **d_state}
         disk_payload = (
-            {**state_payload, "status": "healthy", "last_action": "provision"}
+            {
+                **state_payload,
+                "status": "healthy",
+                "last_action": "provision",
+                "plugin_disabled": True,
+            }
             if clean_act == "deactivate" and surfaces_ok
-            else state_payload
+            else {**state_payload, "plugin_disabled": clean_act == "deactivate"}
         )
         if not dry_run and (clean_act != "healthcheck" or not rt_file.is_file()):
             rt_file.parent.mkdir(parents=True, exist_ok=True)
             rt_txt = json.dumps(disk_payload, indent=2, ensure_ascii=False) + "\n"
             rt_file.write_text(rt_txt, "utf-8")
         services_out.append(state_payload)
+    if not dry_run and clean_act in ("activate", "deactivate", "switch-env") and m_path.is_file():
+        cur_m = load_node_manifest(ws)
+        act_t = [
+            (d.name, d)
+            for t in cur_m.get("default_stack_templates", [])
+            if (d := resolve_template_dir(ws, str(t)) or resolve_template_dir(engine_dir, str(t)))
+        ]
+        known_t = list(
+            {
+                **dict(iter_layer_template_dirs(engine_dir)),
+                **dict(iter_layer_template_dirs(ws)),
+            }.items()
+        )
+        sync_workspace_antigravity_surfaces(
+            ws, active_templates=act_t, known_templates=known_t,
+            manifest=cur_m, parent_dir=parent_dir, active_env=clean_env, dry_run=False,
+        )  # fmt: skip
     return {
         "workspace_dir": str(ws), "layer_id": layer_id, "action": clean_act,
         "environment": clean_env, "persistence_mode": clean_pm,

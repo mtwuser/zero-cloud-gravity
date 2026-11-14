@@ -206,6 +206,10 @@ class TestPromotion:
         (proj / ".agents/skills/good-skill/SKILL.md").write_text(
             '---\nname: good-skill\ndescription: "Valid skill"\n---\n# Good\n', "utf-8"
         )
+        (proj / ".agents/skills/sec-bad").mkdir(parents=True)
+        (proj / ".agents/skills/sec-bad/SKILL.md").write_text(
+            '---\nname: sec-bad\ndescription: "Bad\u202e"\n---\n# Bad\n', "utf-8"
+        )
         (proj / "AGENTS.md").write_text("# Root Agents\n", "utf-8")
         (proj / "big.md").write_text("x" * (AGENTS_MD_MAX_BYTES + 10), "utf-8")
         (proj / "WORKTASK.md").write_text("- [ ] Escalate item\n", "utf-8")
@@ -231,6 +235,13 @@ class TestPromotion:
                 repo,
                 proj,
                 source_rel_path=".agents/skills/bad-name/SKILL.md",
+                actor_email="owner@corp-iso.example",
+            )
+        with pytest.raises(ValueError, match="SKILL_SECURITY_VIOLATION"):
+            promotion.promote_project_asset_to_layer(
+                repo,
+                proj,
+                source_rel_path=".agents/skills/sec-bad/SKILL.md",
                 actor_email="owner@corp-iso.example",
             )
 

@@ -20,10 +20,12 @@ from zcg.core.constants import (
     NODE_MANIFEST_REL_PATH,
     VALID_INTERACTION_LANGUAGES,
 )
-from zcg.core.manifests import load_node_manifest, resolve_template_dir
+from zcg.core.manifests import (
+    load_node_manifest,
+    resolve_template_dir,
+    strip_markdown_frontmatter,
+)
 
-FRONTMATTER_OPEN_LEN: int = 4
-FRONTMATTER_CLOSE_LEN: int = 5
 VALID_GLOBAL_PROFILES: tuple[str, ...] = (
     "universal-base",
     "academic-base",
@@ -53,9 +55,7 @@ PROFILE_TEMPLATE_CHAIN: dict[str, tuple[tuple[str, str], ...]] = {
 
 
 def _strip_frontmatter(markdown_text: str) -> str:
-    text = markdown_text.strip()
-    end_idx = text.find("\n---\n", FRONTMATTER_OPEN_LEN) if text.startswith("---\n") else -1
-    return text[end_idx + FRONTMATTER_CLOSE_LEN :].strip() if end_idx != -1 else text
+    return strip_markdown_frontmatter(markdown_text)
 
 
 def _strip_secondary_header(markdown_text: str) -> str:

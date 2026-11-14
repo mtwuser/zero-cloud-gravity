@@ -137,12 +137,12 @@ When a course project or Master's thesis requires writing production-grade simul
 # Switch between pure & interdisciplinary study tracks inside ~/Projects/alex-tutor:
 cd ~/Projects/alex-tutor
 git checkout specialty/maths-physics
-make consult LAYER=sci-physics               # Query rcap1 L0..L3 capsules (< 20 ms)
+make consult LAYER=sci-physics QUERY="Fourier heat conduction"
 
 # Spawn a dedicated Master's thesis / code repository governed by science-base + software-engineering:
 zcg apply-project ~/Projects/thesis-heat-solver \
   --template science-base,scientific-methodology,software-engineering \
-  --lang es
+  --parent-dir ~/Projects/alex-tutor
 ```
 
 ### 3.3. Dedicated Node Web View (`University Specialty Studio :8786` · `university-specialty-m2-m3`) & Live Capture (`[CAP-03]`)

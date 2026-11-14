@@ -135,6 +135,17 @@ For each candidate, determine the exact target layer and template pack using `.a
 | Materialized lineage file (`layer-<NN>-<layer>.md`) | **Already tracked by `Pillar B` (`layers/<layer>`)** — only promote if modified in the project (`modified_in_project` in `make diff`) |
 | Sovereign node customization (`templates/<layer_id>/rules/<layer_id>.md`, `antigravity/.gemini/config/AGENTS.md` in a layer/knowledge/tutor node, or `.agents/rules/<project>-*.md` in a leaf consumer project) | **`Pillar B/C` (Sovereign to the Node)**: Stays in `<node>/templates/<layer_id>/` (skipped by upstream `make sync` via `skip_id = layer_id` and auto-reconciled from `.agents/rules/<layer_id>.md`) or `<project>/.agents/`, keeping inherited base/stack templates (`universal-base`, `academic-base`, `science-base`, `business-base`, `software-engineering`) pure for `0`-conflict Open-Source upgrades |
 
+### §2.4 4-Pillar Ecosystem Currency & Native Reuse Radar
+
+Evaluate every upward promotion or self-enrichment pass against the **4-Pillar Ecosystem Currency Radar** so shared templates adopt native platform capabilities and retire custom workarounds:
+
+| Ecosystem Pillar | Native Capabilities to Adopt & Keep Current Across Shared Templates | Target Shared Surface |
+| :--- | :--- | :--- |
+| **1. Google Antigravity 2.0** | Native `.agents/plugins/<pack>/plugin.json` + `.agents/plugins.json`, `.agents/skills.json` `"entries"`, frontmatter-free standalone `AGENTS.md` (`strip_markdown_frontmatter`), `.agents/antigravity-permissions.json`, and `5` lifecycle hooks (`SessionStart` + `Stop` `continuationActive`). | `antigravity/.gemini/config/*`, `src/zcg/governance/antigravity_sync.py` |
+| **2. GitHub Platform & MCP Registry** | Root `server.json` (`2025-12-11` MCP Registry schema) + `README.md` `<!-- mcp-name: ... -->` marker, `.github/dependabot.yml` (`github-actions` + package ecosystem), and hardened GitHub Actions workflows. | `server.json`, `.github/dependabot.yml`, `templates/context-stack/software-engineering/` |
+| **3. Google Cloud, Gemini & LiteRT** | Current `google-genai` SDK conventions, least-privilege Cloud Run / BigQuery / IAM templates, and strictly opt-in local `LiteRT` edge-model rules. | `templates/framework-stack/google-cloud-iac/`, `science-base` |
+| **4. Python 3.14+ & Open Web/Crypto Standards** | `PEP 703/649/695` typing, C-backed stdlib (`hashlib.file_digest`), Native ASGI, `RFC 6761` `*.localhost` origins, and WCAG 2.2 AA zero-build UI tokens. | `templates/context-stack/software-engineering/rules/software-engineering.md` |
+
 > [!NOTE]
 > **Strict Boundary Between `/enrich` (Agent Meta-Governance) and `/governance` (Operational & Business Layer Governance)**:
 > - **`/enrich`** governs **only** Antigravity agent configuration assets (`.agents/rules/*.md`, `AGENTS.md`, `.agents/skills/*/SKILL.md`, and `templates/**`).

@@ -34,7 +34,7 @@ flowchart LR
     Z2["Zone 2: Contributor / Dev Clone\n~/Projects/contrib-zero-cloud-gravity\n(.agents/ gitignored · WORK*.md & roadmaps/\nstripped on upstream export)"]
     Z3["Zone 3: Public Open-Source Upstream\nmtwuser/zero-cloud-gravity\n(Sterile 1:1:1 code/docs/templates ·\n8/8 GitHub Actions CI gate)"]
     Z1 -.->|"Never exports upward"| Z2
-    Z2 -->|"Fork PR or make publish-oss"| Z3
+    Z2 -->|"Fork PR or make oss-publish"| Z3
 ```
 
 The table below details the security boundary enforced at each zone:
@@ -42,7 +42,7 @@ The table below details the security boundary enforced at each zone:
 | Security Zone | Local Path Pattern | What Lives Here | Outbound Isolation Guarantee |
 | :--- | :--- | :--- | :--- |
 | **Zone 1 — `$HOME` Runtime & Personal `Root 0`** | `~/zero-cloud-gravity` & `~/<persona>-pc` | Daily stowed `~/.gemini/config/` runtime, personal `bash/` & `git/` profiles, and local OAuth/SSH state. | Hard-blocked from public export (`entity_kind != "open-source"` triggers `OSS_PERSONAL_REPO_PUBLISH_BLOCKED`). |
-| **Zone 2 — Isolated Contributor / `dev` Workspace** | `~/Projects/contrib-zero-cloud-gravity` or `ZCG_DEV_REPO_DIR` | Active `feat/*` or `fix/*` branches with `science-base` + `software-engineering` projected in `.agents/rules/`. | `.agents/*` (`SESSION.md`, local telemetry) is gitignored; `make publish-oss` exports via `git archive HEAD` and strips `WORK*.md`, `BACKLOG.md`, and `roadmaps/`. |
+| **Zone 2 — Isolated Contributor / `dev` Workspace** | `~/Projects/contrib-zero-cloud-gravity` or `ZCG_DEV_REPO_DIR` | Active `feat/*` or `fix/*` branches with `science-base` + `software-engineering` projected in `.agents/rules/` and grouped monthly `.github/dependabot.yml` radar. | `.agents/*` (`SESSION.md`, local telemetry) is gitignored; `make oss-publish` exports via `git archive HEAD` and strips `WORK*.md`, `BACKLOG.md`, `roadmaps/`, and `.github/dependabot.yml`. |
 | **Zone 3 — Public Open-Source Repository** | `github.com/mtwuser/zero-cloud-gravity` | Pure Python 3.14 engine, `16` templates, `17` skills, and `1:1:1` docs/tests. | Protected `master` branch enforcing linear history, Pull Request review for external contributors, and `8/8` GitHub Actions verification ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). |
 
 ### 2.2. Path A — Standard Community Contributor (GitHub Fork -> Branch -> Pull Request)
@@ -72,8 +72,8 @@ Once opened using [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMP
 Organizations operating a private contributor clone (`dev-zero-cloud-gravity`) that contains internal trackers (`WORKTASK.md`, `WORKROAD.md`, `BACKLOG.md`, `roadmaps/`) can export a sterile, tracker-free branch directly to **their own GitHub fork** before opening a Pull Request:
 
 ```bash
-# Strips WORK*.md, BACKLOG.md, and roadmaps/ in an ephemeral directory and pushes a clean 1-commit branch to your fork:
-make publish-oss CREATE_PR=1 \
+# Strips WORK*.md, BACKLOG.md, roadmaps/, and .github/dependabot.yml in an ephemeral directory and pushes a clean 1-commit branch to your fork:
+make oss-publish CREATE_PR=1 \
   CONTRIB_BRANCH=contrib/short-topic-slug \
   OSS_REMOTE_URL=git@github.com:<your-org-or-user>/zero-cloud-gravity.git
 ```
@@ -82,7 +82,7 @@ Contributors may remain `Anonymous Organization (default)` or request named attr
 
 ### 2.4. Path C — Core Maintainer Sovereign Release Flow (`Private CI -> Public Snapshot`)
 
-Strictly inside private `dev-<repo>` clones (`visibility_scope: "private:open-source:dev"`, enforced by `[OSS_DEV_ONLY_BLOCKED]` so `$HOME` appliances, forks, and organizational nodes are never affected), maintainers operate flexibly: either **directly on `master`** for agile refinements (`git push origin master` triggers private GitHub Actions CI, followed by `zcg-sync --sync`), or via **opt-in branch pre-validation** (`make push-branch` to validate a `feature/*` or `fix/*` branch on private CI without touching `master` $\rightarrow$ `make promote-master` to fast-forward `master`, delete the temporary branch, and sync `$HOME`). When cutting a SemVer release (`/release`), `make publish-oss RELEASE_VERSION=X.Y.Z` exports a single tracker-free snapshot commit and annotated `vX.Y.Z` tag onto public `master`.
+Strictly inside private `dev-<repo>` clones (`visibility_scope: "private:open-source:dev"`, isolated in [`mk/oss-contrib.mk`](mk/oss-contrib.mk) + `zcg oss` and enforced by `[OSS_DEV_ONLY_BLOCKED]` so `$HOME` appliances, forks, and organizational nodes are never affected), maintainers operate flexibly: either **directly on `master`** for agile refinements (`git push origin master` triggers private GitHub Actions CI, followed by `zcg-sync --sync`), or via **opt-in branch pre-validation** (`make oss-push-branch` to validate a `feature/*` or `fix/*` branch on private CI without touching `master` $\rightarrow$ `make oss-promote-master` to fast-forward `master`, delete the temporary branch, and sync `$HOME`). When cutting a SemVer release (`/release`), `make oss-publish RELEASE_VERSION=X.Y.Z` exports a single tracker-free snapshot commit and annotated `vX.Y.Z` tag onto public `master`.
 
 ---
 
@@ -103,5 +103,5 @@ Strictly inside private `dev-<repo>` clones (`visibility_scope: "private:open-so
 ## 4. Commit & Release Conventions
 
 - **Conventional Commits**: Use atomic [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`, `build:`).
-- **Changelog & SemVer Discipline**: Record iterative changes under `## [Unreleased]` in [`CHANGELOG.md`](CHANGELOG.md) without bumping [`VERSION`](VERSION) during feature commits; promote `## [Unreleased]` and synchronize `VERSION`, `pyproject.toml`, and `README.md` in lockstep exclusively when cutting a verified SemVer release (`/release`).
+- **Changelog & SemVer Discipline**: Record iterative changes under `## [Unreleased]` in [`CHANGELOG.md`](CHANGELOG.md) without bumping [`VERSION`](VERSION) during feature commits; promote `## [Unreleased]` and synchronize `VERSION`, `pyproject.toml`, `server.json`, and `README.md` in lockstep exclusively when cutting a verified SemVer release (`/release`).
 - **Security Vulnerabilities**: Never open public issues for path-containment, capsule-HMAC, or sandbox vulnerabilities; follow [`SECURITY.md`](SECURITY.md) to report privately via GitHub Security Advisories.

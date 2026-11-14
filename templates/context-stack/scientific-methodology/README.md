@@ -1,6 +1,6 @@
 # `scientific-methodology` (`context-stack`) — Tier 2 Formal Epistemology & Corpus Curation
 
-> Tier 2 domain specialization extending `science-base` for formal proof/citation trace-chains, reproducible benchmarks, and sovereign knowledge repositories (`osa-*`).
+> Tier 2 domain specialization extending `science-base` for formal proof/citation trace-chains, reproducible benchmarks, and sovereign knowledge repositories (`sci-*`, `gov-*`, `geo-*`, `org-*`).
 
 ---
 

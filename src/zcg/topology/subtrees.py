@@ -13,7 +13,6 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from zcg.core.blueprints import is_makefile_outdated, render_layer_makefile
 from zcg.core.constants import (
     NODE_MANIFEST_CONTRACT_REV,
     NODE_MANIFEST_REL_PATH,
@@ -27,6 +26,7 @@ from zcg.core.manifests import (
     sha256_file,
     stamp_schema_rev,
 )
+from zcg.core.surface_composer import is_makefile_outdated, render_layer_makefile
 
 
 def is_git_historical_blob(src_tpl: Path, dest_rf: Path) -> bool:
@@ -122,9 +122,11 @@ def sync_mounted_children_into_parent(
         cm = json.loads(cm_f.read_text(encoding="utf-8")) if cm_f.is_file() else {}
         cid = str(cm.get("layer_id") or cname)
         crole = str(cm.get("layer_role") or "department")
-        if is_makefile_outdated(mdir, crole):
+        ctpls = [str(x) for x in cm.get("default_stack_templates", [])]
+        if is_makefile_outdated(mdir, crole, active_templates=ctpls or None):
             (mdir / "Makefile").write_text(
-                render_layer_makefile(cid, crole, ws, REPO_DIR), encoding="utf-8"
+                render_layer_makefile(cid, crole, ws, REPO_DIR, active_templates=ctpls),
+                encoding="utf-8",
             )
         for tname, ctdir in iter_layer_template_dirs(mdir):
             stamp_schema_rev(ctdir / "template.json", TEMPLATE_MANIFEST_CONTRACT_REV)

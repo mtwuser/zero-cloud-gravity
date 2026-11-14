@@ -60,6 +60,12 @@ class TestDispatcher:
                 {"passed": False},
                 None,
             )
+        with patch("zcg.cli.dispatcher.dispatch_oss", return_value={"oss": 1}):
+            assert dispatcher.dispatch_zcg_cli(ws, True, "oss", ["push-branch"]) == (
+                0,
+                {"oss": 1},
+                None,
+            )
 
         code_unk, p_unk, err_unk = dispatcher.dispatch_zcg_cli(ws, False, "no-such-cmd", [])
         assert code_unk == 1 and p_unk is None and "Unknown subcommand" in str(err_unk)

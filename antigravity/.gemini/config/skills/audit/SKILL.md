@@ -98,6 +98,20 @@ Execute these 3 discovery and probe steps across the target radius (`100%` of re
    - **Probe D — `1:1:1` Spec Table Completeness**: Verify that every specification in `docs/architecture/01..NN` (`< 465` lines) contains an explicit `1:1:1` traceability table and that every referenced source and test file exists on disk.
    - **Probe E — Relational Cluster Mass ($M_{\text{cluster}}$) & Cross-Module Coupling Graph**: Parse the intra-package AST import graph (excluding declarative `constants.py` / `catalogs.py`) to compute each module's individual load $L(f)$, its coupled neighbor set $G$, its **Relational Cluster Mass $M_{\text{cluster}}(G) = L(f) + \sum_{g \in G} L(g)$**, and its cross-module `_private` symbol imports. Flag a **`[CLUSTER_CONSOLIDATION_CANDIDATE]`** whenever: (i) a peer `*_engine.py` module imports `_private` helpers from another `*_engine.py` module (instead of `*_helpers.py`), or (ii) $\ge 2$ coupled modules in $G$ both exceed the **Soft Compression Threshold ($L(f) \ge 385$ lines)** with $M_{\text{cluster}}(G) \ge 1{,}200$ lines, signaling a latent sub-domain that should be consolidated into a dedicated `1:1:1` module.
 
+### 3.3. 3-Lens Audit Protocol & 4-Pillar Ecosystem Currency Radar
+
+Evaluate every repository surface simultaneously through **3 Complementary Analytical Lenses** and cross-check native platform reuse against the **4-Pillar Ecosystem Currency Radar**:
+
+| Analytical Lens / Ecosystem Pillar | Invariant & Native Platform Currency Verified | Primary Surface & Contract Targets |
+| :--- | :--- | :--- |
+| **Lens 1 — Structural & Taxonomic Symmetry** | Orthogonal `X × Y` composition (`0` flat case heuristics), `1:1:1` traceability, `< 465`-line cap, $M_{\text{cluster}} < 1{,}200$, and `0` coexisting generational layers. | `docs/architecture/*.md`, `src/**`, `tests/unit/**`, `templates/**/template.json` |
+| **Lens 2 — Capability, Privacy & Supply-Chain Security** | Ring `R0..R3` least privilege, `PATH_CONTAINMENT_VIOLATION`, airlocked `wallet` / `R3` posture, zero secret/private-token leaks, and automated dependency hygiene. | `.agents/antigravity-permissions.json`, `system/zcg-node.json`, `.github/dependabot.yml` |
+| **Lens 3 — Human Cognitive Ergonomics** | `M1..M4` progressive disclosure, zero-noise `SessionStart` orientation, positional `Daily Conscious Horizon` node grouping, and `4`-line turn compass. | `README.md`, `docs/guides/*.md`, `orientation_ui.py`, `session_start_orientation.py` |
+| **Pillar 1 — Google Antigravity 2.0** | Native `.agents/plugins/<pack>/plugin.json` + `.agents/plugins.json`, `.agents/skills.json` `"entries"`, frontmatter-free `AGENTS.md`, and `5` hooks (`continuationActive` guard). | `antigravity/.gemini/config/hooks.json`, `antigravity_sync.py`, `.agents/*` |
+| **Pillar 2 — GitHub Platform & MCP Registry** | Official `2025-12-11` MCP Registry `server.json` in lockstep with `VERSION`, `<!-- mcp-name: ... -->` ownership marker in `README.md`, and weekly `dependabot.yml`. | `server.json`, `README.md`, `.github/dependabot.yml`, `.github/workflows/*.yml` |
+| **Pillar 3 — Google Cloud, Gemini & LiteRT** | Current `google-genai` SDK idioms, least-privilege IAM/Cloud Run/BigQuery IaC rules, and strictly opt-in local `LiteRT` / hardware boundaries. | `templates/framework-stack/google-cloud-iac/`, `docs/architecture/*` |
+| **Pillar 4 — Python 3.14+ & Open Web/Crypto Standards** | `PEP 703/649/695` typing, Native ASGI (`0` third-party web lock-in), `RFC 6761` `*.localhost` origins, `Ed25519` / `ChaCha20-Poly1305` stdlib/standard primitives, and WCAG 2.2 AA. | `pyproject.toml`, `src/zcg/web/*`, `src/zcg/cockpit/*` |
+
 ---
 
 ## 4. Phase 1 — Pass 1: Conceptual Coherence, Symmetry, Human Persona Journeys & 4-Perspective Lifecycle Matrix

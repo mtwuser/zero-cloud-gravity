@@ -1,0 +1,37 @@
+title: "[Q&A]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask an architectural or operational question about **ZeroCloudGravity (`zero-cloud-gravity`)**. Please use ISO-neutral examples (`corp-iso-root`, `squad-iso`, `alex-pc`) and omit credentials, OAuth tokens, or private paths.
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: Relevant Subsystem or Stack Plane
+      description: Select the primary ZeroCloudGravity area related to your question.
+      options:
+        - "Ubuntu 26.04 LTS Workstation Sync, GNU Stow & Antigravity Installer (scripts/)"
+        - "Sovereign Node Manifests, N-Layer Topology & Links (system/zcg-node.json, src/zcg/{core,topology,governance}/)"
+        - "Native Python 3.14 ASGI Web Engine & Node Cockpits (src/zcg/{web,cockpit}/)"
+        - "Contextual MCP Server, rcap1 Merkle Capsules & Ephemeral Bots (src/zcg/{capsules,ephemeral,mcp}/)"
+        - "Declarative Stack Packs (templates/{human,context,framework,plugin}-stack/)"
+        - "Public Knowledge Corpora & Epistemic Rigor (gov-*, geo-*, sci-*, org-*)"
+        - "General Architecture & Horizon Roadmap"
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question & Architectural Context
+      description: Describe what you are trying to configure, verify, or understand, referencing any relevant guide or CLI command.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS, Python & Antigravity Surface (Optional)
+      description: Operating system, Python 3.14 version, ZeroCloudGravity version, and active Google Antigravity surface.
+      placeholder: "Ubuntu 26.04 LTS, Python 3.14, ZeroCloudGravity v1.0.1, Antigravity 2.0"
+    validations:
+      required: false

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.0.1) — Read-Only Ubuntu Workstation Drift Audit
+# ZeroCloudGravity (v1.1.0) — Read-Only Ubuntu Workstation Drift Audit
 # Usage: ./scripts/workstation-audit.sh [<workstation-dir>] [--clean] [--version] [--help]
 
 set -euo pipefail
@@ -174,7 +174,7 @@ if [[ -f "${SYSTEM_DIR}/packages-manual.txt" ]]; then
   if [[ -n "${ONLY_SYSTEM}" ]]; then
     HAS_DRIFT=true
     COUNT="$(echo "${ONLY_SYSTEM}" | wc -l)"
-    warn "${COUNT} installed but not in manifest (run 'make backup-system' to capture):"
+    warn "${COUNT} installed but not in manifest (run 'make workstation-backup' to capture):"
     echo "${ONLY_SYSTEM}" | head -20 | while IFS= read -r pkg; do item "${GREEN}+ ${pkg}${NC}"; done
   fi
   if [[ -n "${ONLY_MANIFEST}" ]]; then

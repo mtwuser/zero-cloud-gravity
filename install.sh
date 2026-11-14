@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity v1.0.0 — Sovereign Zero-Cloud Antigravity Node Bootstrapper
+# ZeroCloudGravity (v1.1.0) — Sovereign Zero-Cloud Antigravity Node Bootstrapper
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.0.1) — Deterministic 8-Stage Repository Verification Gate
+# ZeroCloudGravity (v1.1.0) — Deterministic 8-Stage Repository Verification Gate
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -40,8 +40,8 @@ echo "=== ZeroCloudGravity Repository Verification (v${VERSION_STR}) ==="
 echo ""
 echo "[1/8] Open-Source Metadata, SemVer & Relative Markdown Links"
 for req in VERSION LICENSE README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md \
-  CODE_OF_CONDUCT.md ACCESSIBILITY.md Makefile Dockerfile .dockerignore install.sh \
-  pyproject.toml requirements.txt requirements-dev.txt system/zcg-node.json \
+  CODE_OF_CONDUCT.md ACCESSIBILITY.md Makefile mk/oss-contrib.mk Dockerfile .dockerignore install.sh \
+  pyproject.toml requirements.txt requirements-dev.txt server.json system/zcg-node.json \
   docs/README.md \
   docs/guides/01_workstation_and_global_profiles.md \
   docs/guides/02_sovereign_nodes_and_federated_workflows.md \
@@ -59,11 +59,19 @@ for req in VERSION LICENSE README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md \
   .github/PULL_REQUEST_TEMPLATE.md \
   .github/ISSUE_TEMPLATE/bug_report.yml \
   .github/ISSUE_TEMPLATE/feature_request.yml \
-  .github/ISSUE_TEMPLATE/config.yml; do
+  .github/ISSUE_TEMPLATE/config.yml \
+  .github/DISCUSSION_TEMPLATE/q-a.yml \
+  .github/DISCUSSION_TEMPLATE/ideas.yml; do
   [[ -f "${REPO_DIR}/${req}" ]] || { echo "Missing required file: ${req}" >&2; exit 1; }
 done
 [[ "${VERSION_STR}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid SemVer: ${VERSION_STR}" >&2; exit 1; }
-echo "  OK: VERSION (${VERSION_STR}), OSS metadata, and 3-tier docs present"
+"${PYTHON}" -c "
+import json
+from pathlib import Path
+srv = json.loads(Path('server.json').read_text('utf-8'))
+assert srv['version'] == '${VERSION_STR}' and srv['packages'][0]['version'] == '${VERSION_STR}'
+"
+echo "  OK: VERSION (${VERSION_STR}), server.json, OSS metadata, and 3-tier docs present"
 
 echo ""
 echo "[2/8] Shell Scripts Syntax (bash -n), Executable Bits & ShellCheck"
@@ -75,6 +83,7 @@ SH_ENTRYPOINTS=(
   scripts/workstation-backup.sh
   scripts/workstation-audit.sh
   scripts/workstation-restore.sh
+  scripts/stage-showcase.sh
 )
 for sh_file in "${SH_ENTRYPOINTS[@]}"; do
   [[ -x "${REPO_DIR}/${sh_file}" ]] || { echo "Not executable: ${sh_file}" >&2; exit 1; }
@@ -111,7 +120,7 @@ from pathlib import Path
 root = Path.cwd()
 cfg_dir = root / "antigravity/.gemini/config"
 cfg = json.loads((cfg_dir / "hooks.json").read_text("utf-8"))
-expected = {"PreToolUse", "PostToolUse", "PostInvocation", "Stop"}
+expected = {"SessionStart", "PreToolUse", "PostToolUse", "PostInvocation", "Stop"}
 seen_events, cmd_count = set(), 0
 for group_map in cfg.values():
     for evt_name, entries in group_map.items():
@@ -121,9 +130,9 @@ for group_map in cfg.values():
                 sp = (cfg_dir / str(hk["command"]).split()[-1]).resolve()
                 assert sp.is_file() and os.access(sp, os.X_OK), f"Invalid hook script: {sp}"
                 cmd_count += 1
-assert seen_events == expected and cmd_count == 4
+assert seen_events == expected and cmd_count == 5
 '
-echo "  OK: Verified 4 Antigravity lifecycle hooks and executable scripts"
+echo "  OK: Verified 5 Antigravity lifecycle hooks and executable scripts"
 
 echo ""
 echo "[5/8] AGENTS.md Token Budget & Google Ecosystem Purity Gate"
@@ -146,6 +155,12 @@ for sk in skills:
     assert len(sk.read_text("utf-8").splitlines()) < 465
 '
 echo "  OK: All 17 SKILL.md files verified (8 global + 9 stack)"
+if [[ -x "${ZCG}" ]]; then
+  "${ZCG}" lint-skills "${REPO_DIR}" >/dev/null
+else
+  PYTHONPATH=src "${PYTHON}" -m zcg.cli.dispatcher lint-skills "${REPO_DIR}" >/dev/null
+fi
+echo "  OK: zcg lint-skills security scan passed (0 Unicode, pipe-to-shell, egress, or path issues)"
 
 echo ""
 echo "[7/8] Node Manifest (zcg-node-v1), 16 Templates (zcg-template-v1) & zcg-mcp Self-Test"

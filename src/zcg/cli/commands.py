@@ -52,31 +52,26 @@ def dispatch_c2(repo_dir: Path, dry_run: bool, subcmd: str, rest: list[str]) -> 
     if subcmd in ("bootstrap", "bootstrap-workspace"):
         tdir = require_pos_path(rest, f"{subcmd} <target-dir> --id <layer-id> [...]")
         vf: tuple[str, ...] = (
-            "--id", "--role", "--precedence", "--description", "--parent-dir",
-            "--upstream-url", "--upstream-id", "--upstream-branch", "--templates",
+            "--id", "--purpose", "--role", "--from-parent", "--precedence", "--description",
+            "--parent-dir", "--upstream-url", "--upstream-id", "--upstream-branch", "--templates",
             "--template-name", "--entity-kind", "--governing-root", "--lang",
         )  # fmt: skip
         opts = parse_cli_options(subcmd, rest[1:], vf, ("--no-scaffold-own",))
         lid = require_opt_str(opts, "id", f"Missing required --id <layer-id> for {subcmd}.")
         return bootstrap.bootstrap_node_workspace(
-            repo_dir,
-            tdir,
-            layer_id=lid,
-            layer_role=str(opts.get("role", "department")),
+            repo_dir, tdir, layer_id=lid, layer_role=opt_str(opts, "role"),
+            purpose=opt_str(opts, "purpose"), from_parent=opt_str(opts, "from_parent"),
             precedence=int(str(opts["precedence"])) if "precedence" in opts else None,
-            description=opt_str(opts, "description"),
-            upstream_repo=opt_str(opts, "upstream_url"),
+            description=opt_str(opts, "description"), upstream_repo=opt_str(opts, "upstream_url"),
             upstream_branch=str(opts.get("upstream_branch", "master")),
-            upstream_layer_id=opt_str(opts, "upstream_id"),
-            parent_dir=opt_path(opts, "parent_dir"),
+            upstream_layer_id=opt_str(opts, "upstream_id"), parent_dir=opt_path(opts, "parent_dir"),
             templates=split_csv(opts.get("templates")),
             own_template_name=opt_str(opts, "template_name"),
             entity_kind=opt_str(opts, "entity_kind"),
             governing_root_id=opt_str(opts, "governing_root"),
             interaction_language=opt_str(opts, "lang"),
-            scaffold_own_template=not bool(opts.get("no_scaffold_own", False)),
-            dry_run=dry_run,
-        )
+            scaffold_own_template=not bool(opts.get("no_scaffold_own", False)), dry_run=dry_run,
+        )  # fmt: skip
     if subcmd == "sync-layer":
         vf = ("--parent-dir", "--templates", "--strategy")
         tdir, opts = parse_pos_and_options(repo_dir, subcmd, rest, vf)
@@ -194,23 +189,37 @@ def dispatch_c2(repo_dir: Path, dry_run: bool, subcmd: str, rest: list[str]) -> 
         )
         return {"dry_run": dry_run, "manifest": manifest}
     if subcmd == "link":
-        vf = ("--target", "--relation", "--ref", "--url", "--packs", "--description")
+        vf = (
+            "--target", "--from", "--branch", "--relation", "--ref", "--url", "--packs",
+            "--description", "--email", "--parent-dir",
+        )  # fmt: skip
         tdir, opts = parse_pos_and_options(repo_dir, subcmd, rest, vf)
-        tgt = require_opt_str(opts, "target", "Usage: zcg link [<dir>] --target <node-id>")
+        tgt, frm = opt_str(opts, "target") or "", opt_str(opts, "from") or ""
+        if not tgt and not frm:
+            raise CLIUsageError(
+                "Usage: zcg link [<dir>] (--target <node-id> | --from <url-or-dir>)"
+            )
         return links.link_node(
-            tdir,
-            target_id=tgt,
+            tdir, target_id=tgt, from_source=frm, from_branch=str(opts.get("branch", "master")),
             relation=str(opts.get("relation", "lateral-peer")),
-            target_ref=str(opts.get("ref", "")),
-            cockpit_url=str(opts.get("url", "")),
+            target_ref=str(opts.get("ref", "")), cockpit_url=str(opts.get("url", "")),
             shared_packs=split_csv(opts.get("packs")),
             description=str(opts.get("description", "")),
+            actor_email=opt_str(opts, "email"), parent_dir=opt_path(opts, "parent_dir"),
+            dry_run=dry_run,
+        )  # fmt: skip
+    if subcmd == "unlink":
+        tdir, opts = parse_pos_and_options(
+            repo_dir, subcmd, rest, ("--target", "--email", "--parent-dir")
+        )
+        tgt = require_opt_str(opts, "target", "Usage: zcg unlink [<dir>] --target <node-id>")
+        return links.unlink_node(
+            tdir,
+            target_id=tgt,
+            actor_email=opt_str(opts, "email"),
+            parent_dir=opt_path(opts, "parent_dir"),
             dry_run=dry_run,
         )
-    if subcmd == "unlink":
-        tdir, opts = parse_pos_and_options(repo_dir, subcmd, rest, ("--target",))
-        tgt = require_opt_str(opts, "target", "Usage: zcg unlink [<dir>] --target <node-id>")
-        return links.unlink_node(tdir, target_id=tgt, dry_run=dry_run)
     if subcmd == "spinout-project":
         tdir = require_pos_path(rest, "spinout-project <target-dir> --id <id> --from-branch <ref>")
         vf = (

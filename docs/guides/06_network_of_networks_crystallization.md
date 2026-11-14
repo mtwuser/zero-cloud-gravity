@@ -95,6 +95,14 @@ Every perspective across Guides `01..08` pairs its workspace topology with a ded
 > - **Center Pane (Contextual Chat)**: Selective `1-Hop` Knowledge Crystallization & `rcap1` mesh synthesis verifying zero cross-window rule pollution across personal, public, and corporate workspaces.
 > - **Right Pane (`2×2` Quad Web Views + Terminal)**: Simultaneous live `*.localhost` dashboards across `:8790`, `:8786`, `:8720`, and `:8710` paired with multi-node posture & health status.
 
+To materialize all `[CAP-01..CAP-10]` ISO-neutral reference nodes and launch their live Native Python 3.14 ASGI daemons locally on isolated ports (`9700 + precedence`, avoiding any collision with active `8700 + precedence` workstation daemons) for interactive browser inspection or authentic manual screenshot capture (`0` workspace residue), run [`scripts/stage-showcase.sh`](../../scripts/stage-showcase.sh) (`zcg stage-showcase` or `make stage-showcase`):
+
+```bash
+zcg stage-showcase                  # Provision /tmp/zcg-showcase & start live *.localhost daemons
+zcg stage-showcase --status         # Inspect active showcase ports, PIDs, and /healthz status
+zcg stage-showcase --stop           # Stop all showcase daemons and remove /tmp/zcg-showcase
+```
+
 ---
 
 ## 3. Horizon `ZeroCloudGravity v2.0.0`: Cryptographic Composite Node Networks (`T_chain` + $\Delta t$)

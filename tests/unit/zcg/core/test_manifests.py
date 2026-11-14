@@ -303,3 +303,20 @@ class TestManifests:
         assert sub_dev == "http://dev.alex-tutor.alex-pc.localhost:8786"
         assert know_pro == "http://org-alpha.localhost:8720"
         assert root_fb == "http://dev.alex-pc.localhost:8790"
+
+    def test_strip_markdown_frontmatter_valid_plain_and_unclosed_expected(self) -> None:
+        """Verify YAML frontmatter stripping preserves body and leaves plain or unclosed text."""
+        # Arrange
+        with_fm = "---\ntrigger: always_on\n---\n\n# Rule Body\n"
+        plain = "# Plain Body\n"
+        unclosed = "---\ntrigger: always_on\n# Missing Closing Fence\n"
+
+        # Act
+        res_fm = manifests.strip_markdown_frontmatter(with_fm)
+        res_plain = manifests.strip_markdown_frontmatter(plain)
+        res_unclosed = manifests.strip_markdown_frontmatter(unclosed)
+
+        # Assert
+        assert res_fm == "# Rule Body"
+        assert res_plain == "# Plain Body"
+        assert res_unclosed == unclosed.strip()

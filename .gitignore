@@ -18,5 +18,6 @@ venv/
 # Zero-Cloud Node transient runtime & session state
 logs/
 .agents/runtime/
+.agents/telemetry/
 .agents/SESSION.md
 .workstation-state.json

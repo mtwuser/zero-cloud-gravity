@@ -54,10 +54,12 @@ class TestConstants:
         assert manifest_path == "system/zcg-node.json"
         assert constants.NODE_MANIFEST_CONTRACT_REV == "zcg-node-v1"
         assert constants.TEMPLATE_MANIFEST_CONTRACT_REV == "zcg-template-v1"
+        assert constants.SKILLS_MANIFEST_CONTRACT_REV == "zcg-skills-v1"
         assert all("$(ZCG_BIN)" in r for r in recipes)
-        assert "backup-system" in constants.LAYER_ROLE_MAKEFILE_TARGETS["workstation"]
-        assert "backup-system" not in constants.LAYER_ROLE_MAKEFILE_TARGETS["corporate"]
-        assert "install-antigravity" in constants.LAYER_ROLE_MAKEFILE_TARGETS["workstation"]
+        assert "workstation-backup" in constants.LAYER_ROLE_MAKEFILE_TARGETS["workstation"]
+        assert "workstation-backup" not in constants.LAYER_ROLE_MAKEFILE_TARGETS["corporate"]
+        assert "workstation-update-agy" in constants.LAYER_ROLE_MAKEFILE_TARGETS["workstation"]
+        assert "plugin" in constants.MAKEFILE_COMPOSABLE_BLOCKS["plugin_ops"]
         assert "link" in constants.LAYER_MAKEFILE_RECIPES
         assert "unlink" in constants.LAYER_MAKEFILE_RECIPES
         assert "hr-process" in constants.VALID_NODE_LINK_RELATIONS
@@ -65,4 +67,9 @@ class TestConstants:
         assert "project" in constants.VALID_LAYER_ROLES
         assert "pub-" in constants.VALID_KNOWLEDGE_PREFIXES
         assert constants.KNOWLEDGE_DOMAIN_TAXONOMY["pub-"]["default_entity_kind"] == "individual"
+        assert "economic" in constants.CANONICAL_SCIENCE_TRUNKS["social"]
+        assert "sci-economic" in constants.DEFAULT_PUBLIC_KNOWLEDGE_REGISTRY
+        assert "lint-skills" in constants.CONSUMER_ALLOWED_OPS
+        assert "check-handoff" in constants.CONSUMER_ALLOWED_OPS
+        assert "install-plugin" in constants.MAINTAINER_ALLOWED_OPS
         assert "scaffold-plugin-module" in constants.MAINTAINER_ALLOWED_OPS

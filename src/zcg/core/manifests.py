@@ -166,6 +166,18 @@ def stamp_schema_rev(json_file: Path, expected_rev: str) -> None:
         json_file.write_text(json.dumps(d, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+FRONTMATTER_OPEN_LEN: int = 4
+FRONTMATTER_CLOSE_LEN: int = 5
+
+
+def strip_markdown_frontmatter(markdown_text: str) -> str:
+    """Strip leading YAML frontmatter from Markdown text for standalone AGENTS.md files."""
+    text = markdown_text.strip()
+    padded = f"{text}\n"
+    end_idx = padded.find("\n---\n", FRONTMATTER_OPEN_LEN) if padded.startswith("---\n") else -1
+    return padded[end_idx + FRONTMATTER_CLOSE_LEN :].strip() if end_idx != -1 else text
+
+
 def ensure_rule_file_frontmatter(rule_path: Path, *, sync_in_place: bool = True) -> str:
     """Ensure a Markdown rule file starts with Antigravity 'trigger: always_on' frontmatter."""
     text = rule_path.read_text(encoding="utf-8")

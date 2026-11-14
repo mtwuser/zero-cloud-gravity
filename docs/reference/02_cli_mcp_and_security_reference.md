@@ -6,17 +6,18 @@ epistemic_grade: E2
 
 > **Normative Architecture**: [`docs/architecture/03_governance_and_work_ledger.md`](../architecture/03_governance_and_work_ledger.md) and [`docs/architecture/05_contextual_mcp_and_capsules.md`](../architecture/05_contextual_mcp_and_capsules.md)
 >
-> This reference documents all 33 `zcg` console subcommands (`37` dispatcher tokens including shorthand aliases), the `zcg-mcp` JSON-RPC 2.0 catalog (`9` resources, `9` tools, `3` prompts), Docker/Cloud Run/SSH federated MCP deployment patterns, OWASP ASVS + `MCP-Sec` security error contracts, and the Maintainer Extension Playbook.
+> This reference documents all 38 `zcg` console subcommands (`42` dispatcher tokens including shorthand aliases), the `zcg-mcp` JSON-RPC 2.0 catalog (`9` resources, `9` tools, `3` prompts), Docker/Cloud Run/SSH federated MCP deployment patterns, OWASP ASVS + `MCP-Sec` security error contracts, and the Maintainer Extension Playbook.
 
 ---
 
 ## 1. Complete `zcg` Console CLI Reference (`zcg [--repo-dir <dir>] [--dry-run] <subcommand>`)
 
-All 33 canonical subcommands are partitioned into five deterministic capability families (`exit 0` success, `exit 1` usage/validation error, `exit 2` RBAC/env-gate blocked):
+All 38 canonical subcommands are partitioned into six deterministic capability families (`exit 0` success, `exit 1` usage/validation error, `exit 2` RBAC/env-gate blocked):
 
 | Capability Family | Subcommand & Canonical Synopsis | Mutates Disk? | Primary Purpose |
 | :--- | :--- | :---: | :--- |
-| **`C1` Discovery** | `zcg status [<dir>] [--parent-dir <dir>]` | No | Returns `< 0.2s` JSON digest (`entity_identity`, `network_topology`, `work_orchestration`, `runtime_orchestration`, `setup_state`, `horizon`, `agent_diff`). |
+| **`C1` Discovery** | `zcg status [<dir>] [--parent-dir <dir>]` | No | Returns `< 0.2s` JSON digest (`entity_identity`, `posture`, `surface_origin`, `network_topology`, `work_orchestration`, `runtime_orchestration`, `setup_state`, `horizon`, `agent_diff`). |
+| **`C1` Discovery** | `zcg inspect-remote <git-url-or-path> [--branch <ref>]` | No (ephemeral) | Reads `system/zcg-node.json` from any local directory or shallow `--depth 1` Git remote without repository-name heuristics (`UNSAFE_GIT_REMOTE_REF` guarded). |
 | **`C1` Discovery** | `zcg list-templates [<dir>]` | No | Lists all `16` `zcg-template-v1` packs, `federated_mcps`, and `ephemeral_bots` across the node and mounted `layers/*`. |
 | **`C1` Discovery** | `zcg inspect-horizon [<dir>] [--parent-dir <dir>] [--email <e>]` | No | Returns `actor_role_profile` and 3-bucket `1-hop` radar (`inbound_from_upstream`, `inbound_from_downstream`, `local_workspace_changes`). |
 | **`C1` Discovery** | `zcg compare-upstream [<dir>] [--template <id>] [--apply-safe]` | No (`--apply-safe` writes) | Compares `#`/`##` Markdown sections between upstream and local templates (`NEW_UPSTREAM`, `IN_SYNC`, `DIVERGED`, `LOCAL_ONLY`). |
@@ -24,7 +25,9 @@ All 33 canonical subcommands are partitioned into five deterministic capability 
 | **`C1` Discovery** | `zcg check-authority [<dir>] --op <op> [--email <e>] [--file <f>]` | No | Evaluates RBAC permission (`owner`, `maintainer`, `validator`, `member`, `consumer` + `UPSTREAM_HIERARCHICAL_AUTHORITY`). |
 | **`C1` Discovery** | `zcg consult-layer [<dir>] --layer <id> --query <q> [--tier <t>]` | No (auto-reaped) | Spawns a one-shot `strictly-read-only` ephemeral consultation against `<id>`, returning a 4-Channel Digest + `rcap1` capsules. |
 | **`C1` Discovery** | `zcg lint-arch [<dir>] [--no-tests]` | No | Statically audits Hexagonal Functional Core boundaries (`0` infrastructure/I/O imports in `domain/`), `0`-byte `__init__.py`, `excluded_contexts`, and `1:1:1` `AAA` test rules (`exit 1` on violations). |
-| **`C2` Lifecycle** | `zcg bootstrap-workspace <dir> --id <id> --role <r> [--precedence <n>] [--templates <csv>] [--parent-dir <d>] [--lang <l>]` | Yes | Scaffolds a sovereign node (`system/zcg-node.json`, `Makefile`, `README.md`, `WORK*`, `templates/<id>/`, `.agents/`), activates its Cockpit, and registers it in Antigravity IDE. |
+| **`C1` Discovery** | `zcg lint-skills [<dir>] [--parent-dir <dir>]` | No | `< 50 ms` `0-dep` static security audit of `SKILL.md`, `hooks.json`, and `mcp_config.json` (`BIDI_OR_ZERO_WIDTH_UNICODE`, `PIPE_TO_SHELL_EXECUTION`, `UNAUTHORIZED_EGRESS_URL`, `CONFIG_PATH_ESCAPES_WORKSPACE`; `exit 1` on violations). |
+| **`C1` Discovery** | `zcg check-handoff [<dir>] (--text <txt> \| --source <file>) [--target-dir <dir>] [--parent-dir <dir>] [--email <e>] [--single-axis] [--stage-proposal]` | No (`--stage-proposal` stages) | Validates cross-layer directives against `canonical_terms` axis glossaries, rebounding informal aliases / multi-axis conflation (`exit 1`) or emitting an `/enrich` standardization proposal (`exit 0`). |
+| **`C2` Lifecycle** | `zcg bootstrap-workspace <dir> --id <id> [--purpose <p>] [--role <r>] [--from-parent <url\|dir>] [--precedence <n>] [--templates <csv>] [--lang <l>]` | Yes | Scaffolds a sovereign or managed node (`system/zcg-node.json`, `Makefile`, `README.md`, `WORK*`, `templates/<id>/`, `.agents/`), inherits `1-hop` parent stacks, activates its Cockpit, and registers it in Antigravity IDE. |
 | **`C2` Lifecycle** | `zcg sync-layer [<dir>] [--parent-dir <d>] [--templates <csv>] [--strategy reconcile\|accept-upstream\|merge\|keep-local]` | Yes | Self-heals `Makefile` and `zcg-node-v1`, reconciles inherited templates (`skip_id = layer_id`), rolls up `[x]` child tasks, and refreshes `.agents/` + Cockpit JSON feeds. |
 | **`C2` Lifecycle** | `zcg apply-project <dir> [--parent-dir <d>] [--template <id>] [--layers <csv>] [--service-action <act>] [--env <e>]` | Yes | Projects `.agents/rules/layer-<NN>-<id>.md` & `.agents/skills/` into a project, or executes cockpit plugin lifecycle actions (`install`..`teardown`). |
 | **`C2` Lifecycle** | `zcg set-global-profile <profile> [--lang <l>] [--workstation-dir <d>] [--stow]` | Yes | Composes `antigravity/.gemini/config/AGENTS.md` (`<= 18,000` bytes) with optional personal `<ws-id>.md`, stows into `$HOME`, and binds `zcg-mcp` to `--repo-dir <workstation-dir>`. |
@@ -32,7 +35,7 @@ All 33 canonical subcommands are partitioned into five deterministic capability 
 | **`C2` Lifecycle** | `zcg scaffold-template <name> [--kind <k>] [--register-binding]` | Yes (`owner`/`maintainer`) | Scaffolds a new `zcg-template-v1` pack under `templates/<kind>/<name>/`. |
 | **`C2` Lifecycle** | `zcg scaffold-plugin-module <plugin-id> <module-name> [--prefix <p>] [--description <d>]` | Yes (`owner`/`maintainer`) | Scaffolds a Hexagonal `L1..L4` plugin module (`modules/<pkg>/{models,service}.py`, `routers/<pkg>.py`, `web/templates/partials/<mod>.html`) inside a `plugin-stack` pack. |
 | **`C2` Lifecycle** | `zcg init-fork --id <id> [--role <r>] [--precedence <n>] [--prune-default-templates]` | Yes (`owner`) | Parameterizes `system/zcg-node.json` in place for a cloned node fork. |
-| **`C2` Lifecycle** | `zcg link [<dir>] --target <id> [--relation <rel>] [--ref <path\|url>] [--url <cockpit-url>] [--packs <csv>]` | Yes | Registers a zero-copy declarative node connection in `system/zcg-node.json -> linked_nodes` (`lateral-peer`, `spinout-project`, `hr-process`, `b2b-collaboration`, `knowledge-feed`). |
+| **`C2` Lifecycle** | `zcg link [<dir>] (--target <id> \| --from <url\|path>) [--branch <ref>] [--relation <rel>] [--ref <path\|url>] [--url <cockpit-url>] [--packs <csv>]` | Yes | Registers a zero-copy declarative node connection in `system/zcg-node.json -> linked_nodes` (`lateral-peer`, `spinout-project`, `hr-process`, `b2b-collaboration`, `knowledge-feed`; `R3` `<persona>-wallet` permits only read-only `knowledge-feed` to `knowledge` corpora). |
 | **`C2` Lifecycle** | `zcg unlink [<dir>] --target <id>` | Yes | Removes a declarative node connection from `system/zcg-node.json -> linked_nodes`. |
 | **`C2` Lifecycle** | `zcg spinout-project <target-dir> --id <id> --from-branch <branch> [--source-dir <dir>] [--packs <csv>]` | Yes | Graduates an incubated branch (`venture/*`, `engagement/*`) into a standalone governed repository (`precedence: 80`) with bidirectional `spinout-project` links. |
 | **`C3` Governance** | `zcg complete-task [<dir>] --task <id> [--deliverable <p>] [--parent-dir <d>] [--create-pr]` | Yes | Marks task `[x]` in `WORKTASK.md` and optionally rolls up completion to `parent-dir`'s `## Outbound Delegations`. |
@@ -44,7 +47,8 @@ All 33 canonical subcommands are partitioned into five deterministic capability 
 | **`C3` Governance** | `zcg check-env-promotion [<dir>] --to-env <tst\|pre\|pro> [--files <csv>]` | Audit log | Evaluates progressive `dev -> tst -> pre -> pro` gates and $N$-departmental surface consensus. |
 | **`C3` Governance** | `zcg record-decision [<dir>] --item <ref> --decision <approve\|reject\|defer\|blocked> --reason <txt>` | Yes (`validator`+) | Records a signed governance decision in `WORKTASK.md` and `logs/governance_audit.jsonl`. |
 | **`Subtree`** | `zcg subtree <list\|pull\|pull-all\|register> [args]` | Git sync | Lists, registers (`layers/<name>`), or synchronizes mounted child/knowledge subtrees. |
-| **`Workstation`** | `zcg install-antigravity \| workstation-sync \| workstation-backup \| workstation-audit \| workstation-restore [--json]` | Host ops | Executes the corresponding Ubuntu 26.04 physical workstation script in `scripts/` (streams live TTY progress/colors interactively; returns JSON when non-TTY or `--json`). |
+| **`Workstation`** | `zcg install-antigravity \| workstation-sync \| workstation-backup \| workstation-audit \| workstation-restore \| stage-showcase [--json]` | Host ops | Executes the corresponding Ubuntu 26.04 physical workstation or ephemeral showcase script in `scripts/` (streams live TTY progress/colors interactively; returns JSON when non-TTY or `--json`). |
+| **`OSS` Engine** | `zcg oss <push-branch\|promote-master\|publish> [<dir>] [--remote-url <u>] [--release-version <v>] [--contrib-branch <b>] [--create-pr] [--verify]` | Git / Release | Executes isolated Open-Source engine contribution workflows (`mk/oss-contrib.mk`: `oss-push-branch`, `oss-promote-master`, `oss-publish`) strictly guarded by `[OSS_DEV_ONLY_BLOCKED]` and `git archive` tracker stripping. |
 
 ---
 
@@ -89,7 +93,7 @@ Because `ZeroCloudGravity` has `0` external runtime dependencies (`pyproject.tom
     },
     "zcg-container-node": {
       "command": "docker",
-      "args": ["run", "-i", "--rm", "--read-only", "zero-cloud-gravity:1.0.1", "--layer-id", "prod-api-node", "--layer-role", "service-node"]
+      "args": ["run", "-i", "--rm", "--read-only", "zero-cloud-gravity:1.1.0", "--layer-id", "prod-api-node", "--layer-role", "service-node"]
     },
     "zcg-remote-ssh": {
       "command": "ssh",
@@ -115,6 +119,10 @@ The table below catalogs the deterministic security and governance error codes e
 | `CAPSULE_RESONANCE_DENIED` | `mcp/unfold.py`, `capsules/codec.py` | Missing or invalid `resonance_key`, cross-issuer (`iss`) mismatch, or cross-environment (`env`) replay. |
 | `EPHEMERAL_LEASE_EXPIRED_OR_SHREDDED` | `ephemeral/lifecycle.py`, `capsules/codec.py` | Attempting to use or verify a return capsule from an expired or reaped ephemeral fork. |
 | `SURFACE_BOUNDARY_VIOLATION` | `capsules/codec.py` | Ephemeral bot return digest touches `modified_files` outside its leased `surface_globs`. |
+| `WALLET_EXTERNAL_LINK_BLOCKED` | `governance/capabilities.py`, `governance/links.py`, `cockpit/mesh_router.py` | Attempting non-epistemic `zcg link` or `POST /api/modules/node-mesh/link` on an `R3` local-only `<persona>-wallet` node (only read-only `knowledge-feed` links to `knowledge` corpora with empty `cockpit_url` are allowed; route peer/settlement links via `<persona>-work`). |
+| `CAPABILITY_ACTOR_ROLE_BLOCKED` / `CAPABILITY_CEILING_*_BLOCKED` | `governance/capabilities.py` | Actor role lacks lifecycle permission or inherited *Lex Superior* `capability_policy` (`blocked_operations` / `curated-allowlist`) forbids the plugin, link target, or operation. |
+| `SKILL_SECURITY_VIOLATION` | `governance/capabilities.py`, `cockpit/lifecycle.py`, `governance/promotion.py` | Skill or config failed `lint-skills` static scan (bidi/zero-width Unicode, `curl \| sh`, unauthorized egress URL, or `..` path escape). |
+| `GLOSSARY_DEFINITION_CONFLICT` | `governance/handoff.py` | Sender and receiver nodes map the same informal alias on the same axis to conflicting canonical terms without a *Lex Superior* parent resolution. |
 
 ### 4.1. Maintainer Checklist for Extending `ZeroCloudGravity`
 

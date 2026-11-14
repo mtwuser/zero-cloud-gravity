@@ -56,7 +56,7 @@ Inside a personal workstation node (`~/<persona>-pc/system/`), plain-text manife
 | Manually installed Ubuntu 26.04 APT packages (3-stage filtered: excludes base OS, dependencies, external recipe packages, and `.audit-ignore`). | `system/packages-manual.txt` |
 | Installed Snap applications (excludes `core*`, `bare`, `gnome-*`, and `mesa-*` runtime snaps). | `system/snaps.txt` |
 | Global NPM packages under the active Node.js version & default NVM major version. | `system/npm-globals.txt`, `system/nvm-default.txt` |
-| Enabled external third-party recipes auto-detected during `make backup-system`. | `system/external.txt` |
+| Enabled external third-party recipes auto-detected during `make workstation-backup`. | `system/external.txt` |
 | Declarative recipe catalog for third-party software (Docker, Chrome, GCloud CLI, Antigravity Agents/IDE, etc.). Starter recipes ship in [`templates/plugin-stack/workstation-control-tower/assets/external/`](../../templates/plugin-stack/workstation-control-tower/assets/external/README.md). | `system/external/{apt-repo,deb-url,script}/` |
 | Installed GNOME Shell extension UUIDs and declarative `dconf` settings (keybindings, interface, touchpad, dock, tiling). | `system/gnome-extensions.txt`, `system/gnome-settings.dconf` |
 
@@ -85,14 +85,15 @@ zcg workstation-sync --status               # JSON status of runtime, workstatio
 
 ### 3.2. Installing or Upgrading Google Antigravity (`scripts/install-antigravity.sh`)
 
-The [`scripts/install-antigravity.sh`](../../scripts/install-antigravity.sh) utility (`make install-antigravity` or `zcg install-antigravity`) manages the three Google Antigravity binary components on Ubuntu 26.04 (`linux-x64`):
+The [`scripts/install-antigravity.sh`](../../scripts/install-antigravity.sh) utility (`make workstation-update-agy` or `zcg install-antigravity`) manages the three Google Antigravity binary components on Ubuntu 26.04 (`linux-x64`) using an ephemeral `mktemp -d` staging directory (`0` residual archives left in `~/Downloads`) and strict `package.json` version verification prior to `/opt` installation:
 
 ```bash
 cd ~/zero-cloud-gravity
-./scripts/install-antigravity.sh --agents   # (Recommended) Download & install Antigravity Agents (/opt/antigravity-agents) + agy CLI (~/.local/bin/agy)
-./scripts/install-antigravity.sh --cli      # Install/update agy CLI only (~/.local/bin/agy)
-./scripts/install-antigravity.sh --ide      # (Optional) Download & install Antigravity IDE (/opt/antigravity-ide)
-./scripts/install-antigravity.sh --all      # Install/update Agents, agy CLI, and optional IDE
+./scripts/install-antigravity.sh --agents                         # (Recommended) Download & install Antigravity Agents (/opt/antigravity-agents) + agy CLI (~/.local/bin/agy)
+./scripts/install-antigravity.sh --cli                            # Install/update agy CLI only (~/.local/bin/agy)
+./scripts/install-antigravity.sh --ide                            # (Optional) Download & install Antigravity IDE (/opt/antigravity-ide)
+./scripts/install-antigravity.sh --all                            # Install/update Agents, agy CLI, and optional IDE
+./scripts/install-antigravity.sh --agents --from-archive <file>   # Explicit offline install from a local .tar.gz / .zip archive
 ./scripts/install-antigravity.sh --agents --dry-run
 ```
 
@@ -102,10 +103,10 @@ Each workstation script supports targeted flags and `--dry-run` previews:
 
 | Command / `Makefile` Target | Action |
 | :--- | :--- |
-| `make backup-system` (`zcg workstation-backup`) | Snapshots manual APT packages, Snaps, NPM globals, enabled external recipes, and GNOME extensions/settings into `system/*`. |
-| `make audit-system` (`zcg workstation-audit`) | Read-only 8-section drift check across Stow symlinks (`antigravity`, `bash`, `git`), APT, Snap, NPM, External recipes, GNOME extensions, residual `*.backup.*` files, and Git status (treating localized/composed `AGENTS.md` as clean). |
-| `make audit-system CLEAN=1` (`workstation-audit --clean`) | Interactive cleanup of residual `~/.backup.*` files in `$HOME`. |
-| `make restore-system` (`zcg workstation-restore`) | Interactive restoration prompt across all workstation subsystems. |
+| `make workstation-backup` (`zcg workstation-backup`) | Snapshots manual APT packages, Snaps, NPM globals, enabled external recipes, and GNOME extensions/settings into `system/*`. |
+| `make workstation-audit` (`zcg workstation-audit`) | Read-only 8-section drift check across Stow symlinks (`antigravity`, `bash`, `git`), APT, Snap, NPM, External recipes, GNOME extensions, residual `*.backup.*` files, and Git status (treating localized/composed `AGENTS.md` as clean). |
+| `make workstation-audit CLEAN=1` (`workstation-audit --clean`) | Interactive cleanup of residual `~/.backup.*` files in `$HOME`. |
+| `make workstation-restore` (`zcg workstation-restore`) | Interactive restoration prompt across all workstation subsystems. |
 | `zcg workstation-restore <ws-dir> --all` | Unattended full provision: APT/Snap/NPM packages, external recipes, NVM/Node.js, GNOME settings, and Stow symlinks. |
 | `zcg workstation-restore <ws-dir> --packages \| --external \| --nvm \| --gnome \| --stow \| --antigravity` | Granular subsystem restoration (`--dry-run` supported on all modes). |
 
@@ -126,7 +127,8 @@ When operating multiple machines (`machine/<hostname>`) alongside multiple paral
 | :--- | :--- | :--- |
 | **1. `$HOME` Personal `Root 0` Hub (`~/<persona>-pc`, `precedence: 90`)** | **`master` = Common Personal Baseline (`universal-base`)** shared across all machines and contexts. Context branches: **`machine/<hostname>`** (per-PC `system/*.txt` manifests) and **`hat/<context>`** (global workstation hats). **Zero `env/tst` or `env/pre` branches.** | **`zcg-sync` (`make workstation-sync`)**: Syncs `~/zero-cloud-gravity` and `~/<persona>-pc` automatically while preserving your `system/zcg-node.json` identity (`precedence: 90`), personal rules (`<persona>-pc.md`), private trackers (`WORKTASK.md`), and `.local` overrides. |
 | **2. Unified Personal Academy / Tutor Hub (`~/Projects/<persona>-tutor`, `precedence: 86`)** | **`master` = Common Tutor Pedagogical DNA (`academic-base,academic-curriculum,tutor-study-cockpit`)** defining how the tutor adapts to you across *all* subjects (`templates/<persona>-tutor/rules/<persona>-tutor.md`). Context branches: **`specialty/<track>`** (e.g., `specialty/maths`, `specialty/physics`, `specialty/maths-physics`, `specialty/software-eng`). | **Two-Level Personal Reconciliation**: (a) **Intra-Tutor (`specialty/* -> master`)**: Pedagogical improvements common to how you learn any discipline reconcile into `<persona>-tutor:master` and flow to all `specialty/*` branches via `git merge master`; (b) **Inter-Layer (`<persona>-tutor:master -> ~/<persona>-pc:master`)**: Universal personal workflow rules promote 1-hop upward to `~/<persona>-pc` via `make promote`. |
-| **3. Parallel Study / Project Workspaces (`~/Projects/<workspace>`, `precedence: 80..95`)** | Run `zcg apply-project` pointing to your `<persona>-tutor` (or corporate parent layer) and set your per-window `Human-Stack` (`domain-<subject>:M1..M4 \| soft-socratic-coach`) in `.agents/SESSION.md`. | **`make sync` + `/enrich` $\rightarrow$ `make promote`**: Refreshes inherited `.agents/` rules downward without touching `.agents/SESSION.md`, and promotes reusable discoveries upward. |
+| **3. Personal Work & Sovereign Wallet Pillars (`~/Projects/<persona>-work` `:8787` & `~/Projects/<persona>-wallet` `:8788`)** | **`<persona>-work` (`87`)** manages professional execution, spin-off incubation, and `hr-process` / `b2b-collaboration` links; **`<persona>-wallet` (`88`, strict `R3` local-only)** isolates personal multi-platform portfolio rules and unidirectional venture financial tracking (`0` balances or keys in Git; `0` external peer links). | Keep corporate `managed` repositories (`governance_posture: "managed"`) in a separate directory tree (e.g., `~/Work/<org>/`) outside `~/<persona>-pc`; any optional B2B milestone settlement (`settlement_mode`) routes via `<persona>-work` so `<persona>-wallet` remains invisible externally. |
+| **4. Parallel Study / Project Workspaces (`~/Projects/<workspace>`, `precedence: 80..95`)** | Run `zcg apply-project` pointing to your `<persona>-tutor` (or corporate parent layer) and set your per-window `Human-Stack` (`domain-<subject>:M1..M4 \| soft-socratic-coach`) in `.agents/SESSION.md`. | **`make sync` + `/enrich` $\rightarrow$ `make promote`**: Refreshes inherited `.agents/` rules downward without touching `.agents/SESSION.md`, and promotes reusable discoveries upward. |
 
 ### 4.1. Phase 0 Linear Post-Install Onboarding (`Case 1`): `$HOME` Control Tower (`~/<persona>-pc`)
 
@@ -135,8 +137,8 @@ Paste this prompt into Antigravity when onboarding a fresh `$HOME` personal `Roo
 ```text
 /sopen — Execute Phase 0 ($HOME Control Tower Onboarding — Case 1, starting from zero with ~/<persona>-pc before ~/Projects/<persona>-tutor):
 1. Phase A (Workspace Purpose & Identity Alignment): Configure our $HOME workstation repository as a sovereign private individual Root 0 hub (layer_id: "<persona>-pc", entity_kind: "individual", layer_role: "workstation", precedence: 90, --profile universal-base, --lang [en|es|it|fr|de|pt]) coupled with ~/zero-cloud-gravity via workstation-sync.sh --setup. Keep $HOME strictly on universal-base so domain rules never pollute parallel ~/Projects/* windows.
-2. Phase B (Universal Personal Preferences & Multi-Machine Branches): Capture current workstation packages via make backup-system, verify ~/.gitconfig.local and ~/.bashrc.local isolation, and document our machine/<hostname> branch conventions in README.md and WORKTASK.md.
-3. Phase C (Daily Multi-Machine Execution & Audit): Run make audit-system and make diff to confirm zero Stow or manifest drift across bash, git, and antigravity (with Workstation Control Tower active on :8790).
+2. Phase B (Universal Personal Preferences & Multi-Machine Branches): Capture current workstation packages via make workstation-backup, verify ~/.gitconfig.local and ~/.bashrc.local isolation, and document our machine/<hostname> branch conventions in README.md and WORKTASK.md.
+3. Phase C (Daily Multi-Machine Execution & Audit): Run make workstation-audit and make diff to confirm zero Stow or manifest drift across bash, git, and antigravity (with Workstation Control Tower active on :8790).
 4. Phase D (Open-Source Reconciliation & Parallel Workspace Handoff): Verify zcg-sync (make workstation-sync) and output the exact zcg bootstrap-workspace commands to launch ~/Projects/<persona>-tutor (--parent-dir ~/<persona>-pc) and isolated domain/company workspaces inside ~/Projects/* (Cases 2-7 in Guide 02).
 ```
 
@@ -195,7 +197,7 @@ The matrix below separates the upstream community baseline (`World 1`) from your
 | :--- | :--- | :--- | :--- |
 | **1. Rules & Global `AGENTS.md`** | `templates/human-stack/universal-base/rules/universal-base.md` (`13` universal mandates + commit discipline). | `templates/alex-pc/rules/alex-pc.md` (`--lang`, personal shell/Git invariants, `1-hop` tutor delegation). | `zcg-sync` (`zcg set-global-profile`) $\rightarrow$ `~/.gemini/config/AGENTS.md` |
 | **2. Skills & Lifecycle Hooks** | `8` universal skills (`/sopen`, `/continue`, `/sclose`, `/review`, `/enrich`, `/architecture`, `/audit`, `/governance`) + `4` hooks. | Optional personal skill `templates/alex-pc/skills/alex-pc-guide/SKILL.md` + custom `Makefile` targets below `# --- Custom Targets ---`. | `zcg sync-layer ~/alex-pc` $\rightarrow$ [`scripts/workstation-sync.sh`](../../scripts/workstation-sync.sh) |
-| **3. Host System & Secrets** | Generic installers & audit scripts (`install.sh`, `scripts/workstation-{backup,audit,restore}.sh`, `5` starter external recipes). | `bash/`, `git/`, `system/{packages-manual,snaps,npm-globals,external,gnome-*}.txt`, `.audit-ignore`, plus untracked `~/.bashrc.local` & `~/.gitconfig.local`. | `make backup-system` / `make audit-system` $\rightarrow$ `~/alex-pc/system/` |
+| **3. Host System & Secrets** | Generic installers & audit scripts (`install.sh`, `scripts/workstation-{backup,audit,restore}.sh`, `5` starter external recipes). | `bash/`, `git/`, `system/{packages-manual,snaps,npm-globals,external,gnome-*}.txt`, `.audit-ignore`, plus untracked `~/.bashrc.local` & `~/.gitconfig.local`. | `make workstation-backup` / `make workstation-audit` $\rightarrow$ `~/alex-pc/system/` |
 | **4. Cockpit Web Surface (`:8790`)** | `workstation-control-tower` plugin (`python314-native-asgi` `DeliveryChannel`, `Z1..Z4`, `--zcg-*` tokens, `HTTP 286` poll control). | Node-specific `surfaces/data/{node,network,federation}_scope.json` (`alex-pc.personal.local`, active `WORKTASK.md` items, local fleet inventory). | `make activate-plugin` $\rightarrow$ [`docs/architecture/04_cockpit_and_intranet_surfaces.md`](../architecture/04_cockpit_and_intranet_surfaces.md) |
 
 ### 6.3. Dedicated Web View (`Workstation Control Tower :8790` · `Z1..Z4`) & Live Capture (`[CAP-01]`)
@@ -216,3 +218,15 @@ When provisioned on `~/<persona>-pc`, `workstation-control-tower` renders an edi
 > - **Left Pane (Workspaces)**: `~/alex-pc` (active `Root 0` workstation on `master` + `machine/*` / `hat/*`) alongside coupled `~/zero-cloud-gravity` and child `~/Projects/alex-tutor`.
 > - **Center Pane (Contextual Chat)**: `/sopen` Phase 0 Control Tower onboarding confirming `0` Stow/package drift and `universal-base` (`<= 18 KB`) profile isolation.
 > - **Right Pane (Web View + Terminal)**: Live `http://dev.alex-pc.localhost:8790/dashboard` (`Private Local Node`, `Switch Node` personal triad, Host Machine & Parallel Profiles spotlight) paired with `zcg status ~/alex-pc` (`state: "configured"`, `drift: 0`).
+
+---
+
+## 7. Official Zero-Collateral Windows Onboarding (`WSL2 + Ubuntu 26.04 LTS`)
+
+Windows operators run ZeroCloudGravity with `100%` POSIX, GNU Stow, and Native Python 3.14 ASGI parity via **WSL2 (`Ubuntu 26.04 LTS`)**, keeping `src/zcg/` completely free of Windows-specific (`win32`) conditional branches:
+
+1. **Provision `Ubuntu-26.04` on WSL2 & Clone Inside Native `ext4` `$HOME`**:
+   - Run `wsl --install -d Ubuntu-26.04` from an elevated PowerShell prompt and store all repositories (`~/zero-cloud-gravity`, `~/<persona>-pc`, `~/Projects/*`, `~/Work/*`) inside the native Linux filesystem (`/home/<user>/`), **never** under `/mnt/c/` (preserving POSIX executable bits, symlink atomicity, and `< 20 ms` Git/SQLite WAL I/O).
+2. **Connect Google Antigravity Desktop / CLI & `*.localhost` Loopback Cockpits**:
+   - Launch Antigravity connected to the WSL2 `Ubuntu-26.04` environment (or run `agy` directly inside WSL2); WSL2 automatically forwards loopback ports (`8700..8799` and showcase `9700..9799`) so `http://dev.<node>.localhost:<port>/dashboard` resolves natively in your host browser (`SurfaceOriginResolver` `loopback` mode).
+   - Skip GNOME-only flags (`--gnome`) when running `workstation-backup` / `workstation-restore` inside headless WSL2 instances while retaining full APT, NPM, Stow, and Antigravity `~/.gemini/config/` parity.

@@ -96,9 +96,14 @@ class TestCommands:
             sub_res = commands.dispatch_c2(repo, True, "register-subtree", ["gov-es", ""])
             assert sub_res["registered_layer"]["name"] == "gov-es"
 
+        with pytest.raises(CLIUsageError, match="Usage: zcg link"):
+            commands.dispatch_c2(repo, True, "link", [])
         with patch("zcg.cli.commands.links.link_node", return_value={"ok": "link"}):
             assert commands.dispatch_c2(
                 repo, True, "link", ["--target", "org-alpha", "--relation", "hr-process"]
+            ) == {"ok": "link"}
+            assert commands.dispatch_c2(
+                repo, True, "link", ["--from", "https://example.org/org-alpha.git"]
             ) == {"ok": "link"}
         with patch("zcg.cli.commands.links.unlink_node", return_value={"ok": "unlink"}):
             assert commands.dispatch_c2(repo, True, "unlink", ["--target", "org-alpha"]) == {

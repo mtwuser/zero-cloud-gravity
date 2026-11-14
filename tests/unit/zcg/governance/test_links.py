@@ -58,20 +58,46 @@ class TestLinks:
             rel_sub,
             {"layer_id": "client-node", "layer_role": "squad", "precedence": 50},
         )
+        wallet_dir = tmp_path / "alex-wallet"
+        _write_manifest(
+            wallet_dir,
+            {
+                "layer_id": "alex-wallet",
+                "layer_role": "squad",
+                "precedence": 88,
+                "entity_kind": "individual",
+                "governing_root_id": "alex-pc",
+            },
+        )
 
-        # Act — validation guards
+        # Act — validation & wallet R3 airlock guards
         with pytest.raises(ValueError, match="Invalid target_id"):
             links.link_node(work_dir, target_id="INVALID_ID")
         with pytest.raises(ValueError, match="Invalid relation"):
             links.link_node(work_dir, target_id="org-alpha", relation="unknown-rel")
         with pytest.raises(ValueError, match="Missing node manifest"):
             links.link_node(tmp_path / "missing-ws", target_id="org-alpha")
+        with pytest.raises(ValueError, match="WALLET_EXTERNAL_LINK_BLOCKED"):
+            links.link_node(wallet_dir, target_id="org-alpha")
+        res_wal_sci = links.link_node(
+            wallet_dir, target_id="sci-economic", relation="knowledge-feed"
+        )
+        res_wal_gov = links.link_node(wallet_dir, target_id="gov-es", relation="knowledge-feed")
+        with (
+            patch(
+                "zcg.governance.links.inspect_remote_node_manifest",
+                return_value={"layer_id": "BAD_REMOTE_ID", "manifest": {}},
+            ),
+            pytest.raises(ValueError, match="Invalid target_id"),
+        ):
+            links.link_node(work_dir, from_source="https://example.org/bad.git")
         with pytest.raises(ValueError, match="Cannot link node"):
             links.link_node(work_dir, target_id="alex-work")
         with pytest.raises(ValueError, match="Invalid shared_pack"):
             links.link_node(work_dir, target_id="org-alpha", shared_packs=["BAD_PACK"])
 
-        # Sibling auto-discovery, relative local ref, remote knowledge URL, and dry-run
+        # Sibling auto-discovery, --from auto-discovery, relative ref, remote URL, and dry-run
+        res_from = links.link_node(work_dir, from_source=str(tutor_dir), dry_run=True)
         res_sib = links.link_node(
             work_dir,
             target_id="alex-tutor",
@@ -142,6 +168,9 @@ class TestLinks:
         un_miss = links.unlink_node(work_dir, target_id="org-alpha")
 
         # Assert
+        assert res_wal_sci["linked_node"]["cockpit_url"] == ""
+        assert res_wal_gov["linked_node"]["cockpit_url"] == ""
+        assert res_from["linked_node"]["node_id"] == "alex-tutor"
         assert res_sib["linked_node"]["precedence"] == 86
         assert (
             res_sib["linked_node"]["cockpit_url"] == "http://dev.alex-tutor.alex-pc.localhost:8786"

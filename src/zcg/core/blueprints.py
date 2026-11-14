@@ -1,4 +1,4 @@
-"""Zero-Cloud Node Makefile, onboarding blueprint, lineage, and setup-state renderers.
+"""Zero-Cloud Node onboarding blueprint, lineage, and setup-state renderers.
 
 Specification: docs/architecture/01_core_and_node_manifest.md
 """
@@ -17,9 +17,6 @@ from zcg.core.constants import (
     HUMAN_STACK_BLUEPRINT_HINT,
     INDIVIDUAL_MIN_PRECEDENCE,
     INTERACTION_LANGUAGE_LABELS,
-    LAYER_MAKEFILE_RECIPES,
-    LAYER_ROLE_MAKEFILE_TARGETS,
-    MAKEFILE_ROLE_HEADER_PREFIX,
     NODE_MANIFEST_REL_PATH,
     OSS_WORKSTATION_IDS,
     PUBLIC_GOV_MAX_PRECEDENCE,
@@ -101,50 +98,6 @@ def resolve_default_cockpit_plugin(
     return ROLE_DEFAULT_COCKPIT_PLUGIN["default"]
 
 
-def is_makefile_outdated(ws_dir: Path, role: str) -> bool:
-    """Return True if ws_dir/Makefile is a generated node Makefile missing current targets."""
-    req_t = LAYER_ROLE_MAKEFILE_TARGETS.get(role, LAYER_ROLE_MAKEFILE_TARGETS["project"])
-    mk_path = ws_dir / "Makefile"
-    mk_txt = mk_path.read_text(encoding="utf-8") if mk_path.is_file() else ""
-    return mk_txt.startswith(MAKEFILE_ROLE_HEADER_PREFIX) and (
-        any(f"\n{t}:\n" not in mk_txt for t in req_t)
-        or "ZCG_BIN ?=" not in mk_txt
-        or "--upstream-dir $(TARGET_REPO)" not in mk_txt
-        or "$(if $(EMAIL),--email $(EMAIL),) --service-action" not in mk_txt
-    )
-
-
-def render_layer_makefile(
-    layer_id: str, layer_role: str, effective_parent: Path, repo_dir: Path
-) -> str:
-    """Render a role-specialized Zero-Cloud Node Makefile powered by the zcg CLI."""
-    p_val = (
-        str(effective_parent.resolve()) if effective_parent.resolve() != repo_dir.resolve() else ""
-    )
-    dev_repo = "$(HOME)/Projects/dev-$(notdir $(ZCG_DIR))"
-    contrib_cfg = (
-        f"CONTRIB_REPO ?= $(if $(wildcard {dev_repo}/{NODE_MANIFEST_REL_PATH}),"
-        f"{dev_repo},$(ZCG_DIR))\nTARGET_REPO ?= $(CONTRIB_REPO)\n"
-        if layer_role == "corporate"
-        else "TARGET_REPO ?= $(PARENT_DIR)\n"
-    )
-    active = LAYER_ROLE_MAKEFILE_TARGETS.get(layer_role, LAYER_ROLE_MAKEFILE_TARGETS["department"])
-    sel = [t for t in active if t in LAYER_MAKEFILE_RECIPES]
-    phony = " ".join(["help", *sel])
-    help_lines = "\n".join(f'\t@echo "  make {t}"' for t in sel)
-    recipes = "\n".join(f"{t}:\n{LAYER_MAKEFILE_RECIPES[t]}" for t in sel)
-    return (
-        f"{MAKEFILE_ROLE_HEADER_PREFIX} — {layer_id} ({layer_role})\n"
-        "ZCG_DIR ?= $(HOME)/zero-cloud-gravity\n"
-        "ZCG_BIN ?= $(if $(wildcard $(ZCG_DIR)/.venv/bin/zcg),$(ZCG_DIR)/.venv/bin/zcg,zcg)\n"
-        f"PARENT_DIR ?= {p_val}\n{contrib_cfg}"
-        "PARENT_FLAG = $(if $(PARENT_DIR),--parent-dir $(PARENT_DIR),)\n"
-        "PR_FLAGS ?= --create-pr\n\n"
-        f".PHONY: {phony}\n"
-        f'help:\n\t@echo "Zero-Cloud Node: {layer_id} ({layer_role})"\n{help_lines}\n\n{recipes}\n'
-    )
-
-
 def render_layer_onboarding_readme(
     layer_id: str,
     layer_role: str,
@@ -167,12 +120,13 @@ def render_layer_onboarding_readme(
     lin_names = {n for n, _ in resolve_template_lineage_chain(active_templates)} | set(
         active_templates
     )
-    is_ind_specialty = (
-        entity_kind == "individual"
-        or effective_prec >= INDIVIDUAL_MIN_PRECEDENCE
-        or "academic-base" in lin_names
+    is_academic = (
+        bool({"academic-base", "academic-curriculum", "tutor-study-cockpit"} & lin_names)
+        and layer_role != "workstation"
+    )
+    is_ind_pillar = (
+        entity_kind == "individual" or effective_prec >= INDIVIDUAL_MIN_PRECEDENCE
     ) and layer_role != "workstation"
-    is_academic = "academic-base" in lin_names or is_ind_specialty
     branch_strategy = (
         f"`direct` (`['dev', 'pro']` — `master` = common baseline DNA in "
         f"`templates/{own_tpl_id}/rules/{own_tpl_id}.md`; `context_branches` (`specialty/*`, "
@@ -193,28 +147,35 @@ def render_layer_onboarding_readme(
         f".agents/SESSION.md, and scaffold our first lesson."
         if is_academic
         else (
-            "Phase B (Epistemic Knowledge & Spec Atlas): Structure "
-            "docs/{reference,architecture,guides}/ (< 465 lines) with E3..E0 epistemic "
-            "grades and citation_receipt anchors."
-            if layer_role == "knowledge"
+            f"Phase B (Sovereign Personal Pillar Rules, Context Tracks & Knowledge Feeds): Keep "
+            f"master for core pillar invariants in templates/{own_tpl_id}/rules/{own_tpl_id}.md, "
+            "isolate parallel tracks via context_branches, link read-only knowledge-feed or scoped "
+            "peer nodes (zcg link), and initialize docs/architecture/ and WORKROAD.md."
+            if is_ind_pillar
             else (
-                "Phase B (Root 0 Roster, Surface Bindings, Departments & Knowledge Twin): "
-                "Configure .github/CODEOWNERS (make roster), surface_bindings, and output "
-                f"zcg {next_cmd_goal} plus our symmetric public --role knowledge twin "
-                "(org-*/gov-*/sci-*/geo-*)."
-                if layer_role == "corporate"
-                else "Phase B (Roster, Surface Bindings & Child Topology): Configure "
-                ".github/CODEOWNERS (make roster), optional plugin-stack plugins "
-                f"(make apply-template), and output zcg {next_cmd_goal}."
+                "Phase B (Epistemic Knowledge & Spec Atlas): Structure "
+                "docs/{reference,architecture,guides}/ (< 465 lines) with E3..E0 epistemic "
+                "grades and citation_receipt anchors."
+                if layer_role == "knowledge"
+                else (
+                    "Phase B (Root 0 Roster, Surface Bindings, Departments & Knowledge Twin): "
+                    "Configure .github/CODEOWNERS (make roster), surface_bindings, and output "
+                    f"zcg {next_cmd_goal} plus our symmetric public --role knowledge twin "
+                    "(org-*/gov-*/sci-*/geo-*)."
+                    if layer_role == "corporate"
+                    else "Phase B (Roster, Surface Bindings & Child Topology): Configure "
+                    ".github/CODEOWNERS (make roster), optional plugin-stack plugins "
+                    f"(make apply-template), and output zcg {next_cmd_goal}."
+                )
             )
         )
     )
     phase_d = (
-        f"Phase D (Two-Level Personal Reconciliation & Sync): Reconcile cross-subject pedagogical "
-        f"improvements from specialty/* into {layer_id}:master, run make sync STRATEGY=reconcile, "
+        f"Phase D (Two-Level Personal Reconciliation & Sync): Reconcile cross-subject or "
+        f"cross-track improvements into {layer_id}:master, run make sync STRATEGY=reconcile, "
         f"and promote universal workstation habits 1-hop upward to {parent_label} via /enrich and "
         "make promote before /sclose."
-        if is_ind_specialty
+        if (is_academic or is_ind_pillar)
         else (
             "Phase D (Upward Enrichment & Sync Reconciliation): Reconcile upstream updates via "
             "make sync STRATEGY=reconcile (make upstream-diff), verify make env-gate "
