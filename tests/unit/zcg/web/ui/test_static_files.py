@@ -1,0 +1,122 @@
+"""Unit tests for zcg.web.ui.static_files.
+
+Specification: docs/architecture/06_web_and_api_application_engine.md
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from zcg.web.auth.security import WebAppError
+from zcg.web.http.request import Request
+from zcg.web.ui.static_files import (
+    CURRENT_ENGINE_ASSET_DIGEST,
+    ENGINE_ASSET_DIGEST_HEX_LEN,
+    FallbackStaticCatalog,
+    compute_engine_asset_digest,
+)
+
+
+class TestStaticFiles:
+    """Verify FallbackStaticCatalog cascading overrides, built-ins, ETag 304, and 403/404 guards."""
+
+    def test_serve_resolves_local_override_before_builtin_assets_expected(
+        self, tmp_path: Path
+    ) -> None:
+        """Verify search_dirs priority cascade and fallback to BUILTIN_STATIC_ASSETS."""
+        # Arrange
+        first_dir = tmp_path / "override_static"
+        second_dir = tmp_path / "plugin_static"
+        first_dir.mkdir()
+        (second_dir / "css").mkdir(parents=True)
+        (second_dir / "css/theme.css").write_text("body { color: cyan; }\n", "utf-8")
+        catalog = FallbackStaticCatalog((first_dir, second_dir))
+        req = Request({"type": "http", "method": "GET", "path": "/static/css/theme.css"})
+
+        # Act
+        resp_local = catalog.serve(req, "css/theme.css")
+        resp_bus = catalog.serve(req, "js/island-bus.js")
+        resp_builtin = catalog.serve(req, "js/zcg-swap.js")
+        resp_atlas = catalog.serve(req, "js/spatial-atlas.js")
+        resp_cockpit = catalog.serve(req, "js/cockpit-shell.js")
+        resp_hydrator = catalog.serve(req, "js/hydrator.js")
+        resp_logo = catalog.serve(req, "img/logo.svg")
+
+        # Assert
+        assert len(catalog.search_dirs) == 2
+        assert resp_local.status == 200 and b"cyan" in resp_local.body
+        assert resp_bus.status == 200 and b"window.IslandBus" in resp_bus.body
+        assert resp_builtin.status == 200 and b"ZCGSwap" in resp_builtin.body
+        assert b"ZCGHydrator?.hydrateAll" in resp_builtin.body
+        assert resp_atlas.status == 200 and b"spatial-atlas" in resp_atlas.body
+        assert b".innerHTML =" not in resp_atlas.body
+        assert resp_cockpit.status == 200 and b"cockpit-passport" in resp_cockpit.body
+        assert b".innerHTML =" not in resp_cockpit.body
+        assert resp_hydrator.status == 200 and b"ZCGHydrator" in resp_hydrator.body
+        assert resp_logo.status == 200 and b"<svg" in resp_logo.body
+        assert "image/svg+xml" in resp_logo.content_type
+        assert len(CURRENT_ENGINE_ASSET_DIGEST) == ENGINE_ASSET_DIGEST_HEX_LEN == 12
+        assert compute_engine_asset_digest() == CURRENT_ENGINE_ASSET_DIGEST
+
+    def test_serve_returns_304_not_modified_when_if_none_match_matches_etag_expected(
+        self, tmp_path: Path
+    ) -> None:
+        """Verify SHA-256 ETag conditional GET returns HTTP 304 with empty body on match."""
+        # Arrange
+        catalog = FallbackStaticCatalog((tmp_path,))
+        req_initial = Request(
+            {"type": "http", "method": "GET", "path": "/static/css/design-system.css"}
+        )
+        initial_resp = catalog.serve(req_initial, "css/design-system.css")
+        etag = initial_resp.headers["etag"]
+        req_cached = Request(
+            {
+                "type": "http",
+                "method": "GET",
+                "path": "/static/css/design-system.css",
+                "headers": [(b"if-none-match", etag.encode("latin1"))],
+            }
+        )
+
+        # Act
+        cached_resp = catalog.serve(req_cached, "css/design-system.css")
+
+        # Assert
+        assert cached_resp.status == 304
+        assert cached_resp.body == b""
+        assert cached_resp.headers["etag"] == etag
+
+    def test_serve_rejects_path_traversal_with_403_containment_violation_expected(
+        self, tmp_path: Path
+    ) -> None:
+        """Verify bipolar path-containment guard blocks '../' and leading '/' asset paths."""
+        # Arrange
+        catalog = FallbackStaticCatalog((tmp_path,))
+        req = Request({"type": "http", "method": "GET", "path": "/static/secret"})
+
+        # Act
+        with pytest.raises(WebAppError) as exc_rel:
+            catalog.serve(req, "../secret.txt")
+        with pytest.raises(WebAppError) as exc_empty:
+            catalog.serve(req, "   ")
+
+        # Assert
+        assert exc_rel.value.http_status == 403
+        assert exc_empty.value.http_status == 403
+
+    def test_serve_raises_404_when_asset_absent_from_all_layers_expected(
+        self, tmp_path: Path
+    ) -> None:
+        """Verify missing static asset raises HTTP 404 STATIC_ASSET_NOT_FOUND."""
+        # Arrange
+        catalog = FallbackStaticCatalog((tmp_path,))
+        req = Request({"type": "http", "method": "GET", "path": "/static/css/missing.css"})
+
+        # Act
+        with pytest.raises(WebAppError) as exc_404:
+            catalog.serve(req, "css/missing.css")
+
+        # Assert
+        assert exc_404.value.http_status == 404

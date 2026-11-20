@@ -20,7 +20,7 @@ class TestPosture:
     """Verify purpose archetypes, sovereign/managed posture, wallet airlocks, and origins."""
 
     def test_resolve_purpose_archetype_nominal_subordinate_and_guards_expected(self) -> None:
-        """Verify all 6 setup purposes, subordinate managed flip, and invalid input guards."""
+        """Verify all 7 setup purposes, subordinate managed flip, and invalid input guards."""
         # Arrange
         ind_purpose = "individual-sovereign"
         ent_purpose = "enterprise-network"
@@ -28,18 +28,38 @@ class TestPosture:
         # Act
         ind = posture.resolve_purpose_archetype(ind_purpose)
         ind_squad = posture.resolve_purpose_archetype(ind_purpose, layer_role="squad")
+        acad = posture.resolve_purpose_archetype("academic-tutor")
+        acad_squad = posture.resolve_purpose_archetype("academic-tutor", layer_role="squad")
         ent_root = posture.resolve_purpose_archetype(ent_purpose)
         ent_dept = posture.resolve_purpose_archetype(ent_purpose, layer_role="department")
         know = posture.resolve_purpose_archetype("knowledge-commons")
 
         # Assert
-        assert ind["default_role"] == "workstation"
+        assert len(posture.VALID_SETUP_PURPOSES) == 7
+        assert ind["default_role"] == "workstation" and ind["default_precedence"] == 90
         assert ind["default_templates"] == ["universal-base", "workstation-control-tower"]
         assert ind["default_governance_posture"] == "sovereign"
-        assert ind["personal_constellation_pillars"] == ["pc", "tutor", "work", "wallet"]
-        assert ind_squad["default_role"] == "squad"
+        assert ind["personal_constellation_pillars"] == [
+            "profile",
+            "tutor",
+            "work",
+            "wallet",
+            "security",
+            "game",
+        ]
+        assert ind_squad["default_role"] == "squad" and ind_squad["default_precedence"] == 50
         assert ind_squad["default_governance_posture"] == "sovereign"
         assert ind_squad["default_templates"] == ["universal-base", "node-work-cockpit"]
+        assert acad["default_role"] == "department" and acad["default_entity_kind"] == "individual"
+        assert (
+            acad["default_precedence"] == 86 and acad["default_governance_posture"] == "sovereign"
+        )
+        assert acad["default_templates"] == [
+            "academic-base",
+            "academic-curriculum",
+            "tutor-study-cockpit",
+        ]
+        assert acad_squad["default_role"] == "squad" and acad_squad["default_precedence"] == 50
         assert ent_root["default_governance_posture"] == "sovereign"
         assert ent_root["personal_constellation_pillars"] == []
         assert ent_dept["default_role"] == "department"
@@ -56,12 +76,12 @@ class TestPosture:
     ) -> None:
         """Verify 4-pillar personal detection, R3 wallet airlock, and managed tree isolation."""
         # Arrange
-        pc_dir = tmp_path / "alex-pc"
-        (pc_dir / "system").mkdir(parents=True)
-        (pc_dir / NODE_MANIFEST_REL_PATH).write_text(
+        profile_dir = tmp_path / "persona-profile"
+        (profile_dir / "system").mkdir(parents=True)
+        (profile_dir / NODE_MANIFEST_REL_PATH).write_text(
             json.dumps(
                 {
-                    "layer_id": "alex-pc",
+                    "layer_id": "persona-profile",
                     "layer_role": "workstation",
                     "entity_kind": "individual",
                     "precedence": 90,
@@ -69,26 +89,26 @@ class TestPosture:
             ),
             encoding="utf-8",
         )
-        wallet_dir = tmp_path / "alex-wallet"
+        wallet_dir = tmp_path / "persona-wallet"
         (wallet_dir / "system").mkdir(parents=True)
         (wallet_dir / NODE_MANIFEST_REL_PATH).write_text(
             json.dumps(
                 {
-                    "layer_id": "alex-wallet",
+                    "layer_id": "persona-wallet",
                     "layer_role": "squad",
                     "entity_kind": "individual",
                     "precedence": 88,
-                    "governing_root_id": "alex-pc",
+                    "governing_root_id": "persona-profile",
                 }
             ),
             encoding="utf-8",
         )
-        work_dir = tmp_path / "alex-work"
+        work_dir = tmp_path / "persona-work"
         (work_dir / "system").mkdir(parents=True)
         (work_dir / NODE_MANIFEST_REL_PATH).write_text(
             json.dumps(
                 {
-                    "layer_id": "alex-work",
+                    "layer_id": "persona-work",
                     "layer_role": "squad",
                     "entity_kind": "individual",
                     "precedence": 87,
@@ -98,12 +118,12 @@ class TestPosture:
             ),
             encoding="utf-8",
         )
-        custom_ind = tmp_path / "alex-notes"
+        custom_ind = tmp_path / "persona-notes"
         (custom_ind / "system").mkdir(parents=True)
         (custom_ind / NODE_MANIFEST_REL_PATH).write_text(
             json.dumps(
                 {
-                    "layer_id": "alex-notes",
+                    "layer_id": "persona-notes",
                     "layer_role": "project",
                     "entity_kind": "individual",
                     "precedence": 89,
@@ -130,11 +150,11 @@ class TestPosture:
         (exp_posture / "system").mkdir(parents=True)
 
         # Act
-        pc_res = posture.resolve_governance_posture(pc_dir)
-        wal_res = posture.resolve_governance_posture(wallet_dir, parent_dir=pc_dir)
-        wrk_res = posture.resolve_governance_posture(work_dir, parent_dir=pc_dir)
+        profile_res = posture.resolve_governance_posture(profile_dir)
+        wal_res = posture.resolve_governance_posture(wallet_dir, parent_dir=profile_dir)
+        wrk_res = posture.resolve_governance_posture(work_dir, parent_dir=profile_dir)
         notes_res = posture.resolve_governance_posture(custom_ind)
-        bad_tree_res = posture.resolve_governance_posture(corp_dept, parent_dir=pc_dir)
+        bad_tree_res = posture.resolve_governance_posture(corp_dept, parent_dir=profile_dir)
         clean_corp_res = posture.resolve_governance_posture(corp_dept)
         exp_res = posture.resolve_governance_posture(
             exp_posture,
@@ -145,9 +165,32 @@ class TestPosture:
                 "governance_posture": "managed",
             },
         )
+        sec_res = posture.resolve_governance_posture(
+            tmp_path / "persona-security",
+            manifest={
+                "layer_id": "persona-security",
+                "layer_role": "domain-policy",
+                "entity_kind": "individual",
+                "precedence": 85,
+            },
+        )
+        game_res = posture.resolve_governance_posture(
+            tmp_path / "persona-game",
+            manifest={
+                "layer_id": "persona-game",
+                "layer_role": "squad",
+                "entity_kind": "individual",
+                "precedence": 89,
+            },
+        )
 
         # Assert
-        assert pc_res["personal_pillar"] == "pc" and pc_res["governance_posture"] == "sovereign"
+        assert (
+            profile_res["personal_pillar"] == "profile"
+            and profile_res["governance_posture"] == "sovereign"
+        )
+        assert sec_res["personal_pillar"] == "security" and sec_res["default_surface_ring"] == "R3"
+        assert game_res["personal_pillar"] == "game" and game_res["allow_external_peer_links"]
         assert wal_res["personal_pillar"] == "wallet"
         assert wal_res["default_surface_ring"] == "R3"
         assert wal_res["allow_external_peer_links"] is False
@@ -167,9 +210,9 @@ class TestPosture:
         """Verify loopback, intranet-gateway, cloud-ephemeral, and host injection guards."""
         # Arrange
         m_doc = {
-            "layer_id": "alex-pc",
+            "layer_id": "persona-profile",
             "precedence": 90,
-            "base_domain": "alex-pc.personal.local",
+            "base_domain": "persona-profile.personal.local",
         }
 
         # Act
@@ -183,7 +226,7 @@ class TestPosture:
         )
         cloud_env = posture.resolve_surface_origin(
             m_doc,
-            env_vars={"ZCG_SURFACE_PUBLIC_ORIGIN": "https://alex-pc.run.app/"},
+            env_vars={"ZCG_SURFACE_PUBLIC_ORIGIN": "https://persona-profile.run.app/"},
         )
         cloud_hdr = posture.resolve_surface_origin(
             m_doc,
@@ -194,13 +237,13 @@ class TestPosture:
 
         # Assert
         assert loop_dev["origin_mode"] == "loopback"
-        assert loop_dev["dashboard_url"] == "http://dev.alex-pc.localhost:8790/dashboard"
-        assert loop_pro["dashboard_url"] == "http://alex-pc.localhost:9790/dashboard"
+        assert loop_dev["dashboard_url"] == "http://dev.persona-profile.localhost:8790/dashboard"
+        assert loop_pro["dashboard_url"] == "http://persona-profile.localhost:9790/dashboard"
         assert intra_dev["origin_mode"] == "intranet-gateway"
-        assert intra_dev["canonical_origin"] == "https://dev.alex-pc.personal.local"
-        assert intra_pro["canonical_origin"] == "https://alex-pc.personal.local"
+        assert intra_dev["canonical_origin"] == "https://dev.persona-profile.personal.local"
+        assert intra_pro["canonical_origin"] == "https://persona-profile.personal.local"
         assert cloud_env["origin_mode"] == "cloud-ephemeral"
-        assert cloud_env["dashboard_url"] == "https://alex-pc.run.app/dashboard"
+        assert cloud_env["dashboard_url"] == "https://persona-profile.run.app/dashboard"
         assert cloud_hdr["canonical_origin"] == "http://ephemeral.iso.example:8080"
         with pytest.raises(ValueError, match="Invalid active_env"):
             posture.resolve_surface_origin(m_doc, active_env="bad", env_vars={})

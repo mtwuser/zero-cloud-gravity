@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block header %}
+  <div class="zcg-public-navbar" data-zcg-plane="public-portal">
+    <a class="zcg-public-brand" href="{{ clean_prefix }}">
+      <img class="zcg-brand-logo" src="{% if brand_logo_url %}{{ brand_logo_url | safe_url }}{% else %}/static/img/logo.svg{% endif %}" alt="{{ brand_name }}" width="36" height="36">
+      <div>
+        <strong class="zcg-public-brand__title">{{ brand_name }}</strong>
+        <span class="zcg-public-brand__domain">{% if display_domain %}{{ display_domain }}{% else %}{{ brand_name }}{% endif %}</span>
+      </div>
+    </a>
+    {% if nav_links %}
+    <nav class="zcg-public-links" aria-label="Website sections">
+      {% for item in nav_links %}
+      <a class="zcg-public-link" href="{{ item.href | safe_url }}">{{ item.label }}</a>
+      {% endfor %}
+    </nav>
+    {% endif %}
+    <div class="zcg-public-cta">
+      {{ env_frame_badge_html }}
+      {% if is_signed_in %}
+      <a class="zcg-btn zcg-btn--secondary zcg-btn--sm zcg-settings-btn" href="/settings" aria-label="User Settings (/settings)" title="User Settings (/settings)">{{ icon_settings }}</a>
+      <details class="zcg-burger zcg-user-menu">
+        <summary class="zcg-user-avatar-btn" aria-label="Account ({{ caller_ring }})" data-zcg-auth-cta="active-session">
+          <span class="zcg-user-avatar">{{ caller_ring }}</span>
+          <span class="zcg-sr-only">Account ({{ caller_ring }})</span>
+        </summary>
+        <div class="zcg-burger__panel zcg-user-menu__panel">
+          <div class="zcg-user-menu__head">
+            <strong>Account ({{ caller_ring }})</strong>
+            <small>{% if display_domain %}{{ display_domain }}{% else %}{{ brand_name }}{% endif %}</small>
+          </div>
+          <a class="is-active" aria-current="page" href="{{ clean_prefix }}">{{ icon_globe }} Public Home ({% if display_domain %}{{ display_domain }}{% else %}{{ brand_name }}{% endif %})</a>
+          {% if is_operator_ring %}
+          <div class="zcg-burger__divider">Internal Node ({{ caller_ring }})</div>
+          <a href="/">{{ icon_compass }} Workspace (/)</a>
+          <a href="/admin">{{ icon_shield }} Node Admin (/admin)</a>
+          {% endif %}
+          <form method="post" action="/auth/logout" data-zcg-post="/auth/logout">
+            <button type="submit" class="zcg-menu-btn">{{ icon_lock }} Sign Out</button>
+          </form>
+        </div>
+      </details>
+      {% else %}
+      {% if login_enabled %}
+      <a class="zcg-btn zcg-btn--sm zcg-google-signin" href="/auth/session?format=html" data-zcg-auth-cta="google-oidc">{{ icon_user }} Sign in with Google</a>
+      {% endif %}
+      <details class="zcg-burger">
+        <summary class="zcg-burger__btn" aria-label="Open site menu">{{ icon_menu }} <span>Menu</span></summary>
+        <div class="zcg-burger__panel">
+          <a href="{{ clean_prefix }}">{{ icon_globe }} Home ({% if display_domain %}{{ display_domain }}{% else %}{{ brand_name }}{% endif %})</a>
+          <a href="/.well-known/zcg-attestation.json">{{ icon_check }} Surface Attestation</a>
+        </div>
+      </details>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}{{ portal_content }}{% endblock %}
+{% block footer %}{{ portal_footer }}{% endblock %}

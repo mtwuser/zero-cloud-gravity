@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.1.0) — Deterministic 8-Stage Repository Verification Gate
+# ZeroCloudGravity (v1.2.0) — Deterministic 8-Stage Repository Verification Gate
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -40,11 +40,21 @@ echo "=== ZeroCloudGravity Repository Verification (v${VERSION_STR}) ==="
 echo ""
 echo "[1/8] Open-Source Metadata, SemVer & Relative Markdown Links"
 for req in VERSION LICENSE README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md \
-  CODE_OF_CONDUCT.md ACCESSIBILITY.md Makefile mk/oss-contrib.mk Dockerfile .dockerignore install.sh \
+  CODE_OF_CONDUCT.md ACCESSIBILITY.md Makefile Dockerfile .dockerignore install.sh \
   pyproject.toml requirements.txt requirements-dev.txt server.json system/zcg-node.json \
   docs/README.md \
-  docs/guides/01_workstation_and_global_profiles.md \
-  docs/guides/02_sovereign_nodes_and_federated_workflows.md \
+  docs/WHITEPAPER.md \
+  docs/assets/diagrams/01_four_stack_triadic_architecture.svg \
+  docs/assets/diagrams/02_capability_rings_and_oidc_tls_plane.svg \
+  docs/assets/diagrams/03_v1_to_v2_cryptographic_bridge.svg \
+  docs/guides/01_personal_workstation_and_day0_setup.md \
+  docs/guides/02_personal_tutor_and_academic_progression.md \
+  docs/guides/03_personal_work_security_and_airlock_pillars.md \
+  docs/guides/04_scientific_and_public_knowledge_corpora.md \
+  docs/guides/05_enterprise_root_and_organizational_scales.md \
+  docs/guides/06_enterprise_departments_projects_and_portals.md \
+  docs/guides/07_federated_workflows_and_inter_node_links.md \
+  docs/guides/08_network_of_networks_and_distributed_topology.md \
   docs/architecture/01_core_and_node_manifest.md \
   docs/architecture/02_triadic_topology_and_twin_surfaces.md \
   docs/architecture/03_governance_and_work_ledger.md \
@@ -54,6 +64,8 @@ for req in VERSION LICENSE README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md \
   docs/reference/01_stack_and_plugin_matrix.md \
   docs/reference/02_cli_mcp_and_security_reference.md \
   .github/workflows/ci.yml \
+  .github/workflows/cd-environments.yml \
+  .github/workflows/publish-mcp.yml \
   .github/FUNDING.yml \
   .github/FUNDING.md \
   .github/PULL_REQUEST_TEMPLATE.md \
@@ -91,7 +103,12 @@ for sh_file in "${SH_ENTRYPOINTS[@]}"; do
 done
 command -v "${SHELLCHECK}" >/dev/null 2>&1 || { echo "Missing required tool: shellcheck (run 'make setup-dev')" >&2; exit 1; }
 "${SHELLCHECK}" "${SH_ENTRYPOINTS[@]}" templates/plugin-stack/workstation-control-tower/assets/external/*/*.sh
-echo "  OK: Verified syntax and permissions on shell entrypoints and external recipes"
+if command -v node >/dev/null 2>&1; then
+  for js_file in src/zcg/web/assets/js/*.js templates/plugin-stack/*/web/static/js/islands/*.js; do
+    node --check "${REPO_DIR}/${js_file}"
+  done
+fi
+echo "  OK: Verified syntax and permissions on shell entrypoints, external recipes, and ES2024 JS assets"
 
 echo ""
 echo "[3/8] Python Linting (ruff), Strict Type Checking (mypy --strict) & AAA Structure"
@@ -144,14 +161,14 @@ echo ""
 echo "[6/8] SKILL.md Frontmatter (kebab-case, 1:1 Folder Parity & < 465 Lines)"
 PYTHONPATH=src "${PYTHON}" -c '
 from pathlib import Path
-from zcg.core.constants import KEBAB_ID_RE
+from zcg.core.domain import is_kebab_id
 from zcg.core.manifests import parse_skill_frontmatter
 root = Path.cwd()
 skills = [*sorted((root / "antigravity/.gemini/config/skills").glob("*/SKILL.md")), *sorted((root / "templates").rglob("SKILL.md"))]
 assert len(skills) == 17, f"Expected 17 total SKILL.md files (8 global + 9 stack), got {len(skills)}"
 for sk in skills:
     fm = parse_skill_frontmatter(sk, root)
-    assert KEBAB_ID_RE.match(str(fm["name"])) and fm["name"] == sk.parent.name
+    assert is_kebab_id(str(fm["name"])) and fm["name"] == sk.parent.name
     assert len(sk.read_text("utf-8").splitlines()) < 465
 '
 echo "  OK: All 17 SKILL.md files verified (8 global + 9 stack)"
@@ -163,7 +180,7 @@ fi
 echo "  OK: zcg lint-skills security scan passed (0 Unicode, pipe-to-shell, egress, or path issues)"
 
 echo ""
-echo "[7/8] Node Manifest (zcg-node-v1), 16 Templates (zcg-template-v1) & zcg-mcp Self-Test"
+echo "[7/8] Node Manifest (zcg-node-v1), 19 Templates (zcg-template-v1) & zcg-mcp Self-Test"
 if [[ -x "${ZCG}" ]]; then
   "${ZCG}" list-templates >/dev/null
   "${ZCG_MCP}" --self-test >/dev/null
@@ -171,7 +188,7 @@ else
   PYTHONPATH=src "${PYTHON}" -m zcg.cli.dispatcher list-templates >/dev/null
   PYTHONPATH=src "${PYTHON}" -m zcg.mcp.server --self-test >/dev/null
 fi
-echo "  OK: zcg list-templates (16 packs) & zcg-mcp --self-test (9/9/3) passed"
+echo "  OK: zcg list-templates (19 packs) & zcg-mcp --self-test (9/9/3) passed"
 
 echo ""
 echo "[8/8] Automated Test Suites (1:1 Isolated Unit -> Imp -> E2E) & 100.00% Coverage Gate"

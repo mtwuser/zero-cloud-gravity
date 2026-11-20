@@ -119,7 +119,11 @@ class TestManifests:
 
         # Act
         dict_m = manifests.load_node_manifest(tmp_path)
-        ind_m = {"layer_id": "user-pc", "layer_role": "workstation", "entity_kind": "individual"}
+        ind_m = {
+            "layer_id": "user-profile",
+            "layer_role": "workstation",
+            "entity_kind": "individual",
+        }
         high_prec_m = {"layer_id": "lab", "layer_role": "workstation", "precedence": 90}
 
         # Assert
@@ -234,7 +238,14 @@ class TestManifests:
         (hb / "assets" / "sub").mkdir(parents=True)
         (hb / "assets" / "contract.json").write_text("{}", encoding="utf-8")
         (hb / "template.json").write_text(
-            json.dumps({"kind": "human-stack", "target_role": "department"}), encoding="utf-8"
+            json.dumps(
+                {
+                    "kind": "human-stack",
+                    "target_role": "department",
+                    "associated_global_skills": ["architecture", "audit"],
+                }
+            ),
+            encoding="utf-8",
         )
         flat = t_root / "sovereign-pack"
         flat.mkdir()
@@ -268,6 +279,9 @@ class TestManifests:
         )
         assert manifests.resolve_template_dest_dir(tmp_path, "new-c") == t_root / "new-c"
         assert len(cat) == 3
+        by_name = {entry["template_name"]: entry for entry in cat}
+        assert by_name["science-base"]["associated_global_skills"] == ["architecture", "audit"]
+        assert by_name["sovereign-pack"]["associated_global_skills"] == []
 
     def test_canonicalize_local_node_url_across_loopback_external_and_guards_expected(
         self,
@@ -278,12 +292,12 @@ class TestManifests:
 
         # Act
         empty_id = manifests.canonicalize_local_node_url("http://127.0.0.1:8786", node_id=" ")
-        no_port = manifests.canonicalize_local_node_url("http://127.0.0.1", node_id="alex-tutor")
+        no_port = manifests.canonicalize_local_node_url("http://127.0.0.1", node_id="persona-tutor")
         ext = manifests.canonicalize_local_node_url(raw_ext, node_id="org-alpha")
         sub_dev = manifests.canonicalize_local_node_url(
             "http://127.0.0.1:8786",
-            node_id="alex-tutor",
-            local_dev_zone="alex-pc.localhost",
+            node_id="persona-tutor",
+            local_dev_zone="persona-profile.localhost",
         )
         know_pro = manifests.canonicalize_local_node_url(
             "http://127.0.0.1:8720/?env=pro",
@@ -292,7 +306,7 @@ class TestManifests:
         )
         root_fb = manifests.canonicalize_local_node_url(
             "",
-            node_id="alex-pc",
+            node_id="persona-profile",
             layer_role="workstation",
             fallback_port=8790,
         )
@@ -300,9 +314,9 @@ class TestManifests:
         # Assert
         assert empty_id == "" and no_port == ""
         assert ext == "https://portal.example.org"
-        assert sub_dev == "http://dev.alex-tutor.alex-pc.localhost:8786"
+        assert sub_dev == "http://dev.persona-tutor.persona-profile.localhost:8786"
         assert know_pro == "http://org-alpha.localhost:8720"
-        assert root_fb == "http://dev.alex-pc.localhost:8790"
+        assert root_fb == "http://dev.persona-profile.localhost:8790"
 
     def test_strip_markdown_frontmatter_valid_plain_and_unclosed_expected(self) -> None:
         """Verify YAML frontmatter stripping preserves body and leaves plain or unclosed text."""
@@ -320,3 +334,47 @@ class TestManifests:
         assert res_fm == "# Rule Body"
         assert res_plain == "# Plain Body"
         assert res_unclosed == unclosed.strip()
+
+    def test_collect_layer_effective_bindings_deduplication_and_template_merge_expected(
+        self, tmp_path: Path
+    ) -> None:
+        """Verify manifest surface_bindings merge with template recommended_surface_bindings."""
+        # Arrange
+        t_root = tmp_path / "templates/context-stack"
+        (t_root / "pack-a").mkdir(parents=True)
+        (t_root / "pack-a/template.json").write_text(
+            json.dumps(
+                {
+                    "recommended_surface_bindings": [
+                        {"binding_id": "dup-id", "mode": "ignored"},
+                        {"binding_id": "tpl-id", "mode": "authoritative"},
+                        {"mode": "anonymous"},
+                        "non-dict",
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+        (t_root / "pack-list").mkdir(parents=True)
+        (t_root / "pack-list/template.json").write_text("[1]", encoding="utf-8")
+        manifest = {
+            "surface_bindings": [{"binding_id": "dup-id", "mode": "primary"}],
+            "default_stack_templates": ["pack-a", "pack-list", "missing-pack"],
+        }
+
+        # Act
+        eff = manifests.collect_layer_effective_bindings(tmp_path, manifest)
+        bare_zone_url = manifests.canonicalize_local_node_url(
+            "http://localhost:8788",
+            node_id="persona-wallet",
+            active_env="pro",
+            local_dev_zone="localhost",
+        )
+
+        # Assert
+        assert eff == [
+            {"binding_id": "dup-id", "mode": "primary"},
+            {"binding_id": "tpl-id", "mode": "authoritative"},
+            {"mode": "anonymous"},
+        ]
+        assert bare_zone_url == "http://persona-wallet.persona-wallet.localhost:8788"

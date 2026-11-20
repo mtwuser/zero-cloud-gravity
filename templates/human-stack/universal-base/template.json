@@ -6,5 +6,6 @@
   "extends": null,
   "target_role": "workstation",
   "description": "Universal Zero-Cloud Antigravity cognitive, modular, verification, and commit baseline.",
+  "associated_global_skills": ["sopen", "continue", "sclose", "review", "enrich"],
   "recommended_surface_bindings": []
 }

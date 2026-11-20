@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block header %}
+  <div class="zcg-top-bar" data-zone="Z1" data-zcg-plane="node-admin">
+    <div class="zcg-top-bar__left">
+      <a class="zcg-brand zcg-brand--compact zcg-brand--link" href="/admin" title="Reset {{ layer_id }} Node Admin">
+        <img class="zcg-brand-logo" src="{% if brand_logo_url %}{{ brand_logo_url | safe_url }}{% else %}/static/img/logo.svg{% endif %}" alt="ZeroCloudGravity" width="28" height="28">
+        <span class="zcg-sr-only">{{ layer_id }}</span>
+      </a>
+      <div id="lineage_crumb" class="zcg-lineage-crumb"></div>
+    </div>
+    <div class="zcg-context-strip">{{ env_switcher_html }}{{ branch_badge_html }}{{ user_menu_html }}</div>
+  </div>
+{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+  <div class="zcg-internal-shell" data-zcg-plane="node-admin" data-island="cockpit-passport" data-hydrate="eager" data-zone="Z3">
+    <aside class="zcg-sidebar" aria-label="Node administration sections">
+      <div class="zcg-sidebar__section">
+        <span class="zcg-sidebar__heading">Node Admin</span>
+        <div class="zcg-tabs" role="tablist" aria-label="Node administration views">
+          <button type="button" role="tab" aria-selected="true" class="zcg-tab is-active" data-admin-tab="health" data-admin-title="Health &amp; Telemetry">{{ icon_shield }} Health &amp; Telemetry</button>
+          <button type="button" role="tab" aria-selected="false" class="zcg-tab" data-admin-tab="runtime" data-admin-title="Runtime &amp; Updates" data-admin-fetch="/api/modules/runtime">{{ icon_cpu }} Runtime &amp; Updates</button>
+          <button type="button" role="tab" aria-selected="false" class="zcg-tab" data-admin-tab="brand" data-admin-title="Brand &amp; Identity">{{ icon_sparkles }} Brand &amp; Identity</button>
+          <button type="button" role="tab" aria-selected="false" class="zcg-tab" data-admin-tab="capabilities" data-admin-title="Capabilities" data-admin-fetch="/api/modules/capabilities">{{ icon_layers }} Capabilities</button>
+          <button type="button" role="tab" aria-selected="false" class="zcg-tab" data-admin-tab="skills" data-admin-title="Skills" data-admin-fetch="/api/tools?mode=skills">{{ icon_book }} Skills</button>
+          <button type="button" role="tab" aria-selected="false" class="zcg-tab" data-admin-tab="tools" data-admin-title="Tools &amp; Sandboxes" data-admin-fetch="/api/tools?mode=tools">{{ icon_cpu }} Tools &amp; Sandboxes</button>
+          <button type="button" role="tab" aria-selected="false" class="zcg-tab" data-admin-tab="network" data-admin-title="Network &amp; Links" data-admin-fetch="/api/modules/node-mesh">{{ icon_compass }} Network &amp; Links</button>
+          <button type="button" role="tab" aria-selected="false" class="zcg-tab" data-admin-tab="exposure" data-admin-title="Public Exposure" data-admin-fetch="/api/modules/portal-inbox?mode=admin">{{ icon_globe }} Public Exposure</button>
+          <button type="button" role="tab" aria-selected="false" class="zcg-tab" data-admin-tab="vault" data-admin-title="Attachment Vault" data-admin-fetch="/api/modules/vault?view=cards">{{ icon_vault }} Attachment Vault</button>
+        </div>
+      </div>
+    </aside>
+    <div class="zcg-stage">
+      <header class="zcg-stage-head" data-surface-purpose="node-cockpit">
+        <div class="zcg-stage-head__main">
+          <h1 id="title" class="zcg-stage-head__title" data-zcg-view-indicator="1">Health &amp; Telemetry</h1>
+          <p id="sub" class="zcg-stage-head__sub">{{ active_subdomain_url }}</p>
+        </div>
+        <span class="zcg-badge">{{ icon_shield }} Node Admin · R3</span>
+      </header>
+      <section class="zcg-card zcg-card--wide" role="tabpanel" data-admin-panel="health">
+        <div id="health_breakdown" style="margin-bottom: 0.85rem;"></div>
+        <div id="iac"></div>
+        <div id="admin-telemetry-slot" style="margin-top: 0.85rem;"></div>
+        <h3 id="s_hdr" style="margin-top: 1rem;">Repository Work Summary</h3>
+        <div id="work"></div>
+        <details style="margin-top: 1rem;">
+          <summary><strong id="z4_hdr">Operator CLI Quick Reference</strong></summary>
+          <div id="cmds" style="margin-top: 0.45rem;"></div>
+        </details>
+      </section>
+      <section class="zcg-card zcg-card--wide" role="tabpanel" data-admin-panel="brand" hidden>
+        {{ node_brand_settings_html }}
+      </section>
+      <section class="zcg-card zcg-card--wide" role="tabpanel" data-admin-panel="remote" hidden>
+        <div id="zcg-capability-stage" aria-live="polite"></div>
+      </section>
+    </div>
+  </div>
+  <script id="cockpit-data" type="application/json">{{ cockpit_json }}</script>
+{% endblock %}
+{% block footer %}
+  {{ provenance_footer_html }}
+{% endblock %}

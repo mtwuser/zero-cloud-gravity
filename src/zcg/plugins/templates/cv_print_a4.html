@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" data-zcg-surface="cockpit">
+<head>
+  <meta charset="utf-8">
+  <title>{{ full_name }} — CV ({{ effective_tier }})</title>
+  <link rel="stylesheet" href="/static/css/design-system.css">
+  <style>@page{size:A4;margin:14mm;}body{max-width:210mm;margin:0 auto;padding:1.2rem;font-family:system-ui,sans-serif;line-height:1.45;}@media print{.zcg-no-print{display:none!important;}body{background:#fff;color:#111;}}</style>
+</head>
+<body>
+  <nav class="zcg-no-print" style="margin-bottom:1rem;display:flex;gap:0.5rem;">
+    <a class="zcg-btn" href="{{ clean_prefix }}/cv/download.md">Download .md</a>
+    <a class="zcg-btn zcg-btn--secondary" href="{{ clean_prefix }}/cv/download.json">Download .json</a>
+    <a class="zcg-btn zcg-btn--secondary" href="{{ clean_prefix }}">Back to Portal</a>
+    <small style="align-self:center;">Use Browser Print (Ctrl+P / Cmd+P) for A4 PDF</small>
+  </nav>
+  <header>
+    <h1>{{ full_name }}</h1>
+    <p><strong>{{ headline }}</strong><br>Domain: <code>{{ public_domain }}</code> · Contact: <code>{{ public_contact }}</code> · Projected Tier: <code>{{ effective_tier }}</code> (Withheld: {{ withheld_count }})</p>
+  </header>
+  <main>
+    {% for item in disclosed_entries %}
+    <article style="margin-bottom:0.85rem;padding-bottom:0.65rem;border-bottom:1px solid #d0d7de;">
+      <strong>{{ item.label }}</strong> <small>[{{ item.section }} · {{ item.disclosure_tier }}]</small>
+      <p style="margin:0.25rem 0 0;">{{ item.value }}</p>
+    </article>
+    {% endfor %}
+  </main>
+  <footer><small>Attested SHA-256: <code>{{ payload_digest }}</code></small></footer>
+</body>
+</html>

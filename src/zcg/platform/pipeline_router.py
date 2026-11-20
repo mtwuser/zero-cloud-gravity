@@ -18,12 +18,12 @@ from zcg.platform.cvs import (
     SchemaDriftDetector,
 )
 from zcg.platform.schema_discovery import SchemaDiscovery
-from zcg.web.channels import build_swap_response_headers
-from zcg.web.components import render_card, render_kpi_stat, render_table
-from zcg.web.request import Request, WebResponse, respond
-from zcg.web.router import APIRouter
-from zcg.web.security import ErrorAction, ErrorSeverity, WebAppError
-from zcg.web.templates import SafeHTML
+from zcg.web.auth.security import ErrorAction, ErrorSeverity, WebAppError
+from zcg.web.http.channels import build_swap_response_headers
+from zcg.web.http.request import Request, WebResponse, respond
+from zcg.web.http.router import APIRouter
+from zcg.web.ui.components import render_card, render_kpi_stat, render_table
+from zcg.web.ui.templates import SafeHTML
 
 DEFAULT_DATA_PIPELINE_PREFIX: Final[str] = "/api/platform/pipeline"
 

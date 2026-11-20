@@ -1,0 +1,34 @@
+<section class="zcg-card" data-zcg-wallet-ring="{{ ring_mode }}">
+  <header class="zcg-card__header">
+    <h3>Zero-Custody Treasury ({{ surface_label }})</h3>
+    <span class="zcg-badge">{{ ring_mode }} · {% if privacy_shield %}Base-100 / % Shield ON{% else %}Local Operator Unshielded{% endif %}</span>
+  </header>
+  <p class="zcg-compass" data-surface-purpose="wallet-treasury"><strong>Treasury Ring Scope:</strong> <code>R0</code> public reserve &amp; receipts · <code>R2</code> departmental budget · <code>R3</code> local-only airlock (<code>Base-100 / %</code> shield, <code>0</code> keys stored).</p>
+  <p data-zcg-wallet-discovery="wallet-standard+eip6963">Non-custodial discovery ready: {{ providers_txt }} (`0` private keys stored).</p>
+  <table>
+    <caption>Watch-Only CAIP-10 Accounts</caption>
+    <thead><tr><th>CAIP-10</th><th>Provider</th><th>Ring</th></tr></thead>
+    <tbody>
+      {% if watch_accounts %}
+      {% for acc in watch_accounts %}
+      <tr><td><code>{{ acc.caip10_id }}</code></td><td>{{ acc.wallet_provider }}</td><td>{{ acc.ring_visibility }}</td></tr>
+      {% endfor %}
+      {% else %}
+      <tr><td colspan="3">No watch-only CAIP-10 accounts registered yet.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+  <table>
+    <caption>Verified Bilateral Receipts</caption>
+    <thead><tr><th>ID</th><th>Kind</th><th>Explorer</th></tr></thead>
+    <tbody>
+      {% if receipts %}
+      {% for rec in receipts %}
+      <tr><td><code>{{ rec.receipt_id }}</code></td><td>{{ rec.receipt_kind }}</td><td><a href="{{ rec.verification_url | safe_url }}">Verify</a></td></tr>
+      {% endfor %}
+      {% else %}
+      <tr><td colspan="3">No bilateral receipts recorded in this ring.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</section>

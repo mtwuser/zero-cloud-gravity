@@ -20,24 +20,17 @@ from zcg.cli.parser import (
     require_pos_path,
     split_csv,
 )
-from zcg.cockpit.lifecycle import manage_plugin_service
-from zcg.cockpit.plugin_sdk import scaffold_plugin_module
-from zcg.cockpit.workstation import set_global_agents_profile
+from zcg.cockpit.ops.lifecycle import manage_plugin_service
+from zcg.cockpit.ops.plugin_sdk import orchestrate_web_app_scaffold, scaffold_plugin_module
+from zcg.cockpit.ops.workstation import set_global_agents_profile
 from zcg.core.constants import NODE_MANIFEST_REL_PATH
 from zcg.core.manifests import load_node_manifest
-from zcg.governance import (
-    authority,
-    bootstrap,
-    consensus,
-    ledger,
-    links,
-    promotion,
-    scaffolder,
-    workflows,
-)
+from zcg.governance.policy import authority
+from zcg.governance.work import consensus, ledger, workflows
+from zcg.governance.workspace import bootstrap, links, promotion, scaffolder
 
 C2_LIFECYCLE_SUBCOMMANDS: tuple[str, ...] = (
-    "bootstrap", "bootstrap-workspace", "sync-layer", "apply-project",
+    "bootstrap", "bootstrap-workspace", "sync-layer", "apply-project", "scaffold-web-app",
     "set-global-profile", "start-task", "scaffold-template", "scaffold-plugin-module",
     "init-fork", "register-subtree", "link", "unlink", "spinout-project",
 )  # fmt: skip
@@ -70,19 +63,17 @@ def dispatch_c2(repo_dir: Path, dry_run: bool, subcmd: str, rest: list[str]) -> 
             entity_kind=opt_str(opts, "entity_kind"),
             governing_root_id=opt_str(opts, "governing_root"),
             interaction_language=opt_str(opts, "lang"),
-            scaffold_own_template=not bool(opts.get("no_scaffold_own", False)), dry_run=dry_run,
+            scaffold_own_template=not bool(opts.get("no_scaffold_own", False)),
+            service_activator=manage_plugin_service, dry_run=dry_run,
         )  # fmt: skip
     if subcmd == "sync-layer":
         vf = ("--parent-dir", "--templates", "--strategy")
         tdir, opts = parse_pos_and_options(repo_dir, subcmd, rest, vf)
         return bootstrap.sync_node_workspace(
-            repo_dir,
-            tdir,
-            parent_dir=opt_path(opts, "parent_dir"),
+            repo_dir, tdir, parent_dir=opt_path(opts, "parent_dir"),
             templates=split_csv(opts.get("templates")),
-            strategy=str(opts.get("strategy", "reconcile")),
-            dry_run=dry_run,
-        )
+            strategy=str(opts.get("strategy", "reconcile")), dry_run=dry_run,
+        )  # fmt: skip
     if subcmd == "apply-project":
         tdir = require_pos_path(rest, "apply-project <target-project-dir> [options]")
         vf = ("--template", "--layers", "--parent-dir", "--service-action", "--env", "--email")
@@ -91,49 +82,49 @@ def dispatch_c2(repo_dir: Path, dry_run: bool, subcmd: str, rest: list[str]) -> 
         if opts.get("service_action"):
             eff_em = opt_str(opts, "email") or authority.resolve_git_user_email(tdir)
             return manage_plugin_service(
-                tdir,
-                action=str(opts["service_action"]),
-                plugin_id=opt_str(opts, "template"),
-                target_env=str(opts.get("env", "dev")),
-                actor_email=eff_em,
-                parent_dir=p_dir,
-                dry_run=dry_run,
-            )
+                tdir, action=str(opts["service_action"]), plugin_id=opt_str(opts, "template"),
+                target_env=str(opts.get("env", "")), actor_email=eff_em,
+                parent_dir=p_dir, dry_run=dry_run,
+            )  # fmt: skip
         is_non_ws = mp.is_file() and load_node_manifest(tdir).get("layer_role") != "workstation"
         bdir = p_dir if p_dir is not None else (tdir if is_non_ws else repo_dir)
         inc_def = bool(opts.get("include_defaults", False)) or p_dir is not None or is_non_ws
         return scaffolder.apply_templates_to_project(
-            bdir,
-            tdir,
-            template_ref=opt_str(opts, "template"),
-            layers_filter=split_csv(opts.get("layers")),
-            include_layer_defaults=inc_def,
-            engine_dir=repo_dir,
-            dry_run=dry_run,
-        )
+            bdir, tdir, template_ref=opt_str(opts, "template"),
+            layers_filter=split_csv(opts.get("layers")), include_layer_defaults=inc_def,
+            engine_dir=repo_dir, dry_run=dry_run,
+        )  # fmt: skip
+    if subcmd == "scaffold-web-app":
+        tdir = require_pos_path(rest, "scaffold-web-app <target-dir> [options]")
+        vf = ("--id", "--title", "--port", "--parent-dir", "--template")
+        opts = parse_cli_options(subcmd, rest[1:], vf, ("--standalone",))
+        p_dir = opt_path(opts, "parent_dir")
+        if opts.get("standalone") and p_dir is not None:
+            raise CLIUsageError("Cannot combine --standalone and --parent-dir.")
+        port_n = int(str(opts["port"])) if "port" in opts else 8080
+        return orchestrate_web_app_scaffold(
+            repo_dir, tdir, app_id=opt_str(opts, "id"), title=opt_str(opts, "title"),
+            port=port_n, parent_dir=p_dir, template_ref=opt_str(opts, "template"),
+            standalone=bool(opts.get("standalone", p_dir is None)), dry_run=dry_run,
+        )  # fmt: skip
     if subcmd == "set-global-profile":
         if not rest or rest[0].startswith("-"):
             raise CLIUsageError("Usage: zcg set-global-profile <profile> [--lang <code>] [--stow]")
         opts = parse_cli_options(subcmd, rest[1:], ("--lang", "--workstation-dir"), ("--stow",))
         return set_global_agents_profile(
-            repo_dir,
-            rest[0],
-            interaction_language=opt_str(opts, "lang"),
+            repo_dir, rest[0], interaction_language=opt_str(opts, "lang"),
             workstation_dir=opt_path(opts, "workstation_dir"),
-            run_stow=bool(opts.get("stow", False)),
-            dry_run=dry_run,
-        )
+            run_stow=bool(opts.get("stow", False)), dry_run=dry_run,
+        )  # fmt: skip
     if subcmd == "start-task":
         vf = ("--task", "--tracker", "--ticket", "--prefix")
         tdir, opts = parse_pos_and_options(repo_dir, subcmd, rest, vf)
+        q = require_opt_str(opts, "task", "Usage: zcg start-task [<dir>] --task <id>")
         return workflows.start_task_workflow(
-            tdir,
-            task_query=require_opt_str(opts, "task", "Usage: zcg start-task [<dir>] --task <id>"),
-            tracker=str(opts.get("tracker", "WORKTASK.md")),
+            tdir, task_query=q, tracker=str(opts.get("tracker", "WORKTASK.md")),
             ticket_id=opt_str(opts, "ticket"),
-            branch_prefix=str(opts.get("prefix", "feature")),
-            dry_run=dry_run,
-        )
+            branch_prefix=str(opts.get("prefix", "feature")), dry_run=dry_run,
+        )  # fmt: skip
     if subcmd == "scaffold-template":
         if not rest or rest[0].startswith("-"):
             raise CLIUsageError("Usage: zcg scaffold-template <template-name> [options]")
@@ -141,29 +132,28 @@ def dispatch_c2(repo_dir: Path, dry_run: bool, subcmd: str, rest: list[str]) -> 
         opts = parse_cli_options(subcmd, rest[1:], vf, ("--register-binding",))
         enforce_cli_authority(repo_dir, "scaffold-template")
         return scaffolder.scaffold_template_pack(
-            repo_dir,
-            template_name=rest[0],
-            kind=str(opts.get("kind", "framework-stack")),
+            repo_dir, template_name=rest[0], kind=str(opts.get("kind", "tool-stack")),
             description=opt_str(opts, "description"),
             register_binding=bool(opts.get("register_binding", False)),
-            rule_filename=opt_str(opts, "rule_file"),
-            dry_run=dry_run,
-        )
+            rule_filename=opt_str(opts, "rule_file"), dry_run=dry_run,
+        )  # fmt: skip
     if subcmd == "scaffold-plugin-module":
         if len(rest) < 2 or rest[0].startswith("-") or rest[1].startswith("-"):
             raise CLIUsageError(
                 "Usage: zcg scaffold-plugin-module <plugin-id> <module-name> [options]"
             )
-        opts = parse_cli_options(subcmd, rest[2:], ("--prefix", "--description"))
-        enforce_cli_authority(repo_dir, "scaffold-plugin-module")
+        vf = ("--prefix", "--description", "--target-dir")
+        opts = parse_cli_options(subcmd, rest[2:], vf, ("--overlay", "--in-pack"))
+        if opts.get("overlay") and opts.get("in_pack"):
+            raise CLIUsageError("Cannot combine --overlay and --in-pack.")
+        ov = True if opts.get("overlay") else (False if opts.get("in_pack") else None)
+        tdir = opt_path(opts, "target_dir") or repo_dir
+        enforce_cli_authority(tdir, "scaffold-plugin-module")
         return scaffold_plugin_module(
-            repo_dir,
-            plugin_id=rest[0],
-            module_name=rest[1],
-            route_prefix=opt_str(opts, "prefix"),
-            description=opt_str(opts, "description"),
-            dry_run=dry_run,
-        )
+            tdir, plugin_id=rest[0], module_name=rest[1],
+            route_prefix=opt_str(opts, "prefix"), description=opt_str(opts, "description"),
+            overlay=ov, engine_dir=repo_dir, dry_run=dry_run,
+        )  # fmt: skip
     if subcmd == "init-fork":
         vf = (
             "--id", "--role", "--precedence", "--description", "--upstream-url",
@@ -173,12 +163,9 @@ def dispatch_c2(repo_dir: Path, dry_run: bool, subcmd: str, rest: list[str]) -> 
         lid = require_opt_str(opts, "id", "Missing required --id <layer-id> for init-fork.")
         enforce_cli_authority(repo_dir, "init-fork")
         manifest = scaffolder.configure_node_manifest(
-            repo_dir,
-            layer_id=lid,
-            layer_role=str(opts.get("role", "squad")),
+            repo_dir, layer_id=lid, layer_role=str(opts.get("role", "squad")),
             precedence=int(str(opts["precedence"])) if "precedence" in opts else None,
-            description=opt_str(opts, "description"),
-            upstream_url=opt_str(opts, "upstream_url"),
+            description=opt_str(opts, "description"), upstream_url=opt_str(opts, "upstream_url"),
             upstream_id=opt_str(opts, "upstream_id"),
             upstream_branch=opt_str(opts, "upstream_branch"),
             entity_kind=opt_str(opts, "entity_kind"),
@@ -186,7 +173,7 @@ def dispatch_c2(repo_dir: Path, dry_run: bool, subcmd: str, rest: list[str]) -> 
             interaction_language=opt_str(opts, "lang"),
             prune_default_templates=bool(opts.get("prune_default_templates", False)),
             dry_run=dry_run,
-        )
+        )  # fmt: skip
         return {"dry_run": dry_run, "manifest": manifest}
     if subcmd == "link":
         vf = (
@@ -199,7 +186,7 @@ def dispatch_c2(repo_dir: Path, dry_run: bool, subcmd: str, rest: list[str]) -> 
             raise CLIUsageError(
                 "Usage: zcg link [<dir>] (--target <node-id> | --from <url-or-dir>)"
             )
-        return links.link_node(
+        res = links.link_node(
             tdir, target_id=tgt, from_source=frm, from_branch=str(opts.get("branch", "master")),
             relation=str(opts.get("relation", "lateral-peer")),
             target_ref=str(opts.get("ref", "")), cockpit_url=str(opts.get("url", "")),
@@ -208,18 +195,22 @@ def dispatch_c2(repo_dir: Path, dry_run: bool, subcmd: str, rest: list[str]) -> 
             actor_email=opt_str(opts, "email"), parent_dir=opt_path(opts, "parent_dir"),
             dry_run=dry_run,
         )  # fmt: skip
+        if not dry_run and (tdir / "surfaces/data/node_scope.json").is_file():
+            manage_plugin_service(tdir, action="provision", target_env="")
+        return res
     if subcmd == "unlink":
         tdir, opts = parse_pos_and_options(
             repo_dir, subcmd, rest, ("--target", "--email", "--parent-dir")
         )
         tgt = require_opt_str(opts, "target", "Usage: zcg unlink [<dir>] --target <node-id>")
-        return links.unlink_node(
-            tdir,
-            target_id=tgt,
-            actor_email=opt_str(opts, "email"),
-            parent_dir=opt_path(opts, "parent_dir"),
-            dry_run=dry_run,
-        )
+        res = links.unlink_node(
+            tdir, target_id=tgt, actor_email=opt_str(opts, "email"),
+            parent_dir=opt_path(opts, "parent_dir"), dry_run=dry_run,
+        )  # fmt: skip
+        ns_ok = (tdir / "surfaces/data/node_scope.json").is_file()
+        if not dry_run and bool(res.get("removed")) and ns_ok:
+            manage_plugin_service(tdir, action="provision", target_env="")
+        return res
     if subcmd == "spinout-project":
         tdir = require_pos_path(rest, "spinout-project <target-dir> --id <id> --from-branch <ref>")
         vf = (
@@ -241,6 +232,7 @@ def dispatch_c2(repo_dir: Path, dry_run: bool, subcmd: str, rest: list[str]) -> 
             description=opt_str(opts, "description"),
             templates=split_csv(opts.get("templates")),
             shared_packs=split_csv(opts.get("packs")),
+            service_activator=manage_plugin_service,
             dry_run=dry_run,
         )
     if len(rest) < 2:

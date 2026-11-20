@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import unicodedata
 from pathlib import Path
 from typing import Any
@@ -141,7 +140,12 @@ class CompactionMixin(MCPNodeBase):
 
         matches, excerpt_truncated = list[dict[str, Any]](), False
         q_low = _normalize_ascii(query)
-        q_tokens = [t for t in re.findall(r"[a-z0-9_-]{3,}", q_low) if t not in CODON_STOPWORDS]
+        q_cleaned = "".join(
+            ch if (ch.isascii() and (ch.isalnum() or ch in "_-")) else " " for ch in q_low
+        )
+        q_tokens = [
+            tok for tok in q_cleaned.split() if len(tok) >= 3 and tok not in CODON_STOPWORDS
+        ]
         t_set = {(ldir / raw_tpath).resolve() for ldir in layer_dirs} if raw_tpath else set()
         for lname, ldir, fp, doc_text in source_items:
             min_toks = 1 if (fp.resolve() in t_set and len(q_tokens) >= 3) else 2

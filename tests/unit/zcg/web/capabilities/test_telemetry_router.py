@@ -11,10 +11,10 @@ import sqlite3
 from typing import TYPE_CHECKING, Any
 
 from zcg.web.capabilities.telemetry_router import create_telemetry_router
-from zcg.web.factory import create_web_app
-from zcg.web.probes import HeartbeatJitterTracker, SamplingCadenceCalculator
-from zcg.web.resilience import BulkheadIsolationGuard
-from zcg.web.telemetry import RouteSignalCollector
+from zcg.web.http.factory import create_web_app
+from zcg.web.ops.probes import HeartbeatJitterTracker, SamplingCadenceCalculator
+from zcg.web.ops.resilience import BulkheadIsolationGuard
+from zcg.web.ops.telemetry import RouteSignalCollector
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -69,6 +69,7 @@ class TestTelemetryRouter:
             jitter_tracker=HeartbeatJitterTracker(),
             bulkhead=BulkheadIsolationGuard(),
             cadence=SamplingCadenceCalculator(3.0),
+            security_posture_provider=lambda: {"score": 100, "grade": "HARDENED"},
             prefix="/api/tel-custom",
         )
         rtr_default = create_telemetry_router(tmp_path, prefix="/api/tel-default")
@@ -88,9 +89,11 @@ class TestTelemetryRouter:
         # Assert
         assert custom_data["surface_label"] == "portal-a"
         assert custom_data["cycle_period_seconds"] == 3.0
+        assert custom_data["security_posture"]["score"] == 100
+        assert custom_data["flow_partitions"]["internal_human"] == 1
         assert "GET /api/items" in custom_data["routes"]
-        assert b"Runtime Telemetry (portal-a)" in custom_html
-        assert def_data["cycle_period_seconds"] == 2.0
+        assert b"Runtime Telemetry (portal-a)" in custom_html and b"100/100" in custom_html
+        assert def_data["cycle_period_seconds"] == 2.0 and def_data["security_posture"] is None
 
     def test_audit_dag_sealing_and_history_listing_json_and_swap_expected(
         self, tmp_path: Path

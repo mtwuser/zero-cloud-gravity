@@ -10,10 +10,10 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 | Attribute | Canonical Value | Verification & Runtime Role |
 | :--- | :--- | :--- |
-| **`id`** | `science-base` | Scientific persona in `VALID_HUMAN_STACK_IDS` (`constants.py`) |
+| **`id`** | `science-base` | Scientific persona in `CANONICAL_STARTER_TEMPLATES` (`src/zcg/core/constants.py`) |
 | **`stack_group`** | `human-stack` | Cognitive & Epistemic Persona Axis |
 | **`tier`** | `1` (`Domain Persona`) | Mounted via `.agents/rules/science-base.md` or `--profile science-base` |
-| **`extends`** | `["universal-base"]` | Inherits all 13 universal mandates from `universal-base` |
+| **`extends`** | `"universal-base"` | Inherits all 13 universal mandates from `universal-base` |
 | **`rules_file`** | [`rules/science-base.md`](rules/science-base.md) | Epistemic hierarchy (`E3..E0`), `1:1:1` symbiosis, `N vs N ± 1` cut-points |
 
 ---

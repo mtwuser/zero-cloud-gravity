@@ -1,11 +1,9 @@
-"""Nominal constants, regular expressions, and lifecycle maps for rcap1 capsules and MCP.
+"""Nominal constants and lifecycle maps for rcap1 capsules and MCP.
 
 Specification: docs/architecture/05_contextual_mcp_and_capsules.md
 """
 
 from __future__ import annotations
-
-import re
 
 CAPSULE_PREFIX: str = "rcap1"
 CHARS_PER_TOKEN_ESTIMATE: int = 4
@@ -171,11 +169,3 @@ PLANE_PATH_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
 STRUCTURAL_PATH_SEGMENTS: frozenset[str] = frozenset(
     {"src", "tests", "unit", "imp", "e2e", "docs", "templates", "layers", "surfaces", "zcg"}
 )
-MD_LINK_RE: re.Pattern[str] = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
-BACKTICK_PATH_RE: re.Pattern[str] = re.compile(r"`([A-Za-z0-9_./-]+\.[A-Za-z0-9]+)`")
-CITATION_RECEIPT_REF_RE: re.Pattern[str] = re.compile(
-    r"\b([a-z0-9-]+)::([A-Za-z0-9_./-]+)#[a-z0-9-]+@[0-9a-f]{8,64}:E[0-3]\b"
-)
-BOLD_TERM_RE: re.Pattern[str] = re.compile(r"\*\*([^*]{3,48})\*\*")
-WORD_TOKEN_RE: re.Pattern[str] = re.compile(r"[a-z0-9]{3,}")
-ANSI_ESCAPE_RE: re.Pattern[str] = re.compile(r"\x1b\[[0-9;]*m")

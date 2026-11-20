@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.1.0) — Official Google Antigravity Agents, CLI (agy) & IDE Installer/Updater
+# ZeroCloudGravity (v1.2.0) — Official Google Antigravity Agents, CLI (agy) & IDE Installer/Updater
 # Usage: ./scripts/install-antigravity.sh [--agents | --cli | --ide | --all] [--from-archive <file>] [--force] [--dry-run] [--version] [--help]
 
 set -euo pipefail
@@ -312,7 +312,7 @@ install_or_update_cli() {
     rm -f "${CLI_BIN}.backup"
     for rc_file in "${HOME}/.bashrc" "${HOME}/.profile"; do
       if [[ -f "${rc_file}" ]] && grep -q "# Added by Antigravity CLI installer" "${rc_file}" 2>/dev/null; then
-        python3 -c 'import pathlib,re,sys; p=pathlib.Path(sys.argv[1]).resolve(); t=p.read_text(encoding="utf-8"); p.write_text(re.sub(r"\n*# Added by Antigravity CLI installer\nexport PATH=\"[^\"]*\.local/bin:[$]PATH\"\n*", "\n", t), encoding="utf-8")' "${rc_file}" 2>/dev/null || true
+        python3 -c 'import pathlib,sys; p=pathlib.Path(sys.argv[1]).resolve(); ls=p.read_text(encoding="utf-8").splitlines(); out=[ln for i,ln in enumerate(ls) if ln.strip()!="# Added by Antigravity CLI installer" and not (i>0 and ls[i-1].strip()=="# Added by Antigravity CLI installer" and ln.startswith("export PATH=") and ".local/bin:\x24PATH" in ln)]; p.write_text("\n".join(out)+"\n", encoding="utf-8")' "${rc_file}" 2>/dev/null || true
       fi
     done
     echo "  OK: Antigravity CLI (agy) installed/updated at ${CLI_BIN}"

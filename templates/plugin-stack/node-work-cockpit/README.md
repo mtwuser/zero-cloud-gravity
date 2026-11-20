@@ -1,6 +1,6 @@
 # `node-work-cockpit` (`plugin-stack`) — Tier 2 Sovereign Project & Knowledge Node Surface
 
-> Tier 2 runtime surface plugin extending `software-engineering` for standard `node` and `subnode` repositories, `WORKTASK.md` lifecycle automation, and local HTML cockpit rendering.
+> Tier 2 runtime surface plugin extending `universal-base` for `department` and `squad` repositories, `WORKTASK.md` lifecycle automation, and local HTML cockpit rendering.
 
 ---
 
@@ -31,12 +31,12 @@ The `node-work-cockpit` plugin provides the standard operational surface for eng
 
 ## 3. Mounting & Cross-References
 
-Declare `node-work-cockpit` in `system/zcg-node.json` under `stack_groups.plugin_stack` and synchronize the node:
+Declare `node-work-cockpit` in `system/zcg-node.json` under `default_stack_templates` and synchronize the node:
 
 ```bash
 zcg sync-layer /path/to/project-node
 ```
 
-- **Parent Context Stack**: `templates/context-stack/software-engineering/README.md`
+- **Parent Human Stack**: `templates/human-stack/universal-base/README.md`
 - **Cockpit Architecture**: `docs/architecture/04_cockpit_and_intranet_surfaces.md`
 - **Catalog Reference**: `docs/reference/01_stack_and_plugin_matrix.md`

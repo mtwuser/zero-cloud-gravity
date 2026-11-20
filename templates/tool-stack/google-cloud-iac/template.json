@@ -1,0 +1,21 @@
+{
+  "schema_version": "zcg-template-v1",
+  "name": "google-cloud-iac",
+  "kind": "tool-stack",
+  "stack_group": "tool-stack",
+  "extends": "nist-csf-security",
+  "target_role": "environment-cluster",
+  "description": "Opt-in Google Cloud infrastructure adapter (Cloud Run, GKE, BigQuery, Cloud KMS, IAM Workload Identity) and Antigravity SDK integration.",
+  "recommended_surface_bindings": [
+    {
+      "binding_id": "google-cloud-iac-cluster",
+      "mode": "transversal",
+      "target_globs": ["infra/**", "Dockerfile", "system/**"],
+      "architectural_planes": ["infrastructure"],
+      "scopes": ["*"],
+      "traits": ["gcp"],
+      "rule_files": ["templates/tool-stack/google-cloud-iac/rules/google-cloud-iac.md"],
+      "invariants": ["Target opt-in Google Cloud services with IAM Workload Identity Federation and resource labels."]
+    }
+  ]
+}

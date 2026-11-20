@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -19,6 +18,7 @@ from zcg.core.constants import (
     REPO_DIR,
     TEMPLATE_MANIFEST_CONTRACT_REV,
 )
+from zcg.core.domain import extract_ticket_ids
 from zcg.core.manifests import (
     has_stale_schema,
     iter_layer_template_dirs,
@@ -26,6 +26,7 @@ from zcg.core.manifests import (
     sha256_file,
     stamp_schema_rev,
 )
+from zcg.core.markdown_scan import parse_checkbox_line, scan_markdown_checkboxes
 from zcg.core.surface_composer import is_makefile_outdated, render_layer_makefile
 
 
@@ -92,12 +93,15 @@ def inspect_mounted_children_drifts(
                     c_files.append(str(dst_rf.relative_to(mdir)).replace("\\", "/"))
         if c_files:
             br = str(entry.get("branch") or "master").strip()
+            crepo = str(entry.get("repository") or f"<repo:{cname}>").strip()
             drifts.append(
                 {
                     "layer_id": cname,
                     "mounted_path": f"layers/{cname}",
                     "drift_files": c_files,
-                    "subtree_push_command": f"zcg subtree push {cname} {br}",
+                    "subtree_push_command": (
+                        f"git subtree push --prefix=layers/{cname} {crepo} {br}"
+                    ),
                     "subtree_pull_command": f"zcg subtree pull {cname}",
                 }
             )
@@ -139,19 +143,20 @@ def sync_mounted_children_into_parent(
                     shutil.copy2(src_rf, ag_rf)
     p_wt = ws / "WORKTASK.md"
     if not dry_run and p_wt.is_file() and (ws / "layers").is_dir():
-        tk_re = re.compile(r"\b([A-Z]{2,12}-\d{2,6}(?:-\d{1,6})?)\b")
         done_tks = {
-            m.group(1).lower()
+            tks[0].lower()
             for cwt in (ws / "layers").glob("*/WORKTASK.md")
-            for ln in cwt.read_text(encoding="utf-8").splitlines()
-            if re.match(r"^\s*-\s*\[[xX]\]\s+", ln) and (m := tk_re.search(ln))
+            for chk in scan_markdown_checkboxes(cwt.read_text(encoding="utf-8"))
+            if chk.is_done and (tks := extract_ticket_ids(chk.body, digits_only_suffix=True))
         }
         p_txt = p_wt.read_text(encoding="utf-8")
         p_lines = [
-            re.sub(r"^(\s*-\s*\[)[ /](\])", r"\1x\2", pl).replace(
-                "stage: `delegated`", "stage: `completed (pro)`"
+            chk.format_line(
+                state="x",
+                body=chk.body.replace("stage: `delegated`", "stage: `completed (pro)`"),
             )
-            if re.match(r"^\s*-\s*\[[ /]\]\s+", pl)
+            if (chk := parse_checkbox_line(pl)) is not None
+            and (chk.is_open or chk.is_in_progress)
             and "->" in pl
             and any(tk in pl.lower() for tk in done_tks)
             else pl

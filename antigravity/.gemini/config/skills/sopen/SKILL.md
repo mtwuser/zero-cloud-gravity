@@ -12,7 +12,7 @@ description: restore session state and initialize workspace — first command in
 ## 0. Single-Shot Global Sync & Consolidated Workspace Status
 
 // delegate: flash
-1. **Run ONE combined command** in `<PROJECT_ROOT>` to synchronize the workstation runtime (`$ZCG_RUNTIME_DIR` / `~/<user-pc>`) and collect the entire workspace status digest in `< 0.2s`:
+1. **Run ONE combined command** in `<PROJECT_ROOT>` to synchronize the workstation runtime (`$ZCG_RUNTIME_DIR` / `~/<user>-profile`) and collect the entire workspace status digest in `< 0.2s`:
    ```bash
    ~/.local/bin/zcg-sync --sync 2>/dev/null || true
    ~/.local/bin/zcg status "<PROJECT_ROOT>"
@@ -20,7 +20,7 @@ description: restore session state and initialize workspace — first command in
    *(If `Makefile` defines `status:`, `make status` runs `zcg status` with `PARENT_DIR` automatically.)*
 2. **Parse the returned JSON digest** — it provides in a single call:
    - `operating_state` (`"oss-readonly-appliance"` | `"oss-dev"` | `"individual-root"` | `"corporate-root"` | `"domain-policy"` | `"department"` | `"squad"` | `"project"`), `workspace_mode` (`"business"` | `"technical"` | `"hybrid"`), `layer_id`, `layer_role`, `precedence`, `active_templates`, `active_rules`, and `command_tiers` (`auto_reflexive`, `guided_tactical`, `conscious_human_gated`)
-   - **Read-Only Appliance vs. Personal Sovereign Hub Gate**: If `operating_state == "oss-readonly-appliance"` (`mode=readonly`), warn immediately that `$ZCG_RUNTIME_DIR` is a read-only runtime appliance and redirect any authoring to `ZCG_DEV_REPO_DIR` (`make setup-dev`). When `operating_state == "individual-root"` (`~/<user-pc>`, `mode=private`), the operator's personal `$HOME` hub is mutable for personal tasks, `Human-Stack`, and mounted `layers/*` knowledge nodes, while upstream `zero-cloud-gravity` engine/base edits still belong in `ZCG_DEV_REPO_DIR`.
+   - **Read-Only Appliance vs. Personal Sovereign Hub Gate**: If `operating_state == "oss-readonly-appliance"` (`mode=readonly`), warn immediately that `$ZCG_RUNTIME_DIR` is a read-only runtime appliance and redirect any authoring to `ZCG_DEV_REPO_DIR` (`make setup-dev`). When `operating_state == "individual-root"` (`~/<user>-profile`, `mode=private`), the operator's personal `$HOME` hub is mutable for personal tasks, `Human-Stack`, and mounted `layers/*` knowledge nodes, while upstream `zero-cloud-gravity` engine/base edits still belong in `ZCG_DEV_REPO_DIR`.
    - `has_project_start_skill` (`bool` — if `false`, do NOT search for `.agents/skills/start/SKILL.md`)
    - `setup_state` (`state`: `"uninitialized"` | `"pending_customization"` | `"configured"`, `is_configured`, `layer_role`, `topological_class`, `entity_kind`, `orthogonal_dimensions`, `kickoff_prompt`, `next_action`)
    - `session_state` (`exists`, `last_conversation_id`, and `excerpt` of `.agents/SESSION.md`)
@@ -29,6 +29,7 @@ description: restore session state and initialize workspace — first command in
    - `horizon` (`oss_root_version`, `upstream_version`, `workspace_version`, `downward_sync_needed`, `child_sync_needed`, `shared_template_drifts`, `downstream_layer_drifts`, `upward_promotion_suggestions`)
    - `git_governance` (`current_branch`, `active_environment`, `makefile_outdated`, `manifest_contracts_outdated`, `staged_proposals`, `stale_proposals`)
    - `agent_diff` (`in_sync`, `modified_in_project`, `novel_in_project`)
+   - `node_health` (`overall_state`: `"OPTIMAL"` 🟢 | `"ATTENTION"` 🟡 | `"CRITICAL"` 🔴 | `"UNCONFIGURED"` 🔵, `dimensions` across `security_posture`, `skill_trust`, `sync_safety`, and `operational_drift`, plus `unconfigured_dimensions` and `attention_items` — missing setup or unconfigured Git `origin` remotes report Blue `🔵 UNCONFIGURED` rather than false Green/Red)
 3. **Assisted Upgrade Reconciliation (`make sync`) & Automatic Session Plugin Activation (`make activate-plugin`)**:
    - **If `horizon.downward_sync_needed`, `horizon.child_sync_needed`, `git_governance.makefile_outdated`, or `git_governance.manifest_contracts_outdated` is `true`**, run `make sync` (or `~/.local/bin/zcg sync-layer "<PROJECT_ROOT>"`) using the default non-destructive `--strategy reconcile`. This self-heals generated `# Role-Specialized Layer Makefile` targets in place (preserving any `# --- Custom Targets ---` block), normalizes `zcg-node-v1` / `squad` manifest contracts, and updates unmodified upstream template packs and mounted child layers (`layers/*`).
    - **If the workspace has any installed `plugin-stack` runtime plugin** (in `active_templates` or `runtime_orchestration.static_runtime.plugins`), run `make activate-plugin` (or `~/.local/bin/zcg apply-project "<PROJECT_ROOT>" --service-action activate`) so the node's 3-Scope Data Topology (`surfaces/data/{node,network,federation}_scope.json`) and Cockpit Web (`surfaces/web/index.html`) are refreshed and served live in the background (`http://127.0.0.1:<port>/?env=<env>` + `active_subdomain_url`) for the duration of the session.
@@ -47,9 +48,9 @@ Inspect `setup_state.state` from the Step 0 JSON digest (plus any user customiza
 1. **State `U0` (`setup_state.state == "uninitialized"` — Freshly Cloned / Unbootstrapped Repository)**:
    - **If the user invoked `/sopen` with an adapted Kickoff Prompt** (already specifying the repository's mission, `layer_role`, `--templates`/plugins, or `gov-*/geo-*/sci-*/org-*` knowledge mounts): do **NOT** stop to ask redundant wizard questions. Infer the orthogonal coordinates directly from the prompt, execute `~/.local/bin/zcg bootstrap-workspace "<PROJECT_ROOT>" --id <id> --role <role> --precedence <prec> [--parent-dir <parent-dir>] --templates <templates-and-knowledge-ids>` (which automatically installs, activates, and opens the role's default Node Cockpit plugin in the browser on initial setup, plus `set-authority --emails "<owner-email>,$(git config user.email)"` so the local Git operator remains in the owner list, and English technical terms/proper nouns in `make consult QUERY="..."` per `artifact_language: "en"`), re-read `setup_state`, and execute **State `U1` (`Phase A -> Phase D`)** immediately in the same turn so `setup_state.state` transitions directly to `"configured"`, **keeping the Node Cockpit daemon active (`daemon_active: true`) — do NOT run `/sclose` (`make deactivate-plugin`) during initial `/sopen` onboarding** so the user can immediately use the live browser cockpit!
    - **If the user invoked bare `/sopen` (with no arguments)**: ask the user to select the repository's **orthogonal coordinates (`setup_state.orthogonal_dimensions`: `entity_kind × layer_role × stack_groups`)** and core parameters:
-     - **`entity_kind`**: `"individual"` (`workstation` `0`, personal layers `85..95`), `"enterprise"` (`5..84`), `"public-government"` (`1..4`), or `"open-source"`
+     - **`entity_kind`**: `"individual"` (`workstation` `90`, personal layers `85..95`), `"enterprise"` (`5..84`), `"public-government"` (`1..4`), or `"open-source"`
      - **`layer_role` (`topological_class`)**:
-       - `workstation` (`runtime-node` — Personal `Root 0` Workstation `~/<persona>-pc`: `init-fork --id <persona>-pc --role workstation --precedence 0 --entity-kind individual`)
+       - `workstation` (`runtime-node` — Personal `Root 0` Workstation `~/<persona>-profile`: `init-fork --id <persona>-profile --role workstation --precedence 90 --entity-kind individual`)
        - `corporate` (`governance-layer` — Collective `Root 0`: `bootstrap-workspace --id <root-id> --role corporate --precedence <1..15> --templates ...`)
        - `domain-policy` or `department` (`governance-layer` — Transversal Policy `5..25`, Functional Department `20..35`, or Individual Specialty Node `85..95` governed by `--parent-dir <root-dir>`: `bootstrap-workspace --id <id> --role <domain-policy|department> --precedence <prec> --parent-dir <parent-dir> --templates ...`)
        - `squad` (`governance-layer` — Execution Unit `40..60`: `bootstrap-workspace --id <squad-id> --role squad --precedence 50 --parent-dir <dept-dir> --templates ...`)
@@ -130,6 +131,7 @@ Present a structured summary (always placing the **`🌐 Live Node Cockpit`** ca
 
 ## Session Recovery
 
+**Node Health**: [🟢 OPTIMAL | 🟡 ATTENTION | 🔴 CRITICAL | 🔵 UNCONFIGURED] (`[unconfigured_dimensions / attention_items if any]`)
 **Current machine**: [hostname]
 **Last session (this machine)**: [date] · conv [id]
 **Last session (any machine)**: [date] · conv [id] · machine [name] (only if different)

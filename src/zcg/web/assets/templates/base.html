@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="{% if viewer_lang_attr %}{{ viewer_lang_attr }}{% else %}en{% endif %}" data-zcg-surface="cockpit" data-zcg-env="{% if active_env_attr %}{{ active_env_attr }}{% else %}pro{% endif %}" data-zcg-theme="{% if theme_preset_attr %}{{ theme_preset_attr }}{% else %}blueprint-dark{% endif %}" data-zcg-accent="{% if theme_accent_attr %}{{ theme_accent_attr }}{% else %}default{% endif %}" data-zcg-contrast="{% if viewer_contrast_attr %}{{ viewer_contrast_attr }}{% else %}inherit{% endif %}" data-zcg-scale="{% if viewer_scale_attr %}{{ viewer_scale_attr }}{% else %}100{% endif %}" data-zcg-motion="{% if viewer_motion_attr %}{{ viewer_motion_attr }}{% else %}standard{% endif %}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="zcg-csrf-token" content="{{ csrf_token }}">
+  <title>{{ title }}</title>
+  {% if brand_logo_url %}<link rel="icon" href="{{ brand_logo_url | safe_url }}">{% else %}<link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">{% endif %}
+  <link rel="stylesheet" href="/static/css/design-system.css">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <a class="zcg-skip-link" href="#main-content">Skip to main content</a>
+  <header class="zcg-z1-header">{% block header %}<div class="zcg-top-bar"><div class="zcg-top-bar__left"><a class="zcg-brand zcg-brand--compact zcg-brand--link" href="{% if brand_href %}{{ brand_href | safe_url }}{% else %}/{% endif %}"><img class="zcg-brand-logo" src="{% if brand_logo_url %}{{ brand_logo_url | safe_url }}{% else %}/static/img/logo.svg{% endif %}" alt="ZeroCloudGravity" width="28" height="28"><strong class="zcg-top-bar__title">{% if layer_id %}{{ layer_id }}{% else %}{{ title }}{% endif %}</strong></a>{{ lineage_crumb_html }}</div><div class="zcg-context-strip">{{ env_switcher_html }}{{ branch_badge_html }}{{ user_menu_html }}</div></div>{% endblock %}</header>
+  <nav class="zcg-z2-nav" aria-label="Primary navigation">{% block nav %}{% endblock %}</nav>
+  <main id="main-content" class="zcg-z3-main">{% block content %}{{ content }}{% endblock %}{% block island %}{% endblock %}</main>
+  <footer class="zcg-z4-footer">{% block footer %}{{ provenance_footer_html }}{% endblock %}</footer>
+  <script src="/static/js/island-bus.js" defer></script>
+  <script src="/static/js/zcg-swap.js" defer></script>
+  <script src="/static/js/spatial-atlas.js" defer></script>
+  <script src="/static/js/cockpit-shell.js" defer></script>
+  <script src="/static/js/hydrator.js" defer></script>
+</body>
+</html>

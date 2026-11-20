@@ -7,27 +7,50 @@ from __future__ import annotations
 
 import contextlib
 import json
-import re
 import sqlite3
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Final, cast
+from typing import Any, ClassVar, cast
 
 from zcg.core.domain import DomainEntity
 from zcg.core.manifests import ensure_contained_path
 
-_SAFE_NAMESPACE_RE: Final[re.Pattern[str]] = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
+type SQLiteMigrationStep = tuple[int, str | Callable[[sqlite3.Connection], None]]
+
+
+def apply_sqlite_user_version_migrations(
+    conn: sqlite3.Connection, migrations: Sequence[SQLiteMigrationStep]
+) -> int:
+    """Apply strictly ascending SQLite PRAGMA user_version schema migrations transactionally."""
+    current_version = int(conn.execute("PRAGMA user_version;").fetchone()[0])
+    prev_target = 0
+    for target_version, step in migrations:
+        if target_version <= prev_target:
+            raise ValueError(
+                f"SQLite migration versions must be strictly ascending > 0; got {target_version}"
+            )
+        prev_target = target_version
+        if target_version <= current_version:
+            continue
+        if isinstance(step, str):
+            conn.executescript(step)
+        else:
+            step(conn)
+        conn.execute(f"PRAGMA user_version = {int(target_version)};")
+        current_version = target_version
+    return current_version
 
 
 class SQLiteRepositoryAdapter[EntityT: DomainEntity, IdT](ABC):
     """L4 Hexagonal persistence adapter backed by parameterized SQLite WAL storage."""
 
     table_name: str = ""
+    schema_migrations: ClassVar[tuple[SQLiteMigrationStep, ...]] = ()
 
     def __init__(self, db_path: Path, *, workspace_root: Path | None = None) -> None:
-        if not self.table_name or not _SAFE_NAMESPACE_RE.fullmatch(self.table_name):
+        if not (self.table_name and self.table_name.isascii() and self.table_name.isidentifier()):
             raise ValueError(f"Invalid repository table_name identifier: {self.table_name!r}")
         resolved_db = db_path.resolve()
         if workspace_root is not None:
@@ -74,6 +97,13 @@ class SQLiteRepositoryAdapter[EntityT: DomainEntity, IdT](ABC):
                 ON domain_entity_records (namespace, created_at_utc DESC)
                 """
             )
+            if self.schema_migrations:
+                apply_sqlite_user_version_migrations(conn, self.schema_migrations)
+
+    def get_schema_version(self) -> int:
+        """Return current SQLite PRAGMA user_version integer for this database."""
+        with self._connect() as conn:
+            return int(conn.execute("PRAGMA user_version;").fetchone()[0])
 
     def extract_id(self, entity: EntityT) -> IdT:
         """Extract the typed identifier from a domain entity."""

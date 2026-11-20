@@ -1,0 +1,45 @@
+{
+  "schema_version": "zcg-template-v1",
+  "name": "sovereign-wallet-cockpit",
+  "kind": "plugin-stack",
+  "stack_group": "plugin-stack",
+  "extends": "science-base",
+  "target_role": "department",
+  "description": "Multi-ring zero-custody treasury and portfolio cockpit across R0 public stewardship, R2 corporate finance, and R3 private sovereign vaults.",
+  "runtime_service": {
+    "service_id": "sovereign-wallet-cockpit",
+    "framework": "zero-build-html-cockpit",
+    "bound_surfaces": [
+      "surfaces/web/",
+      "surfaces/data/"
+    ],
+    "healthcheck_endpoint": "/healthz",
+    "enabled_modules": ["wallet_treasury", "work_ledger", "docs_reader", "vault", "spatial_atlas"],
+    "web_assets": {
+      "templates_dir": "web/templates",
+      "static_dir": "web/static"
+    },
+    "delivery_channel": {
+      "protocol": "python314-native-asgi",
+      "zones": ["Z1", "Z2", "Z3", "Z4"],
+      "default_tier": "T1",
+      "latency_budget_ms": 200,
+      "http_poll_stop_status": 286,
+      "telemetry_sink": ".agents/telemetry"
+    }
+  },
+  "ephemeral_fork_policy": {
+    "bot_role": "treasury-compliance-audit-bot",
+    "trigger": "on_surface_match",
+    "model_tier": "inherit",
+    "access_mode": "strictly-read-only",
+    "mount_templates": [
+      "science-base",
+      "scientific-methodology"
+    ],
+    "resolution": "L2",
+    "ttl_seconds": 300,
+    "handback_contract": "4-channel-digest+rcap1"
+  },
+  "recommended_surface_bindings": []
+}

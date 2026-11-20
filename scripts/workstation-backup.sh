@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.1.0) — Ubuntu Physical Workstation State Backup
+# ZeroCloudGravity (v1.2.0) — Ubuntu Physical Workstation State Backup
 # Usage: ./scripts/workstation-backup.sh [<workstation-dir>] [--dry-run] [--version] [--help]
 
 set -euo pipefail
@@ -43,7 +43,12 @@ for arg in "$@"; do
   esac
 done
 
+WORKSTATION_CONF="${ZCG_WORKSTATION_CONF:-${HOME}/.config/zero-cloud-gravity/workstation.conf}"
 if [[ -z "${WORKSTATION_DIR}" ]]; then
+  if [[ -z "${ZCG_WORKSTATION_DIR:-}" || ! -d "${ZCG_WORKSTATION_DIR}" ]] && [[ -f "${WORKSTATION_CONF}" ]]; then
+    # shellcheck disable=SC1090
+    . "${WORKSTATION_CONF}"
+  fi
   WORKSTATION_DIR="${ZCG_WORKSTATION_DIR:-${PWD}}"
   WORKSTATION_DIR="$(cd "${WORKSTATION_DIR}" && pwd)"
 fi

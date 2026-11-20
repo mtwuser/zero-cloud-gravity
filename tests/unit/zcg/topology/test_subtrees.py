@@ -149,6 +149,9 @@ class TestSubtrees:
 
         # Assert
         assert len(drifts_before) == 1
+        assert drifts_before[0]["subtree_push_command"].startswith(
+            "git subtree push --prefix=layers/dept-ops "
+        )
         assert NODE_MANIFEST_REL_PATH in drifts_before[0]["drift_files"]
         assert "Makefile" in drifts_before[0]["drift_files"]
         assert dry_synced == ["dept-ops"]

@@ -5,7 +5,6 @@ Specification: docs/architecture/01_core_and_node_manifest.md
 
 from __future__ import annotations
 
-import re
 import stat
 from pathlib import Path
 
@@ -15,9 +14,12 @@ NODE_MANIFEST_CONTRACT_REV: str = "zcg-node-v1"
 TEMPLATE_MANIFEST_CONTRACT_REV: str = "zcg-template-v1"
 SKILLS_MANIFEST_CONTRACT_REV: str = "zcg-skills-v1"
 PERMISSIONS_MANIFEST_CONTRACT_REV: str = "zcg-agy-permissions-v1"
+SIDECAR_MANIFEST_CONTRACT_REV: str = "zcg-sidecar-v1"
 SKILLS_MANIFEST_REL_PATH: str = ".agents/skills.json"
 PLUGINS_MANIFEST_REL_PATH: str = ".agents/plugins.json"
 ANTIGRAVITY_PERMISSIONS_REL_PATH: str = ".agents/antigravity-permissions.json"
+SIDECAR_MANIFEST_REL_PATH: str = ".agents/sidecar.json"
+TOOL_RUNTIME_REL_DIR: str = ".zcg/tools"
 PROJECT_ZCG_MK_REL_PATH: str = ".agents/zcg.mk"
 MCP_JSONRPC_PROTOCOL_REV: str = "2024-11-05"
 MISSING_VERSION_SENTINEL: str = "unversioned"
@@ -55,7 +57,7 @@ ROLE_DEFAULT_PRECEDENCE: dict[str, int] = {
     "service-node": 60, "environment-cluster": 70, "project": 80,
 }  # fmt: skip
 INDIVIDUAL_MIN_PRECEDENCE, PUBLIC_GOV_MAX_ROOT_PRECEDENCE, PUBLIC_GOV_MAX_PRECEDENCE = 85, 2, 4
-PUBLIC_GOV_PREFIXES: tuple[str, ...] = ("gov-", "admin-", "public-", "state-", "geo-")
+PUBLIC_GOV_PREFIXES: tuple[str, ...] = ("gov-", "geo-")
 VALID_ENTITY_KINDS: tuple[str, ...] = (
     "public-government", "enterprise", "individual", "open-source",
 )  # fmt: skip
@@ -63,27 +65,30 @@ VALID_VISIBILITY_MODES, VALID_PROMOTION_PIPELINES = ("private", "public"), ("dir
 VALID_ENVIRONMENTS: tuple[str, ...] = ("dev", "tst", "pre", "pro")
 VALID_NODE_DATA_SCOPES: tuple[str, ...] = ("node", "network", "federation")
 VALID_NODE_LINK_RELATIONS: tuple[str, ...] = (
-    "lateral-peer", "spinout-project", "hr-process", "b2b-collaboration", "knowledge-feed",
+    "lateral-peer", "co-sovereign-union", "spinout-project",
+    "hr-process", "b2b-collaboration", "knowledge-feed",
 )  # fmt: skip
 VALID_PLUGIN_SERVICE_ACTIONS: tuple[str, ...] = (
-    "install", "uninstall", "activate", "deactivate", "switch-env",
-    "provision", "deploy", "restart", "healthcheck", "teardown",
+    "install", "uninstall", "activate", "deactivate", "switch-env", "provision",
+    "deploy", "restart", "healthcheck", "teardown", "enable-autostart", "disable-autostart",
 )  # fmt: skip
 DEFAULT_PLUGIN_BASE_PORT: int = 8700
-TEMPLATE_STACK_GROUP_DIRS: tuple[str, ...] = (
-    "human-stack", "context-stack", "framework-stack", "plugin-stack",
+CANONICAL_STACK_GROUP_DIRS: tuple[str, ...] = (
+    "human-stack", "context-stack", "tool-stack", "plugin-stack",
 )  # fmt: skip
+TEMPLATE_STACK_GROUP_DIRS: tuple[str, ...] = CANONICAL_STACK_GROUP_DIRS
 VALID_TEMPLATE_KINDS: tuple[str, ...] = TEMPLATE_STACK_GROUP_DIRS
 CANONICAL_STARTER_TEMPLATES: tuple[str, ...] = (
     "universal-base", "academic-base", "science-base", "business-base",
     "academic-curriculum", "scientific-methodology", "software-engineering", "corporate-operations",
-    "nist-csf-security", "google-cloud-iac", "workstation-control-tower", "corporate-root-hub",
-    "node-work-cockpit", "tutor-study-cockpit", "secops-mcp-guardian",
-    "knowledge-stewardship-portal",
+    "spatial-simulation", "nist-csf-security", "self-hosted-container", "google-cloud-iac",
+    "workstation-control-tower", "corporate-root-hub", "node-work-cockpit", "tutor-study-cockpit",
+    "secops-mcp-guardian", "knowledge-stewardship-portal", "sovereign-wallet-cockpit",
 )  # fmt: skip
 BUILTIN_COCKPIT_PLUGINS: tuple[str, ...] = (
     "workstation-control-tower", "corporate-root-hub", "node-work-cockpit",
-    "tutor-study-cockpit", "knowledge-stewardship-portal",
+    "tutor-study-cockpit", "secops-mcp-guardian", "knowledge-stewardship-portal",
+    "sovereign-wallet-cockpit",
 )  # fmt: skip
 ROLE_DEFAULT_COCKPIT_PLUGIN: dict[str, str] = {
     "workstation": "workstation-control-tower", "corporate": "corporate-root-hub",
@@ -115,7 +120,7 @@ EPISTEMIC_GRADE_LABELS: dict[str, str] = {
     "E1": "contextual-guideline-or-theory", "E0": "provisional-hypothesis-or-draft",
 }  # fmt: skip
 
-VALID_KNOWLEDGE_PREFIXES: tuple[str, ...] = ("gov-", "sci-", "geo-", "org-", "pub-")
+VALID_KNOWLEDGE_PREFIXES: tuple[str, ...] = ("gov-", "sci-", "geo-", "org-")
 VALID_KNOWLEDGE_STEWARDSHIP_STAGES: tuple[str, ...] = (
     "private-incubation", "public-community", "sovereign-authority",
 )  # fmt: skip
@@ -132,9 +137,6 @@ KNOWLEDGE_DOMAIN_TAXONOMY: dict[str, dict[str, str]] = {
     "org-": {"knowledge_domain": "organizational-operational", "default_epistemic_grade": "E2",
         "default_entity_kind": "enterprise",
         "default_templates": "business-base,corporate-operations"},
-    "pub-": {"knowledge_domain": "personal-sovereign-public", "default_epistemic_grade": "E1",
-        "default_entity_kind": "individual",
-        "default_templates": "business-base,science-base,knowledge-stewardship-portal"},
 }  # fmt: skip
 CANONICAL_SCIENCE_TRUNKS: dict[str, tuple[str, ...]] = {
     "formal": ("math", "maths", "mathematics", "logic", "statistics", "cs-theory"),
@@ -290,6 +292,10 @@ DEFAULT_SQUAD_ONBOARDING_SPEC: tuple[str, str, str, str] = (
     "apply-project commands for our target consumer project or service repositories",
 )  # fmt: skip
 ROLE_ONBOARDING_SPECS: dict[str, tuple[str, str, str, str]] = {
+    "workstation": ("Level 0 — Personal Root 0 Workstation Hub",
+        "[Fill: Personal workstation habits, host manifests, and 1-hop personal pillar topology]",
+        "[Fill: Planned 1-hop pillars (<persona>-tutor, <persona>-work, <persona>-wallet)]",
+        "bootstrap commands to initialize our 1-hop personal pillars"),
     "corporate": ("Level 1 — Root 0 (Corporate & Organizational Governance Hub)",
         "[Fill: Organization mission, core business domain, and compliance/IP/SLA non-negotiables]",
         "[Fill: Planned child Departments (--role department / --role domain-policy)]",
@@ -312,8 +318,6 @@ GIT_CMD_TIMEOUT_SECONDS, MAX_SKILL_FRONTMATTER_LINES, SKILL_MD_MAX_LINES = 5, 30
 STATUS_EXCERPT_MAX_LINES, CAPSULE_DIGEST_HEX_LEN, CAPSULE_HMAC_HEX_LEN = 12, 16, 24
 OWNER_WRITABLE_MODE_BIT, OWNER_DIR_RWX_BITS = stat.S_IWUSR, stat.S_IRWXU
 AGENTS_MD_WARN_BYTES, AGENTS_MD_MAX_BYTES = 16000, 18000
-KEBAB_ID_RE: re.Pattern[str] = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
-SAFE_GIT_REF_RE: re.Pattern[str] = re.compile(r"^[a-zA-Z0-9._/-]+$")
 VALID_RUNTIME_PERSISTENCE_MODES: tuple[str, ...] = ("static", "dynamic")
 VALID_DYNAMIC_RESOLUTION_POLICIES: tuple[str, ...] = (
     "standing", "ttl-expired", "goal-resolved", "surface-matched", "no-utility-pruned",
@@ -325,7 +329,8 @@ VALID_DELEGATION_DIRS: tuple[str, ...] = ("corporate", "docs", "roadmaps")
 VALID_DELEGATION_SURFACES: tuple[str, ...] = (*VALID_TRACKER_FILES, "rules", *VALID_DELEGATION_DIRS)
 CONSUMER_ALLOWED_OPS: tuple[str, ...] = (
     "status", "list-templates", "diff-project", "lint-arch", "lint-skills", "check-handoff",
-    "apply-project", "check-authority", "inspect-horizon", "compare-upstream", "consult-layer",
+    "apply-project", "scaffold-web-app", "check-authority", "inspect-horizon",
+    "compare-upstream", "consult-layer",
 )  # fmt: skip
 MAINTAINER_ALLOWED_OPS: tuple[str, ...] = (
     "sync-layer", "scaffold-template", "scaffold-plugin-module", "delegate-to-child",
@@ -351,7 +356,6 @@ DEFAULT_PROCESS_BRANCH_PREFIXES: dict[str, str] = {
 }  # fmt: skip
 DEFAULT_GOVERNANCE_PR_PREFIXES: dict[str, str] = {"promote": "promote/", "delegate": "delegate/"}
 CAPSULE_REF_NAMESPACE: str = "refs/zcg/capsules"
-MATERIALIZED_RULE_RE: re.Pattern[str] = re.compile(r"^layer-(\d{2})-([a-z0-9-]+)\.md$")
 COMMAND_CONSCIOUSNESS_TIERS: dict[str, tuple[str, ...]] = {
     "c1_tactical_fast": (
         "status", "task", "diff", "workstation-audit", "activate-plugin",

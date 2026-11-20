@@ -6,5 +6,6 @@
   "extends": "universal-base",
   "target_role": "department",
   "description": "Socratic pedagogy, M1..M4 mastery progression, and anti-ghostwriting academic baseline.",
+  "associated_global_skills": [],
   "recommended_surface_bindings": []
 }

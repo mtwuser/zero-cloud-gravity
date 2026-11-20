@@ -1,6 +1,6 @@
 # `tutor-study-cockpit` (`plugin-stack`) — Tier 2 Pedagogical & Mastery Progression Surface
 
-> Tier 2 runtime surface plugin extending `academic-curriculum` for academic workspaces (`alex-tutor`), interactive `M1..M4` study dashboards, and `verify-mastery` checkpoints.
+> Tier 2 runtime surface plugin extending `academic-curriculum` for academic workspaces (`<persona>-tutor`), interactive `M1..M4` study dashboards, and `verify-mastery` checkpoints.
 
 ---
 
@@ -21,7 +21,7 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 ## 2. Core Study Cockpit Capabilities
 
-The `tutor-study-cockpit` plugin powers dedicated learning and tutoring workspaces (`alex-tutor`):
+The `tutor-study-cockpit` plugin powers dedicated learning and tutoring workspaces (`<persona>-tutor`):
 
 1. **`M1..M4` Mastery Telemetry**: Visualizes learner progression across syllabus units (`M1` Intuition $\rightarrow$ `M2` Guided Practice $\rightarrow$ `M3` Boundary Analysis $\rightarrow$ `M4` Autonomous Verification).
 2. **Socratic Session Continuity**: Connects `.agents/SESSION.md` and `WORKTASK.md` study lots so tutoring sessions resume at the exact conceptual checkpoint without losing prior diagnostic context.
@@ -31,7 +31,7 @@ The `tutor-study-cockpit` plugin powers dedicated learning and tutoring workspac
 
 ## 3. Mounting & Cross-References
 
-Declare `tutor-study-cockpit` in `system/zcg-node.json` under `stack_groups.plugin_stack` and synchronize the academic node:
+Declare `tutor-study-cockpit` in `system/zcg-node.json` under `default_stack_templates` and synchronize the academic node:
 
 ```bash
 zcg sync-layer /path/to/academic-node

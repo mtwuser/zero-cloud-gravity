@@ -22,19 +22,12 @@ from zcg.cli.parser import (
     require_opt_str,
     require_pos_path,
 )
-from zcg.cockpit.status import inspect_workspace_status
+from zcg.cockpit.ops.status import inspect_workspace_status
 from zcg.core.constants import NODE_MANIFEST_REL_PATH
 from zcg.core.manifests import discover_templates_catalog, load_node_manifest
-from zcg.governance import (
-    arch_linter,
-    authority,
-    bootstrap,
-    capabilities,
-    handoff,
-    horizon,
-    oss_contrib,
-    promotion,
-)
+from zcg.governance.policy import arch_linter, authority, capabilities, handoff
+from zcg.governance.work import horizon, oss_contrib
+from zcg.governance.workspace import bootstrap, promotion
 from zcg.topology.posture import inspect_remote_node_manifest
 from zcg.topology.subtrees import (
     inspect_mounted_children_drifts,

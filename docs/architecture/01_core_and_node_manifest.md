@@ -4,25 +4,27 @@ epistemic_grade: E3
 
 # Architecture 01 — Core Contracts, Hexagonal Domain & Data Platform (`src/zcg/{core,platform}/`)
 
-> **Normative Specification — Subsystem 1 (`src/zcg/core/{constants,manifests,epistemics,blueprints,surface_composer,domain,sqlite_repo}.py` & `src/zcg/platform/{type_registry,schema_discovery,cdc,cvs,projection,pipeline_router,projection_router}.py`)**
+> **Normative Specification — Subsystem 1 (`src/zcg/core/{constants,manifests,markdown_scan,ast_graph,epistemics,blueprints,surface_composer,domain,sqlite_repo}.py` & `src/zcg/platform/{type_registry,schema_discovery,cdc,cvs,projection,pipeline_router,projection_router}.py`)**
 >
-> This specification defines the foundational nominal constants, `system/zcg-node.json` (`zcg-node-v1`) and `template.json` (`zcg-template-v1`) contracts, `E3 > E2 > E1 > E0` epistemic resolution, `M1..M4` cognitive adaptation, composable `Purpose × Role × Active Stacks` `Makefile` & `.agents/{zcg.mk,skills.json}` synthesis, `setup_state` (`U0 -> U1 -> U2`) state machines, immutable `PEP 703` Hexagonal `DomainEntity` / `RepositoryPort` primitives, zero-dependency SQLite WAL persistence in `src/zcg/core/`, and the opt-in `Level B` Data Platform engine (`CanonicalTypeRegistry`, `SchemaDiscovery`, `ChangeDataCapture`, `ContinuousValidationScorer`, `SchemaDriftDetector`, `RolePayloadProjector`, `AdaptiveThresholdPromoter`, stateful `DataPipelineRuntime` / `create_data_pipeline_router`, and `create_role_projection_router`) in `src/zcg/platform/`.
+> This specification defines the foundational nominal constants, `system/zcg-node.json` (`zcg-node-v1`) and `template.json` (`zcg-template-v1`) contracts, fence-aware Markdown structural scanning (`markdown_scan.py`), zero-LLM stdlib `ast` + `graphlib` codebase graph indexing (`ast_graph.py`), `E3 > E2 > E1 > E0` epistemic resolution, `M1..M4` cognitive adaptation, composable `Purpose × Role × Active Stacks` `Makefile` & `.agents/{zcg.mk,skills.json}` synthesis, `setup_state` (`U0 -> U1 -> U2`) state machines, immutable `PEP 703` Hexagonal `DomainEntity` / `RepositoryPort` primitives, zero-dependency SQLite WAL persistence in `src/zcg/core/`, and the opt-in `Level B` Data Platform engine (`CanonicalTypeRegistry`, `SchemaDiscovery`, `ChangeDataCapture`, `ContinuousValidationScorer`, `SchemaDriftDetector`, `RolePayloadProjector`, `AdaptiveThresholdPromoter`, stateful `DataPipelineRuntime` / `create_data_pipeline_router`, and `create_role_projection_router`) in `src/zcg/platform/`.
 
 ---
 
 ## 1. `1:1:1` Source $\leftrightarrow$ Unit Test $\leftrightarrow$ Specification Traceability Matrix (`src/zcg/{core,platform}/`)
 
-All fourteen modules across `src/zcg/core/` (`7`) and `src/zcg/platform/` (`7`) are pure Python 3.14 stdlib components with zero upward imports into `topology`, `governance`, `cockpit`, `cli`, `capsules`, `ephemeral`, or `mcp`:
+All sixteen modules across `src/zcg/core/` (`9`) and `src/zcg/platform/` (`7`) are pure Python 3.14 stdlib components with zero upward imports into `topology`, `governance`, `cockpit`, `cli`, `capsules`, `ephemeral`, or `mcp`:
 
 | Implementation Module | Isolated `1:1` Unit Suite | Primary Symbols & Normative Scope |
 | :--- | :--- | :--- |
-| [src/zcg/core/constants.py](../../src/zcg/core/constants.py) | [tests/unit/zcg/core/test_constants.py](../../tests/unit/zcg/core/test_constants.py) | `NODE_MANIFEST_CONTRACT_REV` (`"zcg-node-v1"`), `TEMPLATE_MANIFEST_CONTRACT_REV` (`"zcg-template-v1"`), `SKILLS_MANIFEST_CONTRACT_REV` (`"zcg-skills-v1"`), `PERMISSIONS_MANIFEST_CONTRACT_REV` (`"zcg-agy-permissions-v1"`), `PLUGINS_MANIFEST_REL_PATH`, `ANTIGRAVITY_PERMISSIONS_REL_PATH`, `AGENTS_MD_MAX_BYTES` (`18,000`), `VALID_LAYER_ROLES`, `VALID_NODE_LINK_RELATIONS`, `MAKEFILE_COMPOSABLE_BLOCKS`, `LAYER_MAKEFILE_RECIPES` (uniform `workstation-*` & `plugin` `ACTION=...`), and `COMMAND_CONSCIOUSNESS_TIERS` (`C1/C2/C3`). |
-| [src/zcg/core/manifests.py](../../src/zcg/core/manifests.py) | [tests/unit/zcg/core/test_manifests.py](../../tests/unit/zcg/core/test_manifests.py) | `read_version`, `file_sha256_hex`, `strip_markdown_frontmatter` (`0`-frontmatter standalone `AGENTS.md` invariant), `load_node_manifest` (with automatic `zcg-node-v1`, `governing_root_id`, and `dev..pro` environment backfill), `discover_templates_catalog` (`zcg-template-v1`), `resolve_template_dir`, `parse_skill_frontmatter`, and `resolve_interaction_language`. |
-| [src/zcg/core/epistemics.py](../../src/zcg/core/epistemics.py) | [tests/unit/zcg/core/test_epistemics.py](../../tests/unit/zcg/core/test_epistemics.py) | `resolve_science_trunk` (`6` UNESCO/Frascati trunks), `classify_knowledge_domain` (`gov-*`, `sci-*`, `geo-*`, `org-*`, `pub-*`), `parse_human_stack_string`, and `resolve_effective_human_stack` (`M1..M4` + `domain-*`, `bridge-*`, `soft-*`, `hat-*` across 4 scopes). |
-| [src/zcg/core/blueprints.py](../../src/zcg/core/blueprints.py) | [tests/unit/zcg/core/test_blueprints.py](../../tests/unit/zcg/core/test_blueprints.py) | `resolve_template_lineage_chain` (recursive `"extends"` DAG traversal), `resolve_default_cockpit_plugin`, `render_layer_onboarding_readme`, `render_lineage_markdown`, and `resolve_workspace_setup_state` (`U0 -> U1 -> U2`). |
+| [src/zcg/core/constants.py](../../src/zcg/core/constants.py) | [tests/unit/zcg/core/test_constants.py](../../tests/unit/zcg/core/test_constants.py) | `NODE_MANIFEST_CONTRACT_REV` (`"zcg-node-v1"`), `TEMPLATE_MANIFEST_CONTRACT_REV` (`"zcg-template-v1"`), `SKILLS_MANIFEST_CONTRACT_REV` (`"zcg-skills-v1"`), `PERMISSIONS_MANIFEST_CONTRACT_REV` (`"zcg-agy-permissions-v1"`), `SIDECAR_MANIFEST_CONTRACT_REV` (`"zcg-sidecar-v1"`), `TOOL_RUNTIME_REL_DIR` (`".zcg/tools"`), `CANONICAL_STACK_GROUP_DIRS` (`human-stack`, `context-stack`, `tool-stack`, `plugin-stack`), `CANONICAL_STARTER_TEMPLATES` (`19` packs), `PLUGINS_MANIFEST_REL_PATH`, `ANTIGRAVITY_PERMISSIONS_REL_PATH`, `SIDECAR_MANIFEST_REL_PATH`, `AGENTS_MD_MAX_BYTES` (`18,000`), `VALID_LAYER_ROLES`, `VALID_NODE_LINK_RELATIONS`, `MAKEFILE_COMPOSABLE_BLOCKS`, `LAYER_MAKEFILE_RECIPES`, and `COMMAND_CONSCIOUSNESS_TIERS` (`C1/C2/C3`). |
+| [src/zcg/core/manifests.py](../../src/zcg/core/manifests.py) | [tests/unit/zcg/core/test_manifests.py](../../tests/unit/zcg/core/test_manifests.py) | `read_version`, `sha256_file`, `strip_markdown_frontmatter` (`0`-frontmatter standalone `AGENTS.md` invariant), `load_node_manifest`, `discover_templates_catalog` (`zcg-template-v1`), `resolve_template_dir`, `collect_layer_effective_bindings` (`surface_bindings` + `recommended_surface_bindings`), `parse_skill_frontmatter` (`0` regexes), and `canonicalize_local_node_url`. |
+| [src/zcg/core/markdown_scan.py](../../src/zcg/core/markdown_scan.py) | [tests/unit/zcg/core/test_markdown_scan.py](../../tests/unit/zcg/core/test_markdown_scan.py) | Regex-free (`0` `import re`, `0` I/O) CommonMark fence-aware structural and inline scanner: `CheckboxItem`, `HeadingItem`, `iter_unfenced_lines` (3+ backtick/tilde fence tracking), `extract_fenced_blocks`, `parse_checkbox_line`, `scan_markdown_checkboxes`, `parse_heading_line`, `scan_markdown_headings`, `split_markdown_sections`, `slugify_heading`, `tokenize_alnum`, `contains_token_id`, `extract_markdown_links`, `extract_inline_code_paths`, `extract_bold_terms`, `extract_citation_receipt_refs`, and `strip_ansi_csi`. |
+| [src/zcg/core/ast_graph.py](../../src/zcg/core/ast_graph.py) | [tests/unit/zcg/core/test_ast_graph.py](../../tests/unit/zcg/core/test_ast_graph.py) | Deterministic zero-LLM Python 3.14 stdlib `ast` + `graphlib` codebase graph analyzer (`0` `import re`, `0` external parsers): `CLUSTER_MODULE_MIN_LINES` (`380`), `M_CLUSTER_WARN_LINES` (`1,200`), and `build_codebase_ast_graph` extracting module symbols, `EXTRACTED` AST import edges, `CITED` `1:1:1` (`Spec <-> Test <-> Code`) links, $M_{\text{cluster}}$ coupled-module highlights, and package `topological_order`. |
+| [src/zcg/core/epistemics.py](../../src/zcg/core/epistemics.py) | [tests/unit/zcg/core/test_epistemics.py](../../tests/unit/zcg/core/test_epistemics.py) | `VALID_GLOBAL_PROFILES`, `PROFILE_TEMPLATE_CHAIN`, `_resolve_science_trunk` (`6` UNESCO/Frascati trunks), `classify_knowledge_domain` (`gov-*`, `sci-*`, `geo-*`, `org-*`, `pub-*`), `normalize_human_stack_tokens`, `resolve_effective_human_stack` (`M1..M4` + `domain-*`, `bridge-*`, `soft-*`, `hat-*` across 4 scopes), and `resolve_effective_interaction_language`. |
+| [src/zcg/core/blueprints.py](../../src/zcg/core/blueprints.py) | [tests/unit/zcg/core/test_blueprints.py](../../tests/unit/zcg/core/test_blueprints.py) | `extract_kickoff_prompt`, `resolve_template_lineage_chain` (recursive `"extends"` DAG traversal), `resolve_default_cockpit_plugin`, `render_layer_onboarding_readme` (self-contained 4-Phase Day-0 Kickoff Prompt), `render_lineage_markdown`, and `resolve_workspace_setup_state` (`U0 -> U1 -> U2` across all roles including `workstation`). |
 | [src/zcg/core/surface_composer.py](../../src/zcg/core/surface_composer.py) | [tests/unit/zcg/core/test_surface_composer.py](../../tests/unit/zcg/core/test_surface_composer.py) | `compose_node_makefile_targets` (`Purpose × Role × Active Stacks`), `render_layer_makefile`, `render_project_zcg_mk` (`.agents/zcg.mk` `zcg-*` non-invasive project include), `is_makefile_outdated`, `sync_workspace_makefile`, `build_skills_manifest`, and `write_skills_manifest` (`.agents/skills.json`). |
-| [src/zcg/core/domain.py](../../src/zcg/core/domain.py) | [tests/unit/zcg/core/test_domain.py](../../tests/unit/zcg/core/test_domain.py) | `L1..L2` Functional Core semantic primitives (`Identifier`, `NaturalText`, `LongText`, `Slug`, `Temporal`, `generate_identifier`, `ensure_tz_aware`), `frozen=True` `DomainEntity`, and `PEP 695` `RepositoryPort[EntityT, IdT]` (`0` I/O imports). |
-| [src/zcg/core/sqlite_repo.py](../../src/zcg/core/sqlite_repo.py) | [tests/unit/zcg/core/test_sqlite_repo.py](../../tests/unit/zcg/core/test_sqlite_repo.py) | `L4` Infrastructure `SQLiteRepositoryAdapter[EntityT, IdT]` implementing `RepositoryPort` over SQLite WAL (`PRAGMA journal_mode=WAL`, parameterized `?` SQL, `ensure_contained_path`, and deterministic connection closing). |
+| [src/zcg/core/domain.py](../../src/zcg/core/domain.py) | [tests/unit/zcg/core/test_domain.py](../../tests/unit/zcg/core/test_domain.py) | `L1..L2` Functional Core semantic primitives (`Identifier`, `NaturalText`, `LongText`, `Slug`, `Temporal`, `LOOPBACK_HTTP_HOSTS`, `normalize_cdn_origins`, `generate_identifier`, `ensure_tz_aware`), `frozen=True` `DomainEntity`, and `PEP 695` `RepositoryPort[EntityT, IdT]` (`0` I/O imports). |
+| [src/zcg/core/sqlite_repo.py](../../src/zcg/core/sqlite_repo.py) | [tests/unit/zcg/core/test_sqlite_repo.py](../../tests/unit/zcg/core/test_sqlite_repo.py) | `L4` Infrastructure `SQLiteMigrationStep`, `apply_sqlite_user_version_migrations`, and `SQLiteRepositoryAdapter[EntityT, IdT]` implementing `RepositoryPort` over SQLite WAL (`PRAGMA journal_mode=WAL`, `PRAGMA user_version` forward-only migrations, parameterized `?` SQL, `ensure_contained_path`, and deterministic connection closing). |
 | [src/zcg/platform/type_registry.py](../../src/zcg/platform/type_registry.py) | [tests/unit/zcg/platform/test_type_registry.py](../../tests/unit/zcg/platform/test_type_registry.py) | `WireType`, `StructuralPattern`, `SemanticType`, `FieldAnalysis`, `StructureAnalysisResult`, `TypeMappingRule`, `CanonicalTypeRegistry`, and `SemanticMapper` (`HIGH_CARDINALITY_THRESHOLD = 0.80`, `LOW_CARDINALITY_THRESHOLD = 0.10`, `MIN_MAPPING_CONFIDENCE_THRESHOLD = 0.30`). |
 | [src/zcg/platform/schema_discovery.py](../../src/zcg/platform/schema_discovery.py) | [tests/unit/zcg/platform/test_schema_discovery.py](../../tests/unit/zcg/platform/test_schema_discovery.py) | `SchemaStatus`, `ValidationAction`, `TypeSignature`, `FieldProposal`, `SchemaProposal`, `StructureAnalyzer`, `SchemaProposer`, `SchemaValidationGate`, and `SchemaDiscovery` (`0` I/O, deterministic `itertools.islice` sampling, Shannon entropy & positional anchors). |
 | [src/zcg/platform/cdc.py](../../src/zcg/platform/cdc.py) | [tests/unit/zcg/platform/test_cdc.py](../../tests/unit/zcg/platform/test_cdc.py) | `ChangeType` (`INSERT`, `UPDATE`, `DELETE`), `ChangeEvent`, `CDCPipelineConfig`, `DataConnectorPort` (`Protocol`), `InMemoryDataConnector`, `DeltaDetector` (canonical JSON SHA-256 diffing + `changed_fields`), and `ChangeDataCapture` chunked poll-detect-acknowledge pipeline. |
@@ -44,7 +46,7 @@ The table below defines the normative fields and backfill rules enforced by `loa
 | Field | Type / Domain | Normative Contract & Automatic Backfill Rule |
 | :--- | :--- | :--- |
 | `schema_version` | `"zcg-node-v1"` | Validated via `NODE_MANIFEST_CONTRACT_REV`; missing or older revisions are upgraded deterministically in memory and persisted on `zcg sync-layer`. |
-| `layer_id` | `kebab-case` (`KEBAB_ID_RE`) | Sovereign identifier matching `^[a-z0-9]+(-[a-z0-9]+)*$` (defaults to directory name when omitted). |
+| `layer_id` | `kebab-case` (`is_kebab_id`) | Sovereign identifier validated by `is_kebab_id` (`0` regexes; lowercase ASCII alphanumeric `-`-delimited segments, defaulting to directory name when omitted). |
 | `layer_role` | `VALID_LAYER_ROLES` | One of `corporate`, `department`, `domain-policy`, `project`, `squad`, `knowledge`, `workstation`, `service-node`, `environment-cluster`, or `ephemeral-bot`. |
 | `precedence` | `int` (`0..100`) | *Lex Superior* rank (`1..2` Public Admin `Root 0`, `3..4` Public Dept, `5..9` Fiduciary `domain-policy`, `10` Corporate `Root 0` / OSS `workstation`, `15` `ephemeral-bot`, `15..45` Functional `department`, `20` `knowledge`, `50` `squad`, `60` `service-node`, `70` `environment-cluster`, `80` `project`, `85..95` `individual` / `Human-Stack`). |
 | `entity_kind` | `VALID_ENTITY_KINDS` | Orthogonal sovereignty axis: `public-government`, `enterprise`, `individual`, or `open-source`. |
@@ -59,7 +61,7 @@ The table below defines the normative fields and backfill rules enforced by `loa
 
 ### 2.2. `template.json` (`zcg-template-v1`) & Structural Lineage Graph (`resolve_template_lineage_chain`)
 
-Instead of hardcoded template case switches (`Mandate 1` & `Software Engineering §2`), `resolve_template_lineage_chain` resolves template dependencies by traversing the `"extends"` directed acyclic graph (DAG) across `templates/{human,context,framework,plugin}-stack/*/`:
+Instead of hardcoded template case switches (`Mandate 1` & `Software Engineering §2`), `resolve_template_lineage_chain` resolves template dependencies by traversing the `"extends"` directed acyclic graph (DAG) across `templates/{human,context,tool,plugin}-stack/*/` (`human-stack`, `context-stack`, and `plugin-stack` stay `100%` zero-dependency, while `tool-stack` isolates optional deployment targets and external runtimes under `.zcg/tools/<id>/`):
 
 ```mermaid
 flowchart TD
@@ -72,9 +74,11 @@ flowchart TD
     SM["scientific-methodology (context-stack)"]
     SE["software-engineering (context-stack)"]
     CO["corporate-operations (context-stack)"]
+    SS["spatial-simulation (context-stack)"]
+    NC["nist-csf-security (context-stack)"]
 
-    NC["nist-csf-security (framework-stack)"]
-    GC["google-cloud-iac (framework-stack)"]
+    SHC["self-hosted-container (tool-stack)"]
+    GC["google-cloud-iac (tool-stack)"]
 
     WCT["workstation-control-tower (plugin-stack :8790)"]
     CRH["corporate-root-hub (plugin-stack :8710)"]
@@ -82,17 +86,18 @@ flowchart TD
     TSC["tutor-study-cockpit (plugin-stack :8786..8789)"]
     SMG["secops-mcp-guardian (plugin-stack :8705..8725)"]
     KSP["knowledge-stewardship-portal (plugin-stack :8720)"]
+    SWC["sovereign-wallet-cockpit (plugin-stack :8720..8788)"]
 
     UB --> AB & SB & BB & WCT & NWC
     AB --> AC --> TSC
-    SB --> SM & SE
+    SB --> SM & SE & SS & SWC
     SM --> KSP
     BB --> CO --> CRH
-    SE --> NC & GC
-    NC --> SMG
+    SE --> NC
+    NC --> SHC & GC & SMG
 ```
 
-1. **Implicit Kind Parent Fallback**: Any `context-stack` pack without an explicit `"extends"` field defaults to `"business-base"`; any `framework-stack` or `plugin-stack` pack without an explicit `"extends"` field defaults to `"software-engineering"`.
+1. **Implicit Kind Parent Fallback**: Any `context-stack` pack without an explicit `"extends"` field defaults to `"business-base"`; any `tool-stack` or `plugin-stack` pack without an explicit `"extends"` field defaults to `"software-engineering"`.
 2. **Sovereign Self-Exclusion (`skip_id = layer_id`)**: During upstream template synchronization (`zcg sync-layer`), `skip_id = layer_id` ensures a node's own sovereign rule pack (`templates/<layer_id>/rules/<layer_id>.md`) is never overwritten by an upstream parent.
 
 ---
@@ -138,9 +143,9 @@ Every knowledge domain prefix and Markdown section maps to a deterministic credi
 
 | Layer & Module | Exported Contract | Exact Boundary & Security Invariants |
 | :--- | :--- | :--- |
-| **`L1` Semantic Primitives (`domain.py`)** | `validate_identifier`, `validate_natural_text` (`<= 500`), `validate_long_text` (`<= 50,000`), `validate_slug` (`<= 128`, `KEBAB_ID_RE`), `validate_temporal`, `ensure_tz_aware` | Rejects malformed UUIDs, blank or oversized text, non-kebab slugs, and timezone-naive `datetime` instances at construction (`0` external validation libraries). |
+| **`L1` Semantic Primitives (`domain.py`)** | `validate_identifier`, `validate_natural_text` (`<= 500`), `validate_long_text` (`<= 50,000`), `validate_slug` (`<= 128`, `is_kebab_id`), `is_safe_git_ref`, `parse_materialized_rule_filename`, `extract_ticket_ids`, `validate_temporal`, `ensure_tz_aware` | Rejects malformed UUIDs, blank or oversized text, non-kebab slugs, unsafe git refs, and timezone-naive `datetime` instances at construction (`0` regexes, `0` external validation libraries). |
 | **`L1..L2` Functional Core (`domain.py`)** | `@dataclass(frozen=True, kw_only=True) class DomainEntity` & `@runtime_checkable class RepositoryPort[EntityT, IdT]` (`Protocol`) | Immutable (`PEP 703` free-threading safe) entities carrying validated `id`, `created_at`, and `updated_at` fields, paired with a generic `PEP 695` CRUD port (`0` `sqlite3`/network/OS I/O imports). |
-| **`L4` Persistence Adapter (`sqlite_repo.py`)** | `SQLiteRepositoryAdapter[EntityT, IdT]` (`ABC`, `to_record` / `from_record`) | Enforces `ensure_contained_path` when `workspace_root` is bound, validates namespace identifiers (`^[a-zA-Z_][a-zA-Z0-9_]*$`), binds all values via parameterized `?` queries on `domain_entity_records` under `PRAGMA journal_mode=WAL`, and closes connections deterministically (`0` `ResourceWarning`). |
+| **`L4` Persistence Adapter (`sqlite_repo.py`)** | `SQLiteMigrationStep`, `apply_sqlite_user_version_migrations`, `SQLiteRepositoryAdapter[EntityT, IdT]` (`ABC`, `schema_migrations`, `get_schema_version`, `to_record` / `from_record`) | Enforces `ensure_contained_path` when `workspace_root` is bound, validates ASCII identifier namespaces (`str.isascii()` + `str.isidentifier()`, `0` regexes), applies strictly monotonic `PRAGMA user_version` schema evolution steps inside atomic transactions (`SQLITE_DOWNGRADE_UNSUPPORTED` on newer DB versions), binds all values via parameterized `?` queries on `domain_entity_records` under `PRAGMA journal_mode=WAL`, and closes connections deterministically (`0` `ResourceWarning`). |
 
 ---
 
@@ -150,7 +155,7 @@ Every knowledge domain prefix and Markdown section maps to a deterministic credi
 
 | Engine Module | Exported Components | Exact Thresholds, Cut-Points & Security Invariants |
 | :--- | :--- | :--- |
-| **1. Schema Discovery (`type_registry.py`, `schema_discovery.py`)** | `CanonicalTypeRegistry`, `StructureAnalyzer`, `SemanticMapper`, `SchemaProposer`, `SchemaValidationGate`, `SchemaDiscovery` | Deterministic `itertools.islice` sampling (`DEFAULT_MAX_SAMPLE_SIZE = 10,000`), majority wire-type & regex pattern detection (`> 0.50` ratio, Unix epoch `946,684,800..4,102,444,800`), cardinality cut-points (`>= 0.80` high, `< 0.10` low), confidence floor (`>= 0.30`, else `UNKNOWN`), Shannon entropy signatures, and `PENDING_PROPOSAL -> VALIDATED -> ACTIVE \| REJECTED` validation gate. |
+| **1. Schema Discovery (`type_registry.py`, `schema_discovery.py`)** | `CanonicalTypeRegistry`, `StructureAnalyzer`, `SemanticMapper`, `SchemaProposer`, `SchemaValidationGate`, `SchemaDiscovery` | Deterministic `itertools.islice` sampling (`DEFAULT_MAX_SAMPLE_SIZE = 10,000`), majority wire-type & stdlib structural pattern detection (`uuid.UUID`, `ipaddress.IPv4Address`, `datetime.fromisoformat`, `urllib.parse.urlsplit`, `0` regexes; `> 0.50` ratio, Unix epoch `946,684,800..4,102,444,800`), cardinality cut-points (`>= 0.80` high, `< 0.10` low), confidence floor (`>= 0.30`, else `UNKNOWN`), Shannon entropy signatures, and `PENDING_PROPOSAL -> VALIDATED -> ACTIVE \| REJECTED` validation gate. |
 | **2. Change Data Capture (`cdc.py`)** | `DataConnectorPort` (`Protocol`), `InMemoryDataConnector`, `DeltaDetector`, `ChangeDataCapture` | Tracks canonical JSON SHA-256 record state by `key_field`, emitting immutable `ChangeEvent` records (`INSERT`, `UPDATE`, `DELETE`) with sorted `changed_fields` and chunked `batch_size` acknowledgement (`0` raw slices). |
 | **3. Continuous Validation & Role Projection (`cvs.py`, `projection.py`)** | `ContinuousValidationScorer`, `SchemaDriftDetector`, `RolePayloadProjector`, `AdaptiveThresholdPromoter` | Weighted validation score (`0.25` completeness + `0.30` consistency + `0.25` null health + `0.20` normalized Shannon entropy), drift severity cut-points (`0.05` `LOW`, `0.10` `MEDIUM`, `0.20` `HIGH`, `0.35` `CRITICAL`), `DisclosureTier × ExchangeStage` capsule projection (`PUBLIC_OVERVIEW`, `CANDIDATE_APPLICATION`, `B2B_PROPOSAL`, `DAY1_ONBOARDING`) withholding `DAY1_ONBOARDING` PII until acceptance while preserving `citation_receipt` proofs, and `min_cycles` hysteresis threshold promotion. |
 | **4. Composable Platform Routers (`pipeline_router.py`, `projection_router.py`)** | `DataPipelineRuntime`, `create_data_pipeline_router`, `parse_payload_segments`, `create_role_projection_router` | Reusable `APIRouter` adapters (`GET/POST /api/platform/pipeline` tracking stateful `CDC` + `SchemaDriftDetector` across batches, and `GET/POST /api/platform/projection` projecting arbitrary `PayloadFieldSegment` payloads across `ExchangeStage`) with `0` hardcoded vertical fixtures. |

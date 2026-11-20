@@ -24,7 +24,7 @@ Pillar A — Universal Global Baseline (zero-cloud-gravity)
 │   │  Reusable stack starter packs, departmental/domain policy packs, and cross-cutting
 │   │  subtree layers mounted under <node>/layers/<layer-name>/ via zcg subtree.
 │   │  Queried on demand via MCP (compare_layer_patterns) and promoted via
-│   │  zcg promote-from-project or zcg subtree push <layer-name> <branch>.
+│   │  zcg promote-from-project or git subtree push --prefix=layers/<child> <repo> <branch>.
 │   │
 │   ├── Pillar C — Product / Project Workspace (<product>/.agents/)
 │   │   │  Rules and skills specific to a single product repository or squad workspace.
@@ -129,11 +129,11 @@ For each candidate, determine the exact target layer and template pack using `.a
 | If the rule, skill, or template pattern... | Target Layer & Day-to-Day Command (`make` or CLI) |
 |---|---|
 | Applies to ANY project regardless of domain or stack (`<= 18,000` bytes cap, promoted from `Root 0` passing `OSS_AGNOSTICISM_VIOLATION`) | **A (Universal Open Source Root)**: `$ZCG_RUNTIME_DIR/templates/human-stack/<pack>/` (`make promote SOURCE=<path> TEMPLATE=<universal-base\|academic-base\|science-base\|business-base>`) |
-| Applies to a cross-cutting domain policy (`domain-policy`, e.g., Legal/Security) or department (`department`, e.g., Design/Marketing) | **B (Parent Department, Corporate Root 0, or Mounted Subtree `layers/*`)**: 1-hop parent layer (`make promote SOURCE=<path> [TEMPLATE=<pack>]`, or `zcg subtree push <layer-name> <branch>` when pushing a mounted subtree) |
-| Applies to any project using a specific specialization stack or template pack (`human-stack`, `context-stack`, `framework-stack`, `plugin-stack`) | **B (Framework Repo or Polymorphic Template Pack)**: `<layer>/templates/<stack>/<pack>/` (`make promote SOURCE=<path> TEMPLATE=<pack>`) |
+| Applies to a cross-cutting domain policy (`domain-policy`, e.g., Legal/Security) or department (`department`, e.g., Design/Marketing) | **B (Parent Department, Corporate Root 0, or Mounted Subtree `layers/*`)**: 1-hop parent layer (`make promote SOURCE=<path> [TEMPLATE=<pack>]`, or `git subtree push --prefix=layers/<child> <repo> <branch>` when pushing a mounted subtree) |
+| Applies to any project using a specific specialization stack or template pack (`human-stack`, `context-stack`, `tool-stack`, `plugin-stack`) | **B (Provider Adapter or Polymorphic Template Pack)**: `<layer>/templates/<stack>/<pack>/` (`make promote SOURCE=<path> TEMPLATE=<pack>`) |
 | Refines a reusable **`Human-Stack` cognitive, mastery (`M1..M4`), or cross-discipline bridge rule (`precedence: 85..95`)** | **B / A (Living `Human-Stack` Catalog in Squad, Department, `Root 0`, or `universal-base`)**: 1-hop parent layer (`make promote SOURCE=<path> [TEMPLATE=<pack>]`) to homogenize cross-enterprise human-agent pairing |
 | Materialized lineage file (`layer-<NN>-<layer>.md`) | **Already tracked by `Pillar B` (`layers/<layer>`)** — only promote if modified in the project (`modified_in_project` in `make diff`) |
-| Sovereign node customization (`templates/<layer_id>/rules/<layer_id>.md`, `antigravity/.gemini/config/AGENTS.md` in a layer/knowledge/tutor node, or `.agents/rules/<project>-*.md` in a leaf consumer project) | **`Pillar B/C` (Sovereign to the Node)**: Stays in `<node>/templates/<layer_id>/` (skipped by upstream `make sync` via `skip_id = layer_id` and auto-reconciled from `.agents/rules/<layer_id>.md`) or `<project>/.agents/`, keeping inherited base/stack templates (`universal-base`, `academic-base`, `science-base`, `business-base`, `software-engineering`) pure for `0`-conflict Open-Source upgrades |
+| Sovereign node customization (`templates/<layer_id>/rules/<layer_id>.md`, `antigravity/.gemini/config/AGENTS.md` in a workstation node, or `.agents/rules/<project>-*.md` in a leaf consumer project) | **`Pillar B/C` (Sovereign to the Node)**: Stays in `<node>/templates/<layer_id>/` (skipped by upstream `make sync` via `skip_id = layer_id` and auto-reconciled from `.agents/rules/<layer_id>.md`) or `<project>/.agents/`, keeping inherited base/stack templates (`universal-base`, `academic-base`, `science-base`, `business-base`, `software-engineering`) pure for `0`-conflict Open-Source upgrades |
 
 ### §2.4 4-Pillar Ecosystem Currency & Native Reuse Radar
 
@@ -141,9 +141,9 @@ Evaluate every upward promotion or self-enrichment pass against the **4-Pillar E
 
 | Ecosystem Pillar | Native Capabilities to Adopt & Keep Current Across Shared Templates | Target Shared Surface |
 | :--- | :--- | :--- |
-| **1. Google Antigravity 2.0** | Native `.agents/plugins/<pack>/plugin.json` + `.agents/plugins.json`, `.agents/skills.json` `"entries"`, frontmatter-free standalone `AGENTS.md` (`strip_markdown_frontmatter`), `.agents/antigravity-permissions.json`, and `5` lifecycle hooks (`SessionStart` + `Stop` `continuationActive`). | `antigravity/.gemini/config/*`, `src/zcg/governance/antigravity_sync.py` |
+| **1. Google Antigravity 2.0** | Native `.agents/plugins/<pack>/plugin.json` + `.agents/plugins.json`, `.agents/skills.json` `"entries"`, frontmatter-free standalone `AGENTS.md` (`strip_markdown_frontmatter`), `.agents/antigravity-permissions.json`, and `5` lifecycle hooks (`SessionStart` + `Stop` `continuationActive`). | `antigravity/.gemini/config/*`, `src/zcg/governance/workspace/antigravity_sync.py` |
 | **2. GitHub Platform & MCP Registry** | Root `server.json` (`2025-12-11` MCP Registry schema) + `README.md` `<!-- mcp-name: ... -->` marker, `.github/dependabot.yml` (`github-actions` + package ecosystem), and hardened GitHub Actions workflows. | `server.json`, `.github/dependabot.yml`, `templates/context-stack/software-engineering/` |
-| **3. Google Cloud, Gemini & LiteRT** | Current `google-genai` SDK conventions, least-privilege Cloud Run / BigQuery / IAM templates, and strictly opt-in local `LiteRT` edge-model rules. | `templates/framework-stack/google-cloud-iac/`, `science-base` |
+| **3. Cloud, Container Edge & AI Tool Adapters** | Vendor-neutral `self-hosted-container` OCI/TLS/OIDC baselines alongside opt-in `google-cloud-iac`, `google-genai` SDK, and local `LiteRT` edge-model rules. | `templates/tool-stack/{self-hosted-container,google-cloud-iac}/`, `science-base` |
 | **4. Python 3.14+ & Open Web/Crypto Standards** | `PEP 703/649/695` typing, C-backed stdlib (`hashlib.file_digest`), Native ASGI, `RFC 6761` `*.localhost` origins, and WCAG 2.2 AA zero-build UI tokens. | `templates/context-stack/software-engineering/rules/software-engineering.md` |
 
 > [!NOTE]

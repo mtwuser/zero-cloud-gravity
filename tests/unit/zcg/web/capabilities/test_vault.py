@@ -12,9 +12,15 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from zcg.web.capabilities.vault import LocalFileVault, StoredFileRecord, create_vault_router
-from zcg.web.factory import create_web_app
-from zcg.web.resilience import DeferredJobQueue
+from zcg.web.capabilities.vault import (
+    VAULT_DOWNLOAD_CSP,
+    LocalFileVault,
+    StoredFileRecord,
+    create_vault_router,
+    format_rfc6266_attachment_header,
+)
+from zcg.web.http.factory import create_web_app
+from zcg.web.ops.resilience import DeferredJobQueue
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -100,6 +106,7 @@ class TestVault:
         swap = [(b"hx-request", b"true")]
 
         async def _scenario() -> dict[str, Any]:
+            _, _, b_empty = await _call(app, "GET", "/api/vault", headers=swap)
             s_mp, _, b_mp = await _call(app, "POST", "/api/vault", headers=mp_hdrs, body=mp_body)
             s_js, _, b_js = await _call(
                 app,
@@ -112,6 +119,7 @@ class TestVault:
             _, _, b_table = await _call(app, "GET", "/api/vault", query="view=table", headers=swap)
             _, _, b_json = await _call(app, "GET", "/api/vault")
             return {
+                "empty": b_empty,
                 "s_mp": s_mp,
                 "b_mp": b_mp,
                 "s_js": s_js,
@@ -126,9 +134,12 @@ class TestVault:
         out = asyncio.run(_scenario())
 
         # Assert
+        assert b"Local Private Vault" in out["empty"] and b"data-zcg-copy=" not in out["empty"]
         assert out["s_mp"] == 201 and b"spec.txt" in out["b_mp"]
         assert out["s_js"] == 201 and out["js"]["uploaded"]["filename"] == "doc.md"
-        assert b"zcg-card-grid" in out["cards"]
+        assert b"zcg-card-grid" in out["cards"] and b"data-zcg-copy=" in out["cards"]
+        assert b"Copy Doc Link" in out["cards"] and b"Outside Git" in out["cards"]
+        assert b"/download" in out["cards"] and b"data-zcg-delete=" in out["cards"]
         assert b"zcg-list" in out["list"]
         assert b"zcg-table" in out["table"]
         assert out["list_json"]["count"] == 2
@@ -164,6 +175,9 @@ class TestVault:
             return {
                 "s_dl": s_dl,
                 "sha": h_dl.get("x-content-sha256"),
+                "csp": h_dl.get("content-security-policy"),
+                "corp": h_dl.get("cross-origin-resource-policy"),
+                "disp": h_dl.get("content-disposition", ""),
                 "b_dl": b_dl,
                 "s_del1": s_del1,
                 "del1": json.loads(b_del1),
@@ -173,12 +187,19 @@ class TestVault:
 
         # Act
         out = asyncio.run(_scenario())
+        hdr_utf8 = format_rfc6266_attachment_header('dir/report "Q4";\r\nnote-ñ.pdf')
+        hdr_blank = format_rfc6266_attachment_header("   \r\n")
 
         # Assert
         assert out["s_dl"] == 200 and out["b_dl"] == b"payload-1"
         assert out["sha"] == expected_sha
+        assert out["csp"] == VAULT_DOWNLOAD_CSP and out["corp"] == "same-origin"
+        assert "filename*=UTF-8''a.txt" in out["disp"]
+        assert 'filename="report _Q4__note-_.pdf"' in hdr_utf8
+        assert "filename*=UTF-8''report%20%22Q4%22%3Bnote-%C3%B1.pdf" in hdr_utf8
+        assert 'filename="artifact.bin"' in hdr_blank
         assert out["s_del1"] == 200 and out["del1"]["deleted"] is True
-        assert out["s_del2"] == 200 and out["b_del2"] == b""
+        assert out["s_del2"] == 200 and b"Vault is empty." in out["b_del2"]
 
     def test_deferred_job_auto_id_idempotent_repost_and_http_286_poll_stop_expected(
         self, tmp_path: Path

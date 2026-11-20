@@ -188,6 +188,8 @@ class TestMCPServer:
         rc_st = main(["--repo-dir", str(repo), "--self-test"])
         with patch("zcg.mcp.server.run_stdio_loop") as mock_loop:
             rc_stdio = main(["--repo-dir", str(repo)])
+        with patch("zcg.mcp.server.run_mcp_http_server") as mock_http:
+            rc_http = main(["--repo-dir", str(repo), "--http-port", "8799"])
 
         # Assert
         out_text = out_buf.getvalue().decode("utf-8")
@@ -197,4 +199,6 @@ class TestMCPServer:
         assert st["overview_ok"] is True
         assert rc_st == 0
         assert rc_stdio == 0
+        assert rc_http == 0
         mock_loop.assert_called_once()
+        mock_http.assert_called_once()

@@ -9,7 +9,7 @@
 - [ ] **Topology, Multi-Layer Governance & CLI (`src/zcg/topology/`, `src/zcg/governance/`, `src/zcg/cli/`)**
 - [ ] **Node Cockpits, RFC 6761 Domains & Plugin SDK (`src/zcg/cockpit/`)**
 - [ ] **Contextual MCP Server, `rcap1` Capsules & Ephemeral Bots (`src/zcg/capsules/`, `src/zcg/ephemeral/`, `src/zcg/mcp/`)**
-- [ ] **Declarative `16`-Pack Stack Templates (`templates/{human,context,framework,plugin}-stack/`)**
+- [ ] **Declarative `19`-Pack Stack Templates (`templates/{human,context,tool,plugin}-stack/`)**
 - [ ] **Antigravity 2.0 Global Rules, Lifecycle Hooks & Skills (`antigravity/.gemini/config/`)**
 - [ ] **Ubuntu 26.04 Workstation Scripts, CI & Documentation (`install.sh`, `scripts/`, `.github/`, `README.md`, `docs/`)**
 

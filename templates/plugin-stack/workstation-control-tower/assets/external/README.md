@@ -1,12 +1,12 @@
 # External Host Provisioning Assets (`workstation-control-tower/assets/external`)
 
-> Curated, auditable APT repository setup scripts and host binary installers bundled with the `workstation-control-tower` plugin for `Root 0` (`workstation_root`) Ubuntu workstations.
+> Curated, auditable APT repository setup scripts and host binary installers bundled with the `workstation-control-tower` plugin for `Root 0` (`workstation`) Ubuntu workstations.
 
 ---
 
 ## 1. Curated Installer Inventory (`apt-repo/` & `script/`)
 
-The following table catalogs the 5 host provisioning scripts verified by `scripts/workstation-install.sh` and `scripts/workstation-audit.sh`:
+The following table catalogs the 5 host provisioning scripts verified by `scripts/workstation-restore.sh` and `scripts/workstation-audit.sh`:
 
 | Category | Script Path | Target Capability & Verification |
 | :--- | :--- | :--- |

@@ -6,7 +6,6 @@ Specification: docs/architecture/01_core_and_node_manifest.md
 from __future__ import annotations
 
 import itertools
-import re
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
@@ -14,6 +13,7 @@ from enum import StrEnum
 from typing import Any, Final
 
 from zcg.platform.type_registry import (
+    PATTERN_VALIDATORS,
     CanonicalTypeRegistry,
     FieldAnalysis,
     SemanticMapper,
@@ -125,17 +125,6 @@ _PRIMITIVE_WIRE_MAP: Final[dict[type, WireType]] = {
     bytes: WireType.BYTES,
     bytearray: WireType.BYTES,
 }
-_PATTERN_REGEXES: Final[tuple[tuple[StructuralPattern, re.Pattern[str]], ...]] = (
-    (
-        StructuralPattern.UUID,
-        re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I),
-    ),
-    (StructuralPattern.EMAIL, re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")),
-    (StructuralPattern.URL, re.compile(r"^https?://")),
-    (StructuralPattern.ISO_TIMESTAMP, re.compile(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}")),
-    (StructuralPattern.IPV4, re.compile(r"^\d{1,3}(?:\.\d{1,3}){3}$")),
-    (StructuralPattern.HEXADECIMAL, re.compile(r"^[0-9a-f]{16,}$", re.I)),
-)
 _DISPLAY_HINTS: Final[dict[SemanticType, str]] = {
     SemanticType.IDENTIFIER: "monospace",
     SemanticType.FINGERPRINT: "monospace+truncate",
@@ -231,8 +220,8 @@ class StructureAnalyzer:
             str_vals = [str(v) for v in non_null]
             return tuple(
                 p
-                for p, rx in _PATTERN_REGEXES
-                if sum(1 for s in str_vals if rx.match(s)) > threshold
+                for p, validator in PATTERN_VALIDATORS
+                if sum(1 for s in str_vals if validator(s)) > threshold
             )
         return ()
 

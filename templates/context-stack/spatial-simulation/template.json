@@ -1,0 +1,10 @@
+{
+  "schema_version": "zcg-template-v1",
+  "name": "spatial-simulation",
+  "kind": "context-stack",
+  "stack_group": "context-stack",
+  "extends": "science-base",
+  "target_role": "squad",
+  "description": "SO(3)/quaternion scene graphs, AABB/OBB radial explosion, analytical epoch propagation, L0..L2 Digital Twins, and 60 FPS Zone.Z4 Blueprint rendering.",
+  "recommended_surface_bindings": []
+}

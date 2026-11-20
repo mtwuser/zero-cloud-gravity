@@ -8,7 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from zcg.governance import authority
+from zcg.governance.policy import authority
 
 
 class CLIUsageError(ValueError):

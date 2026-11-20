@@ -81,7 +81,7 @@ Follow commit rules in `/continue` (`skills/continue/SKILL.md` §3) — provide 
 2. **Push to Working `origin` at Session Close (Never Public `upstream`)**:
    - **If uncommitted tracked changes exist**: deliver the commit block (`git add -u`, chaining `&& git add <new_path>` when new untracked paths exist; never `git add -u <untracked_path>`) + `&& git push origin <branch>` (where `<branch>` is resolved via `git branch --show-current`).
    - **If all tracked files were already committed earlier in the session**, check `git status --short --branch`:
-     - If the local branch is `[ahead N]` of `origin/<branch>`, deliver the standalone `git push origin <branch>` command so those commits reach `origin` before closing.
+     - If the local branch is `[ahead N]` of `origin/<branch>` (surfaced as `🟡 ATTENTION` in `node_health.dimensions.sync_safety`), deliver the standalone `git push origin <branch>` command so those commits (including any local web brand/skill scoped commits) reach `origin` before closing. If no Git `origin` remote is configured yet (`node_health.dimensions.sync_safety.state == "UNCONFIGURED"` 🔵), note it neutrally as `🔵 UNCONFIGURED (no remote origin)` without emitting a broken `git push`.
      - If the working tree is clean (`0` tracked diffs — e.g. because `make deactivate-plugin` restored `surfaces/` to `inactive` and `.agents/SESSION.md` is gitignored) AND `0` commits ahead of `origin/<branch>`, explicitly state why `0` tracked files changed and emit the optional session-close audit commit block (`cd <REPO_PATH> && git commit --allow-empty -m "chore(<layer_id>): record session close validation checkpoint" && git push origin <branch>`); **never** scan unrelated sibling repositories (`~/Projects/*`).
 
 > [!IMPORTANT]
@@ -96,7 +96,7 @@ Follow commit rules in `/continue` (`skills/continue/SKILL.md` §3) — provide 
 
 ## 3.5. Global Config Sync (Post-Commits)
 
-If any shared rules, skills, or system config in the `zero-cloud-gravity` maintainer clone (`ZCG_DEV_REPO_DIR` / `~/Projects/dev-<repo>`) were modified during this session, run `make verify` first to confirm all verification gates pass, log changes under `## [Unreleased]` in `CHANGELOG.md` without bumping `VERSION`, and deliver a single commit block that pushes to private `origin` and chains `&& ~/.local/bin/zcg-sync --sync` (which synchronizes `~/<user-pc>` and `$HOME` Stow links; public Open-Source `upstream` remains untouched until `/release`):
+If any shared rules, skills, or system config in the `zero-cloud-gravity` maintainer clone (`ZCG_DEV_REPO_DIR` / `~/Projects/dev-<repo>`) were modified during this session, run `make verify` first to confirm all verification gates pass, log changes under `## [Unreleased]` in `CHANGELOG.md` without bumping `VERSION`, and deliver a single commit block that pushes to private `origin` and chains `&& ~/.local/bin/zcg-sync --sync` (which synchronizes `~/<user>-profile` and `$HOME` Stow links; public Open-Source `upstream` remains untouched until `/release`):
 
 ```bash
 ### zero-cloud-gravity (session close -> private origin + $HOME workstation sync)
@@ -105,7 +105,7 @@ cd "${ZCG_DEV_REPO_DIR:-$ZCG_RUNTIME_DIR}" && git add -u && git commit -m "<summ
 
 > [!NOTE]
 > Only include this commit block if tracked files in `zero-cloud-gravity` were edited (or `git push origin <branch> && ~/.local/bin/zcg-sync --sync` if already committed locally but unpushed).
-> Chaining `&& ~/.local/bin/zcg-sync --sync` automatically resolves `$ZCG_RUNTIME_DIR` and `$ZCG_WORKSTATION_DIR` (`~/.config/zero-cloud-gravity/workstation.conf`), reconciles global rules/skills with the workstation's configured `--profile` and `--lang`, and re-stows `~/.gemini/config/` from `~/<user-pc>`.
+> Chaining `&& ~/.local/bin/zcg-sync --sync` automatically resolves `$ZCG_RUNTIME_DIR` and `$ZCG_WORKSTATION_DIR` (`~/.config/zero-cloud-gravity/workstation.conf`), reconciles global rules/skills with the workstation's configured `--profile` and `--lang`, and re-stows `~/.gemini/config/` from `~/<user>-profile`.
 
 ---
 

@@ -1,0 +1,379 @@
+"""Unit tests for zcg.governance.workspace.bootstrap.
+
+Specification: docs/architecture/03_governance_and_work_ledger.md
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+from contextlib import contextmanager
+from pathlib import Path
+from typing import TYPE_CHECKING
+from unittest.mock import patch
+
+import pytest
+
+from zcg.core.constants import MAKEFILE_CUSTOM_TARGETS_MARKER, NODE_MANIFEST_REL_PATH
+from zcg.governance.workspace import bootstrap, scaffolder
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+
+class TestBootstrap:
+    """Verify subtree registration, one-shot node bootstrap, and template synchronization."""
+
+    def test_register_mounted_subtree_validation_and_registry_expected(
+        self, tmp_path: Path
+    ) -> None:
+        """Verify subtree name/manifest guards, public knowledge metadata, and sorting."""
+        # Arrange
+        ws = tmp_path / "corp-iso"
+        ws.mkdir()
+
+        # Act
+        with pytest.raises(ValueError, match="Invalid layer_name"):
+            bootstrap.register_mounted_subtree(ws, "BAD_NAME", "https://example.com/x.git")
+        with pytest.raises(ValueError, match="Missing root manifest"):
+            bootstrap.register_mounted_subtree(ws, "gov-es", "")
+
+        scaffolder.configure_node_manifest(ws, layer_id="corp-iso", layer_role="corporate")
+        dry_reg = bootstrap.register_mounted_subtree(ws, "gov-es", "", dry_run=True)
+        assert dry_reg["registered_layer"]["stewardship_stage"] == "public-community"
+
+        bootstrap.register_mounted_subtree(ws, "gov-es", "")
+        res = bootstrap.register_mounted_subtree(ws, "dept-ops", "https://example.com/ops.git")
+        # Assert
+        assert res["total_mounted_layers"] == 2
+
+    def test_bootstrap_node_workspace_inheritance_and_profiles_expected(
+        self, tmp_path: Path
+    ) -> None:
+        """Verify enterprise parent inheritance, individual & squad bootstrap, and stub README."""
+        # Arrange
+        home = tmp_path / "home"
+        repo = tmp_path / "zcg-engine"
+        scaffolder.configure_node_manifest(
+            repo,
+            layer_id="zero-cloud-gravity",
+            layer_role="workstation",
+            entity_kind="open-source",
+        )
+        scaffolder.scaffold_template_pack(repo, template_name="universal-base", kind="human-stack")
+        scaffolder.scaffold_template_pack(repo, template_name="base-pack", kind="context-stack")
+        scaffolder.scaffold_template_pack(repo, template_name="academic-base", kind="context-stack")
+        scaffolder.scaffold_template_pack(repo, template_name="science-base", kind="context-stack")
+        scaffolder.scaffold_template_pack(repo, template_name="business-base", kind="context-stack")
+        scaffolder.scaffold_template_pack(
+            repo, template_name="software-engineering", kind="context-stack"
+        )
+        ext_tpl = repo / "templates/software-engineering/template.json"
+        ext_d = json.loads(ext_tpl.read_text("utf-8"))
+        ext_d["extends"] = "base-pack"
+        ext_tpl.write_text(json.dumps(ext_d), "utf-8")
+        scaffolder.scaffold_template_pack(
+            repo, template_name="node-work-cockpit", kind="plugin-stack"
+        )
+        scaffolder.scaffold_template_pack(
+            repo, template_name="workstation-control-tower", kind="plugin-stack"
+        )
+        wct_tpl = repo / "templates/workstation-control-tower/template.json"
+        wct_doc = json.loads(wct_tpl.read_text("utf-8"))
+        wct_doc["target_role"] = "workstation"
+        wct_tpl.write_text(json.dumps(wct_doc), "utf-8")
+
+        # Act — validation guards
+        with pytest.raises(ValueError, match="Invalid layer_id"):
+            bootstrap.bootstrap_node_workspace(repo, tmp_path / "x", layer_id="BAD")
+        with pytest.raises(ValueError, match="Invalid layer_role"):
+            bootstrap.bootstrap_node_workspace(
+                repo, tmp_path / "x", layer_id="ok-id", layer_role="bad"
+            )
+
+        # 1. Enterprise corporate parent with .git remote + stub README replacement
+        corp = tmp_path / "corp-iso"
+        corp.mkdir()
+        (corp / "README.md").write_text("# Stub\n", "utf-8")
+        bootstrap.bootstrap_node_workspace(
+            repo,
+            corp,
+            layer_id="corp-iso",
+            layer_role="corporate",
+            templates=["gov-es"],
+            home_dir=home,
+        )
+        (corp / ".git").mkdir()
+
+        # 2. Child software squad inheriting from enterprise parent (dry_run & live)
+        squad = tmp_path / "squad-iso"
+        git_proc = subprocess.CompletedProcess(
+            ["git"], 0, stdout="https://example.com/corp.git\n", stderr=""
+        )
+        with patch("zcg.governance.workspace.bootstrap.subprocess.run", return_value=git_proc):
+            dry_sq = bootstrap.bootstrap_node_workspace(
+                repo,
+                squad,
+                layer_id="squad-iso",
+                layer_role="squad",
+                parent_dir=corp,
+                templates=["base-pack", "software-engineering", "node-work-cockpit"],
+                home_dir=home,
+                dry_run=True,
+            )
+            assert dry_sq["dry_run"] is True
+
+            live_sq = bootstrap.bootstrap_node_workspace(
+                repo,
+                squad,
+                layer_id="squad-iso",
+                layer_role="squad",
+                parent_dir=corp,
+                upstream_repo="https://example.com/explicit.git",
+                templates=["software-engineering", "node-work-cockpit"],
+                scaffold_own_template=False,
+                home_dir=home,
+                service_activator=lambda *_a, **_kw: {
+                    "services": [{"intranet_topology": {"localhost_url": "http://127.0.0.1:8750"}}]
+                },
+            )
+        assert live_sq["manifest"]["governing_root_id"] == "corp-iso"
+        assert live_sq["active_cockpit_url"] == "http://127.0.0.1:8750"
+
+        # 3. Unmanifested parent engine & Individual tutor lab re-run when README is full length
+        bootstrap.bootstrap_node_workspace(
+            tmp_path / "empty-engine",
+            tmp_path / "solo-iso",
+            layer_id="solo-iso",
+            templates=["node-work-cockpit"],
+            dry_run=True,
+        )
+        ind = tmp_path / "study-iso"
+        bootstrap.bootstrap_node_workspace(
+            repo,
+            ind,
+            layer_id="study-iso",
+            layer_role="department",
+            entity_kind="individual",
+            home_dir=home,
+        )
+        re_ind = bootstrap.bootstrap_node_workspace(
+            repo,
+            ind,
+            layer_id="study-iso",
+            layer_role="department",
+            entity_kind="individual",
+            scaffold_own_template=False,
+            home_dir=home,
+        )
+        # 4. Purpose-driven & --from-parent (local and remote) cascading inheritance
+        managed_dept = tmp_path / "dept-managed-local"
+        loc_parent_res = bootstrap.bootstrap_node_workspace(
+            repo,
+            managed_dept,
+            layer_id="dept-managed-local",
+            purpose="enterprise-network",
+            layer_role="department",
+            from_parent=str(corp),
+            home_dir=home,
+            dry_run=True,
+        )
+
+        @contextmanager
+        def _fake_rem_parent(*_a: object, **_kw: object) -> Iterator[tuple[Path, str]]:
+            yield (corp, "git-remote")
+
+        rem_dept = tmp_path / "dept-managed-remote"
+        with patch(
+            "zcg.governance.workspace.bootstrap.posture.open_parent_source", _fake_rem_parent
+        ):
+            rem_parent_res = bootstrap.bootstrap_node_workspace(
+                repo,
+                rem_dept,
+                layer_id="dept-managed-remote",
+                purpose="enterprise-network",
+                layer_role="department",
+                from_parent="https://example.org/corp-iso.git",
+                home_dir=home,
+            )
+
+        # 5. Personal Root 0 workstation -> R3 wallet squad excludes workstation-control-tower
+        persona_profile = tmp_path / "persona-profile"
+        profile_res = bootstrap.bootstrap_node_workspace(
+            repo,
+            persona_profile,
+            layer_id="persona-profile",
+            purpose="individual-sovereign",
+            home_dir=home,
+        )
+        tutor_res = bootstrap.bootstrap_node_workspace(
+            repo,
+            tmp_path / "persona-tutor",
+            layer_id="persona-tutor",
+            purpose="academic-tutor",
+            parent_dir=persona_profile,
+            home_dir=home,
+            dry_run=True,
+        )
+        ws_nopurpose = bootstrap.bootstrap_node_workspace(
+            repo,
+            tmp_path / "ind-ws-direct",
+            layer_id="ind-ws-direct",
+            layer_role="workstation",
+            entity_kind="individual",
+            home_dir=home,
+            dry_run=True,
+        )
+        persona_wallet = tmp_path / "persona-wallet"
+        wallet_res = bootstrap.bootstrap_node_workspace(
+            repo,
+            persona_wallet,
+            layer_id="persona-wallet",
+            purpose="individual-sovereign",
+            layer_role="squad",
+            precedence=88,
+            parent_dir=persona_profile,
+            templates=["science-base", "node-work-cockpit"],
+            home_dir=home,
+        )
+        # Assert
+        assert "README.md" not in re_ind["baseline_files_created"]
+        assert loc_parent_res["purpose"] == "enterprise-network"
+        assert loc_parent_res["manifest"]["governance_posture"] == "managed"
+        assert rem_parent_res["manifest"]["governance_posture"] == "managed"
+        assert (
+            rem_parent_res["manifest"]["upstream_layer"]["repository"]
+            == "https://example.org/corp-iso.git"
+        )
+        assert profile_res["precedence"] == 90
+        assert tutor_res["precedence"] == 86
+        assert ws_nopurpose["precedence"] == 90
+        assert "workstation-control-tower" in profile_res["manifest"]["default_stack_templates"]
+        assert "workstation-control-tower" not in wallet_res["copied_templates"]
+        assert "workstation-control-tower" not in wallet_res["manifest"]["default_stack_templates"]
+        assert len(wallet_res["manifest"]["surface_bindings"]) >= 1
+
+    def test_sync_node_workspace_backfill_pruning_and_makefile_expected(
+        self, tmp_path: Path
+    ) -> None:
+        """Verify schema/root backfill, starter pruning, rule reconciliation, and Makefile sync."""
+        # Arrange
+        home = tmp_path / "home"
+        repo = tmp_path / "zcg-engine"
+        scaffolder.configure_node_manifest(
+            repo,
+            layer_id="zero-cloud-gravity",
+            layer_role="workstation",
+            entity_kind="open-source",
+        )
+        scaffolder.scaffold_template_pack(repo, template_name="universal-base", kind="human-stack")
+        scaffolder.scaffold_template_pack(repo, template_name="science-base", kind="context-stack")
+        scaffolder.scaffold_template_pack(
+            repo, template_name="node-work-cockpit", kind="plugin-stack"
+        )
+        scaffolder.scaffold_template_pack(
+            repo, template_name="workstation-control-tower", kind="plugin-stack"
+        )
+        wct_tpl = repo / "templates/workstation-control-tower/template.json"
+        wct_doc = json.loads(wct_tpl.read_text("utf-8"))
+        wct_doc["target_role"] = "workstation"
+        wct_tpl.write_text(json.dumps(wct_doc), "utf-8")
+
+        ws = tmp_path / "squad-iso"
+        with pytest.raises(ValueError, match="Invalid sync strategy"):
+            bootstrap.sync_node_workspace(repo, ws, strategy="invalid")
+        with pytest.raises(ValueError, match="Missing target node manifest"):
+            bootstrap.sync_node_workspace(repo, ws)
+
+        bootstrap.bootstrap_node_workspace(
+            repo,
+            ws,
+            layer_id="squad-iso",
+            layer_role="squad",
+            templates=["science-base", "node-work-cockpit"],
+            home_dir=home,
+        )
+
+        # Simulate stale schema_version, missing governing_root_id, removed science-base,
+        # newer .agents/rules/squad-iso.md, and custom Makefile section
+        m_path = ws / NODE_MANIFEST_REL_PATH
+        m_data = json.loads(m_path.read_text("utf-8"))
+        m_data["schema_version"] = "old-rev"
+        m_data.pop("governing_root_id", None)
+        m_data.pop("engine_version", None)
+        m_data["default_stack_templates"] = [
+            "squad-iso",
+            "workstation-control-tower",
+            "node-work-cockpit",
+        ]
+        m_path.write_text(json.dumps(m_data), "utf-8")
+
+        ag_rule = ws / ".agents/rules/squad-iso.md"
+        tpl_rule = ws / "templates/squad-iso/rules/squad-iso.md"
+        ag_rule.write_text("# Updated Local Node Rule\n", "utf-8")
+        os.utime(tpl_rule, (1_000_000, 1_000_000))
+        os.utime(ag_rule, (2_000_000_000, 2_000_000_000))
+
+        mk_file = ws / "Makefile"
+        mk_file.write_text(
+            f"{mk_file.read_text('utf-8')}\n{MAKEFILE_CUSTOM_TARGETS_MARKER}\ncustom:\n\t@true\n",
+            "utf-8",
+        )
+        # Force makefile upgrade by trimming first recipe line while keeping header
+        mk_txt = mk_file.read_text("utf-8").replace("PARENT_FLAG :=", "PARENT_FLAG ?=")
+        mk_file.write_text(mk_txt, "utf-8")
+
+        # Act
+        dry_sync = bootstrap.sync_node_workspace(repo, ws, dry_run=True)
+        assert dry_sync["dry_run"] is True
+
+        live_sync = bootstrap.sync_node_workspace(repo, ws, strategy="accept-upstream")
+
+        # Assert
+        assert live_sync["makefile_upgraded"] is True
+        assert not (ws / "templates/context-stack/science-base").exists()
+        assert "Updated Local Node Rule" in tpl_rule.read_text("utf-8")
+        assert len(live_sync["plugin_services_redeployed"]) == 1
+        assert MAKEFILE_CUSTOM_TARGETS_MARKER in mk_file.read_text("utf-8")
+        assert json.loads(m_path.read_text("utf-8"))["engine_version"] == "0.0.0"
+
+        # Keep-local sync when governing_root_id is already backfilled, plus workstation self-sync
+        kl_sync = bootstrap.sync_node_workspace(
+            repo, ws, templates=["science-base"], strategy="keep-local"
+        )
+        assert kl_sync["synced_templates"] == ["science-base"]
+        assert (
+            "workstation-control-tower"
+            not in json.loads(m_path.read_text("utf-8"))["default_stack_templates"]
+        )
+        ws_root = tmp_path / "persona-profile-sync"
+        bootstrap.bootstrap_node_workspace(
+            repo,
+            ws_root,
+            layer_id="persona-profile-sync",
+            purpose="individual-sovereign",
+            home_dir=home,
+        )
+        profile_sync = bootstrap.sync_node_workspace(repo, ws_root)
+        assert "workstation-control-tower" in (profile_sync["applied_template"] or "")
+
+        scaffolder.scaffold_template_pack(
+            repo, template_name="corporate-root-hub", kind="plugin-stack"
+        )
+        crh_tpl = repo / "templates/corporate-root-hub/template.json"
+        crh_tpl.write_text(
+            json.dumps({**json.loads(crh_tpl.read_text("utf-8")), "target_role": "corporate"}),
+            "utf-8",
+        )
+        repo_m = json.loads((repo / NODE_MANIFEST_REL_PATH).read_text("utf-8"))
+        repo_m["default_stack_templates"] = [
+            "universal-base",
+            "science-base",
+            "workstation-control-tower",
+            "corporate-root-hub",
+        ]
+        (repo / NODE_MANIFEST_REL_PATH).write_text(json.dumps(repo_m), "utf-8")
+        oss_sync = bootstrap.sync_node_workspace(repo, repo, dry_run=True)
+        assert "corporate-root-hub" in oss_sync["catalog_templates"]
+        assert oss_sync["applied_template"] == "universal-base,science-base"

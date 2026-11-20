@@ -60,7 +60,7 @@ class TestProjection:
                 "distributed_systems",
                 DisclosureTier.VERIFIED_COMPETENCY,
                 "M3 Verified",
-                citation_receipt="alex-tutor::SYLLABUS.md#dist-sys@0123456789abcdef:E2",
+                citation_receipt="persona-tutor::SYLLABUS.md#dist-sys@0123456789abcdef:E2",
             ),
             PayloadFieldSegment("tax_iban_record", DisclosureTier.DAY1_ONBOARDING, "ES00-0000"),
             PayloadFieldSegment("case_study_notes", DisclosureTier.DEEP_CONTEXT, " Extended text "),

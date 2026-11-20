@@ -4,7 +4,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Share an early-stage architectural idea, stack pack concept, or community corpus proposal for **ZeroCloudGravity (`zero-cloud-gravity`)** before drafting a formal Issue Proposal. Please keep all examples ISO-neutral (`corp-iso-root`, `alex-pc`).
+        Share an early-stage architectural idea, stack pack concept, or community corpus proposal for **ZeroCloudGravity (`zero-cloud-gravity`)** before drafting a formal Issue Proposal. Please keep all examples ISO-neutral (`corp-iso-root`, `persona-profile`).
   - type: dropdown
     id: plane
     attributes:

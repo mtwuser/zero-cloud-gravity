@@ -8,12 +8,9 @@ from __future__ import annotations
 import ast
 import json
 import os
-import re
-import shutil
 import struct
 import subprocess
 import sys
-import tarfile
 import tomllib
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -21,32 +18,59 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+from zcg.cockpit.views.dashboard_app import ARCHETYPE_DEFAULT_MODULES
 from zcg.core.constants import (
     AGENTS_MD_MAX_BYTES,
-    KEBAB_ID_RE,
+    BASE_SKILL_TAXONOMY,
     NODE_MANIFEST_CONTRACT_REV,
     REPO_DIR,
     TEMPLATE_MANIFEST_CONTRACT_REV,
 )
+from zcg.core.domain import is_kebab_id
 from zcg.core.manifests import discover_templates_catalog, parse_skill_frontmatter
+from zcg.core.markdown_scan import contains_token_id, extract_markdown_links, iter_unfenced_lines
 from zcg.topology.identity import resolve_node_entity_identity
+from zcg.topology.posture import VALID_SETUP_PURPOSES
 
 MAX_SOURCE_LINES: int = 384
 MAX_DOC_OR_TEST_LINES: int = 464
-EXPECTED_SOURCE_MODULES: int = 80
-EXPECTED_TEMPLATES_COUNT: int = 16
+EXPECTED_SOURCE_MODULES: int = 143
+EXPECTED_TEMPLATES_COUNT: int = 19
 EXPECTED_GLOBAL_SKILLS_COUNT: int = 8
 EXPECTED_SCREENSHOTS_COUNT: int = 10
 PNG_SIGNATURE: bytes = b"\x89PNG\r\n\x1a\n"
 EXPECTED_SCREENSHOT_DIMENSIONS: tuple[int, int] = (1680, 980)
+_RETIRED_TOKENS: tuple[str, ...] = (
+    "jira", "confluence", "aws", "azure", "angular", "django",
+    "fastapi", "dotfiles", "legacy", "osa", "sgarciag", "bkfex", "skillspector", "alex",
+)  # fmt: skip
 
-_SPEC_LINE_RE = re.compile(r"^Specification:\s+(docs/architecture/\S+\.md)\s*$", re.MULTILINE)
-_MD_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)#\s]+)(?:#[^)]*)?\)")
-_H5_HEADING_RE = re.compile(r"^#{5,}\s+", re.MULTILINE)
-_RETIRED_TOKENS_RE = re.compile(
-    r"\b(jira|confluence|aws|azure|angular|django|fastapi|dotfiles|legacy|osa|sgarciag|bkfex)\b",
-    re.IGNORECASE,
-)
+
+def _extract_spec_header(txt: str) -> str | None:
+    for ln in txt.splitlines():
+        if ln.startswith("Specification:"):
+            val = ln.removeprefix("Specification:").strip()
+            if val.startswith("docs/architecture/") and val.endswith(".md") and " " not in val:
+                return val
+    return None
+
+
+def _iter_shell_commands(md_txt: str) -> list[str]:
+    cmds, in_sh, buf = list[str](), False, ""
+    for raw in md_txt.splitlines():
+        st = raw.strip()
+        if not in_sh:
+            in_sh = st in ("```bash", "```sh")
+        elif st == "```":
+            in_sh, buf = False, ""
+        elif raw.endswith("\\"):
+            buf += raw[:-1] + " "
+        else:
+            full = (buf + raw).split("#", 1)[0].strip()
+            buf = ""
+            if full:
+                cmds.append(full)
+    return cmds
 
 
 class TestRepoContracts:
@@ -62,11 +86,10 @@ class TestRepoContracts:
         changelog_txt = (REPO_DIR / "CHANGELOG.md").read_text(encoding="utf-8")
         dockerfile_txt = (REPO_DIR / "Dockerfile").read_text(encoding="utf-8")
         makefile_txt = (REPO_DIR / "Makefile").read_text(encoding="utf-8")
-        oss_mk_txt = (REPO_DIR / "mk/oss-contrib.mk").read_text(encoding="utf-8")
 
         required_files = (
             "VERSION", "LICENSE", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md",
-            "CODE_OF_CONDUCT.md", "ACCESSIBILITY.md", "Makefile", "mk/oss-contrib.mk",
+            "CODE_OF_CONDUCT.md", "ACCESSIBILITY.md", "Makefile",
             "Dockerfile", ".dockerignore", "install.sh", "scripts/verify-repo.sh",
             "scripts/install-antigravity.sh", "scripts/workstation-sync.sh",
             "scripts/workstation-backup.sh", "scripts/workstation-audit.sh",
@@ -74,11 +97,14 @@ class TestRepoContracts:
             "requirements.txt", "requirements-dev.txt", "server.json", "system/zcg-node.json",
             "antigravity/.local/share/applications/antigravity-agents.desktop",
             "antigravity/.local/share/applications/antigravity-ide.desktop", "docs/README.md",
-            ".github/workflows/ci.yml", ".github/FUNDING.yml",
-            ".github/FUNDING.md", ".github/PULL_REQUEST_TEMPLATE.md",
+            "docs/WHITEPAPER.md", "docs/assets/diagrams/01_four_stack_triadic_architecture.svg",
+            "docs/assets/diagrams/02_capability_rings_and_oidc_tls_plane.svg",
+            "docs/assets/diagrams/03_v1_to_v2_cryptographic_bridge.svg",
+            ".github/workflows/ci.yml", ".github/workflows/cd-environments.yml",
+            ".github/FUNDING.yml", ".github/FUNDING.md", ".github/PULL_REQUEST_TEMPLATE.md",
             ".github/ISSUE_TEMPLATE/bug_report.yml", ".github/ISSUE_TEMPLATE/feature_request.yml",
             ".github/ISSUE_TEMPLATE/config.yml", ".github/DISCUSSION_TEMPLATE/q-a.yml",
-            ".github/DISCUSSION_TEMPLATE/ideas.yml",
+            ".github/DISCUSSION_TEMPLATE/ideas.yml", ".github/workflows/publish-mcp.yml",
         )  # fmt: skip
 
         # Act
@@ -101,11 +127,15 @@ class TestRepoContracts:
         assert "USER zcg" in dockerfile_txt
         assert "ZCG_NO_BROWSER=1" in dockerfile_txt
         assert 'ENTRYPOINT ["zcg-mcp"]' in dockerfile_txt
-        assert "-include mk/oss-contrib.mk" in makefile_txt
-        assert "push-branch:" not in makefile_txt and "publish-oss:" not in makefile_txt
-        assert "oss-push-branch:" in oss_mk_txt
-        assert "oss-promote-master:" in oss_mk_txt
-        assert "oss-publish:" in oss_mk_txt
+        assert not (REPO_DIR / "mk").exists()
+        assert not (REPO_DIR / "templates/framework-stack").exists()
+        assert not any(
+            ln.startswith(("push-branch:", "promote-master:", "publish-oss:"))
+            for ln in makefile_txt.splitlines()
+        )
+        assert "oss-push-branch:" in makefile_txt
+        assert "oss-promote-master:" in makefile_txt
+        assert "oss-publish:" in makefile_txt
 
     def test_one_to_one_to_one_spec_test_code_and_line_budgets_expected(self) -> None:
         """Verify 1:1:1 (Spec <-> Unit <-> Code) mapping, 0-byte __init__.py, and line caps."""
@@ -132,9 +162,8 @@ class TestRepoContracts:
             mod_lines = len(mod_txt.splitlines())
             assert mod_lines <= MAX_SOURCE_LINES, f"{rel_mod} has {mod_lines} lines (> 384)"
 
-            spec_match = _SPEC_LINE_RE.search(mod_txt)
-            assert spec_match is not None, f"{rel_mod} lacks Specification: header"
-            spec_rel = spec_match.group(1)
+            spec_rel = _extract_spec_header(mod_txt)
+            assert spec_rel is not None, f"{rel_mod} lacks Specification: header"
             spec_path = REPO_DIR / spec_rel
             assert spec_path.is_file(), f"{rel_mod} points to missing spec {spec_rel}"
             spec_txt = spec_path.read_text(encoding="utf-8")
@@ -143,8 +172,9 @@ class TestRepoContracts:
             sub_rel = mod_path.relative_to(REPO_DIR / "src/zcg")
             unit_path = REPO_DIR / "tests/unit/zcg" / sub_rel.parent / f"test_{mod_path.name}"
             assert unit_path.is_file(), f"Missing 1:1 unit suite for {rel_mod}: {unit_path}"
-            unit_spec = _SPEC_LINE_RE.search(unit_path.read_text(encoding="utf-8"))
-            assert unit_spec is not None and unit_spec.group(1) == spec_rel
+            unit_rel = unit_path.relative_to(REPO_DIR)
+            assert str(unit_rel) in spec_txt, f"{spec_rel} 1:1:1 table omits {unit_rel}"
+            assert _extract_spec_header(unit_path.read_text(encoding="utf-8")) == spec_rel
 
         # Assert
         for test_path in all_tests:
@@ -169,52 +199,104 @@ class TestRepoContracts:
             "dispatch_subtree": ("subtree", "subtree-list", "subtree-pull-all"),
         }  # fmt: skip
 
-        def _strs(nodes: Sequence[ast.AST], rx: str = "") -> list[str]:
+        def _strs(nodes: Sequence[ast.AST], *, flags_only: bool = False) -> list[str]:
             vals = [
                 c.value
                 for root in nodes
                 for c in ast.walk(root)
                 if isinstance(c, ast.Constant) and isinstance(c.value, str)
             ]
-            return [v for v in vals if not rx or re.fullmatch(rx, v)]
+            return [
+                v for v in vals if not flags_only or (v.startswith("--") and is_kebab_id(v[2:]))
+            ]
 
         for cli_py in ("src/zcg/cli/discovery.py", "src/zcg/cli/commands.py"):
             tree = ast.parse((REPO_DIR / cli_py).read_text("utf-8"))
             for fn in (n for n in tree.body if isinstance(n, ast.FunctionDef)):
                 rem = [s for s in fn.body if not isinstance(s, ast.If)]
                 for stmt in (s for s in fn.body if isinstance(s, ast.If)):
-                    fl = set(_strs(stmt.body, r"--[a-z0-9-]+"))
+                    fl = set(_strs(stmt.body, flags_only=True))
                     for nm in _strs([stmt.test]):
                         cli_flags.setdefault(nm, set()).update(fl)
-                fb_fl = set(_strs(rem, r"--[a-z0-9-]+"))
+                fb_fl = set(_strs(rem, flags_only=True))
                 for nm in fallbacks.get(fn.name, ()):
                     cli_flags.setdefault(nm, set()).update(fb_fl)
         for sh in (REPO_DIR / "scripts").glob("*.sh"):
-            cli_flags[sh.stem] = set(re.findall(r"--[a-z][a-z0-9-]*", sh.read_text("utf-8")))
-        broken_links, bad_cli_flags = list[str](), list[str]()
+            sh_norm = "".join(
+                c if (c.isascii() and (c.islower() or c.isdigit() or c == "-")) else " "
+                for c in sh.read_text("utf-8")
+            )
+            cli_flags[sh.stem] = {
+                w for w in sh_norm.split() if w.startswith("--") and is_kebab_id(w[2:])
+            }
+        broken_links, bad_cli_flags, stale_py_refs, bad_purposes = (
+            list[str](),
+            list[str](),
+            list[str](),
+            list[str](),
+        )
 
         # Act
         for md_path in md_files:
             txt = md_path.read_text(encoding="utf-8")
             line_count = len(txt.splitlines())
             assert line_count <= MAX_DOC_OR_TEST_LINES, f"{md_path} has {line_count} lines"
-            assert _H5_HEADING_RE.search(txt) is None, f"Forbidden ##### heading in {md_path}"
+            assert not any(
+                (hl := len(ln) - len(ln.lstrip("#"))) >= 5 and ln[hl : hl + 1].isspace()
+                for ln in txt.splitlines()
+            ), f"Forbidden ##### heading in {md_path}"
             rel_md = md_path.relative_to(REPO_DIR)
-            for block in re.findall(r"```(?:bash|sh)\n([\s\S]*?)```", txt):
-                for ln in re.sub(r"\\\n\s*", " ", block).splitlines():
-                    s = ln.split("#", 1)[0].strip()
-                    if m := re.match(r"^(?:~/.local/bin/)?zcg\s+([a-z][a-z0-9-]*)\b(.*)$", s):
-                        sub, rest_s = m.group(1), m.group(2)
-                        allowed = cli_flags.get(sub, set()) | global_flags
-                        bad_cli_flags.extend(
-                            f"{rel_md}: zcg {sub} {flg}"
-                            for flg in re.findall(r"(?<!\S)(--[a-z][a-z0-9-]*)", rest_s)
-                            if flg not in allowed
+            if md_path.name != "CHANGELOG.md":
+                norm = txt.translate(str.maketrans("`|()[]", "      "))
+                for raw_tok in norm.split():
+                    cand = raw_tok.rstrip(".,:;").removeprefix("../../").removeprefix("../")
+                    if (
+                        cand.startswith(("src/zcg/", "tests/"))
+                        and cand.endswith(".py")
+                        and not any(ch in cand for ch in ("*", "<", "{"))
+                        and not (REPO_DIR / cand).is_file()
+                    ):
+                        stale_py_refs.append(f"{rel_md} -> {cand}")
+            for cmd in _iter_shell_commands(txt):
+                parts = cmd.split()
+                if (
+                    len(parts) >= 2
+                    and parts[0] in ("zcg", "~/.local/bin/zcg")
+                    and is_kebab_id(parts[1])
+                ):
+                    sub, allowed = parts[1], cli_flags.get(parts[1], set()) | global_flags
+                    bad_cli_flags.extend(
+                        f"{rel_md}: zcg {sub} {flg}"
+                        for tok in parts[2:]
+                        if (flg := tok.partition("=")[0]).startswith("--")
+                        and is_kebab_id(flg[2:])
+                        and flg not in allowed
+                    )
+            if md_path == REPO_DIR / "README.md" or md_path.parent == REPO_DIR / "docs/guides":
+                p_toks = txt.translate(str.maketrans("`|()[]\"'", "        ")).split()
+                for idx, tok in enumerate(p_toks):
+                    val = (
+                        tok.partition("=")[2]
+                        if tok.startswith("--purpose=")
+                        else (
+                            p_toks[idx + 1] if tok == "--purpose" and idx + 1 < len(p_toks) else ""
                         )
-            clean_txt = re.sub(r"```[\s\S]*?```", "", txt)
-            for match in _MD_LINK_RE.finditer(clean_txt):
-                target = match.group(1)
-                if target.startswith(("http://", "https://", "mailto:", "zcg://")):
+                    ).rstrip(".,:;\\")
+                    if (
+                        val
+                        and val[0].isalnum()
+                        and not any(c in val for c in "<>[]/")
+                        and val not in VALID_SETUP_PURPOSES
+                    ):
+                        bad_purposes.append(f"{rel_md}: --purpose {val}")
+            unfenced = "\n".join(ln for _, ln in iter_unfenced_lines(txt))
+            for _, raw_target in extract_markdown_links(unfenced):
+                target = raw_target.partition("#")[0]
+                if (
+                    not target
+                    or any(c.isspace() for c in target)
+                    or target.startswith(("http://", "https://", "mailto:", "zcg://"))
+                ):
                     continue
                 if not (md_path.parent / target).resolve().exists():
                     broken_links.append(f"{rel_md} -> {target}")
@@ -222,14 +304,17 @@ class TestRepoContracts:
         # Assert
         assert not broken_links, f"Broken relative Markdown links: {broken_links}"
         assert not bad_cli_flags, f"Invalid CLI subcommand flags in docs: {bad_cli_flags}"
+        assert not stale_py_refs, f"Stale .py references in docs: {stale_py_refs}"
+        assert not bad_purposes, f"Invalid --purpose tokens in docs: {bad_purposes}"
 
     def test_antigravity_hooks_skills_templates_and_ecosystem_purity_expected(self) -> None:
-        """Verify AGENTS.md cap, hooks, 1:1 SKILL.md parity, 16 templates, and Google purity."""
+        """Verify AGENTS.md cap, hooks, 1:1 SKILL.md parity, 19 templates, and Google purity."""
         # Arrange
         cfg_dir = REPO_DIR / "antigravity/.gemini/config"
         agents_md = cfg_dir / "AGENTS.md"
         hooks_json = json.loads((cfg_dir / "hooks.json").read_text(encoding="utf-8"))
         node_manifest = json.loads((REPO_DIR / "system/zcg-node.json").read_text(encoding="utf-8"))
+        upgrade_notes_path = REPO_DIR / "system/upgrade-notes.json"
         global_skills = sorted((cfg_dir / "skills").glob("*/SKILL.md"))
         all_skills = [*global_skills, *sorted((REPO_DIR / "templates").rglob("SKILL.md"))]
         tpl_catalog = discover_templates_catalog(REPO_DIR)
@@ -237,8 +322,17 @@ class TestRepoContracts:
         # Act
         assert agents_md.is_file() and agents_md.stat().st_size <= AGENTS_MD_MAX_BYTES
         assert node_manifest["schema_version"] == NODE_MANIFEST_CONTRACT_REV
+        assert upgrade_notes_path.is_file()
+        upgrade_notes = json.loads(upgrade_notes_path.read_text(encoding="utf-8"))
+        assert upgrade_notes["schema_version"] == "zcg-upgrade-notes-v1"
+        assert isinstance(upgrade_notes.get("releases"), list) and upgrade_notes["releases"]
         assert len(global_skills) == EXPECTED_GLOBAL_SKILLS_COUNT
         assert len(tpl_catalog) == EXPECTED_TEMPLATES_COUNT
+        assert {
+            d["template_name"]: tuple(d["associated_global_skills"])
+            for d in tpl_catalog
+            if d["kind"] == "human-stack"
+        } == BASE_SKILL_TAXONOMY
         assert len(node_manifest["default_stack_templates"]) == EXPECTED_TEMPLATES_COUNT
         assert len(list((REPO_DIR / "templates").glob("*/*/README.md"))) == EXPECTED_TEMPLATES_COUNT
 
@@ -262,27 +356,41 @@ class TestRepoContracts:
             input=json.dumps({"continuationActive": True}),
             capture_output=True, text=True, check=True,
         )  # fmt: skip
-        assert "injectSteps" in json.loads(sess_res.stdout)
+        sess_doc = json.loads(sess_res.stdout)
+        assert "injectSteps" in sess_doc
+        sess_pin = sess_doc["injectSteps"][0]["systemMessage"]["metadata"]["session_pin"]
+        assert sess_pin["schema_version"] == "zcg-session-pin-v1"
+        assert len(sess_pin["rules_merkle_digest"]) == 16
         assert json.loads(stop_res.stdout) == {"decision": "stop"}
 
         for sk_path in all_skills:
             fm = parse_skill_frontmatter(sk_path, REPO_DIR)
-            assert KEBAB_ID_RE.match(str(fm["name"]))
+            assert is_kebab_id(str(fm["name"]))
             assert fm["name"] == sk_path.parent.name
             assert len(sk_path.read_text(encoding="utf-8").splitlines()) <= MAX_DOC_OR_TEST_LINES
 
+        pack_arch_map = {
+            "tutor-study-cockpit": "academic-tutor-cockpit",
+            "node-work-cockpit": "departmental-ops-cockpit",
+        }
         for tpl_json in sorted((REPO_DIR / "templates").rglob("template.json")):
             t_doc = json.loads(tpl_json.read_text(encoding="utf-8"))
             assert t_doc["schema_version"] == TEMPLATE_MANIFEST_CONTRACT_REV
             if t_doc.get("stack_group") == "plugin-stack":
                 p_dir = tpl_json.parent
+                sc_doc = json.loads((p_dir / "assets/service_contract.json").read_text("utf-8"))
+                arch_key = pack_arch_map.get(p_dir.name, p_dir.name)
+                expected_mods = list(ARCHETYPE_DEFAULT_MODULES[arch_key])
                 assert (p_dir / "web/templates/index.html").is_file()
                 assert (p_dir / "web/templates/partials/overview.html").is_file()
                 assert (p_dir / "web/static/css/plugin.css").is_file()
                 assert (p_dir / "web/static/js/islands/plugin-island.js").is_file()
-                assert bool(t_doc["runtime_service"].get("enabled_modules"))
+                assert t_doc["runtime_service"]["enabled_modules"] == expected_mods
+                assert sc_doc["enabled_modules"] == expected_mods
 
-        excl = {".git", ".venv", "__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache"}
+        excl = {
+            ".git", ".venv", ".zcg", "__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache",
+        }  # fmt: skip
         binary_exts = {".png", ".jpg", ".jpeg", ".webp", ".ico", ".woff2"}
         purity_hits: list[str] = []
         self_rel = Path("tests/imp/test_repo_contracts.py")
@@ -294,9 +402,17 @@ class TestRepoContracts:
             ):
                 continue
             rel = path.relative_to(REPO_DIR)
-            hit = _RETIRED_TOKENS_RE.search(path.read_text("utf-8", "ignore"))
-            if rel != self_rel and hit:
-                purity_hits.append(f"{rel}: {hit.group(0)!r}")
+            low_txt = path.read_text("utf-8", "ignore").lower()
+            hit = next(
+                (
+                    tok
+                    for tok in _RETIRED_TOKENS
+                    if tok in low_txt and contains_token_id(low_txt, tok)
+                ),
+                None,
+            )
+            if rel != self_rel and hit is not None:
+                purity_hits.append(f"{rel}: {hit!r}")
         # Assert
         assert not purity_hits, f"Retired non-Google / framework tokens detected: {purity_hits}"
 
@@ -335,122 +451,3 @@ class TestRepoContracts:
             assert raw.startswith(PNG_SIGNATURE), f"Invalid PNG signature in {name}"
             assert dimensions[name] == EXPECTED_SCREENSHOT_DIMENSIONS
             assert "![CAP-" in guides_corpus and name in guides_corpus
-
-    def test_makefile_oss_dev_targets_positive_and_bipolar_guards_expected(
-        self, tmp_path: Path
-    ) -> None:
-        """Verify oss-* targets conditionally appear in help and enforce dev-<repo> guards."""
-        # Arrange
-        dev_repo = tmp_path / "dev-iso-engine"
-        pub_repo = tmp_path / "iso-engine"
-        node_doc = json.dumps(
-            {
-                "schema_version": "zcg-node-v1",
-                "layer_id": "zero-cloud-gravity-workstation",
-                "layer_role": "workstation",
-                "entity_kind": "open-source",
-                "precedence": 10,
-            }
-        )
-        for repo_dir in (dev_repo, pub_repo):
-            (repo_dir / "system").mkdir(parents=True)
-            (repo_dir / "mk").mkdir(parents=True)
-            shutil.copy2(REPO_DIR / "Makefile", repo_dir / "Makefile")
-            shutil.copy2(REPO_DIR / "mk/oss-contrib.mk", repo_dir / "mk/oss-contrib.mk")
-            (repo_dir / "VERSION").write_text("1.0.0\n", encoding="utf-8")
-            (repo_dir / "src").symlink_to(REPO_DIR / "src", target_is_directory=True)
-            (repo_dir / "system/zcg-node.json").write_text(node_doc, encoding="utf-8")
-            subprocess.run(["git", "init", "-b", "master"], cwd=repo_dir, check=True)
-            subprocess.run(
-                ["git", "config", "user.email", "iso@example.org"], cwd=repo_dir, check=True
-            )
-            subprocess.run(["git", "config", "user.name", "ISO"], cwd=repo_dir, check=True)
-            subprocess.run(["git", "add", "."], cwd=repo_dir, check=True)
-            subprocess.run(["git", "commit", "-m", "chore: init"], cwd=repo_dir, check=True)
-
-        subprocess.run(
-            ["git", "remote", "add", "origin", "git@github.com:iso-org/dev-iso-engine.git"],
-            cwd=dev_repo,
-            check=True,
-        )
-        make_cmd = ["make", f"PYTHON={sys.executable}", "DRY_RUN=1"]
-
-        def _mk(cwd: Path, *extra: str) -> subprocess.CompletedProcess[str]:
-            return subprocess.run([*make_cmd, *extra], cwd=cwd, capture_output=True, text=True)
-
-        # Act
-        pub_help = _mk(pub_repo, "help")
-        pub_help_oss = _mk(pub_repo, "OSS_CONTRIB=1", "help")
-        dev_help = _mk(dev_repo, "help")
-        master_err = _mk(dev_repo, "oss-push-branch")
-        subprocess.run(["git", "checkout", "-b", "fix/iso-guard"], cwd=dev_repo, check=True)
-        push_ok = _mk(dev_repo, "oss-push-branch")
-        promo_ok = _mk(dev_repo, "oss-promote-master")
-        non_dev_err = _mk(pub_repo, "oss-push-branch")
-        subprocess.run(
-            ["git", "remote", "set-url", "origin", "git@github.com:iso-org/iso-engine.git"],
-            cwd=dev_repo,
-            check=True,
-        )
-        origin_err = _mk(dev_repo, "oss-push-branch")
-
-        # Assert
-        assert "oss-push-branch" not in pub_help.stdout
-        assert "oss-push-branch" in pub_help_oss.stdout and "oss-push-branch" in dev_help.stdout
-        assert push_ok.returncode == 0 and "[oss-push-branch DRY_RUN=1]" in push_ok.stdout
-        assert promo_ok.returncode == 0 and "[oss-promote-master DRY_RUN=1]" in promo_ok.stdout
-        assert master_err.returncode != 0 and "[OSS_BRANCH_REQUIRED]" in master_err.stderr
-        assert non_dev_err.returncode != 0 and "[OSS_DEV_ONLY_BLOCKED]" in non_dev_err.stderr
-        assert origin_err.returncode != 0 and "[OSS_DEV_ORIGIN_MISMATCH]" in origin_err.stderr
-
-    def test_installer_ephemeral_archive_and_showcase_stager_contracts_expected(
-        self, tmp_path: Path
-    ) -> None:
-        """Verify install-antigravity --from-archive hygiene and stage-showcase dry-run."""
-        # Arrange
-        dl_dir = tmp_path / "Downloads"
-        dl_dir.mkdir()
-        dest_dir = tmp_path / "opt-ide"
-        src_bundle = tmp_path / "pkg/Antigravity IDE"
-        (src_bundle / "resources/app").mkdir(parents=True)
-        (src_bundle / "antigravity-ide").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
-        (src_bundle / "resources/app/package.json").write_text(
-            json.dumps({"version": "2.32.1"}), encoding="utf-8"
-        )
-        archive_path = tmp_path / "manual-ide-2.32.1.tar.gz"
-        with tarfile.open(archive_path, "w:gz") as tf:
-            tf.add(src_bundle, arcname="Antigravity IDE")
-        inst_env = {
-            **os.environ,
-            "ANTIGRAVITY_DOWNLOADS_DIR": str(dl_dir),
-            "ANTIGRAVITY_IDE_DEST": str(dest_dir),
-        }
-        inst_sh = str(REPO_DIR / "scripts/install-antigravity.sh")
-        show_sh = str(REPO_DIR / "scripts/stage-showcase.sh")
-        show_dir = tmp_path / "zcg-showcase"
-
-        # Act
-        ambig_err = subprocess.run(
-            [inst_sh, "--from-archive", str(archive_path)],
-            env=inst_env, capture_output=True, text=True,
-        )  # fmt: skip
-        offline_ok = subprocess.run(
-            [inst_sh, "--ide", "--from-archive", str(archive_path)],
-            env=inst_env, capture_output=True, text=True,
-        )  # fmt: skip
-        dry_showcase = subprocess.run(
-            [show_sh, "--dry-run", "--dir", str(show_dir)], capture_output=True, text=True
-        )
-        status_showcase = subprocess.run(
-            [show_sh, "--status", "--dir", str(show_dir)], capture_output=True, text=True
-        )
-
-        # Assert
-        assert ambig_err.returncode != 0
-        assert offline_ok.returncode == 0
-        assert list(dl_dir.iterdir()) == []
-        assert archive_path.is_file()
-        assert (dest_dir / ".installed-version").read_text(encoding="utf-8").strip() == "2.32.1"
-        assert dry_showcase.returncode == 0 and "[CAP-01]" in dry_showcase.stdout
-        assert "[CAP-10]" in dry_showcase.stdout and not show_dir.exists()
-        assert status_showcase.returncode == 0 and "not staged" in status_showcase.stdout.lower()

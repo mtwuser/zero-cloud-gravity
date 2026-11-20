@@ -9,7 +9,7 @@ from zcg.capsules import constants as mod
 
 
 class TestCapsuleConstants:
-    """Verify rcap1 capsule, surface, epistemic, and JSON-RPC nominal constants and regexes."""
+    """Verify rcap1 capsule, surface, epistemic, and JSON-RPC nominal constants and maps."""
 
     def test_constants_nominal_invariants_and_maps(self) -> None:
         """Verify envelope prefixes, progression maps, and lifecycle quadrant mappings."""
@@ -31,25 +31,24 @@ class TestCapsuleConstants:
         assert mod.DEFAULT_EPHEMERAL_TTL_SECONDS < mod.MAX_EPHEMERAL_TTL_SECONDS
         assert {"SYLLABUS.md", "WORKTASK.md", "WORKVALI.md"}.issubset(mod.ALLOWED_ROOT_FILES)
 
-    def test_constants_regex_patterns_match_expected_tokens(self) -> None:
-        """Verify Markdown link, backtick path, citation receipt, bold, word, and ANSI regexes."""
+    def test_constants_jsonrpc_planes_and_digest_channels_expected(self) -> None:
+        """Verify JSON-RPC error codes, plane path rules, and 4-channel digest keys."""
         # Arrange
-        sample = (
-            "[Guide](docs/guides/01.md) `docs/README.md` **Zero Cloud** "
-            "gov-iso::docs/law.md#art-1@0123456789abcdef:E3 \x1b[32mok\x1b[0m"
-        )
+        expected_rpc_codes = (-32700, -32601, -32602, -32603)
 
         # Act
-        md_hits = mod.MD_LINK_RE.findall(sample)
-        bt_hits = mod.BACKTICK_PATH_RE.findall(sample)
-        rc_hits = mod.CITATION_RECEIPT_REF_RE.findall(sample)
-        bold_hits = mod.BOLD_TERM_RE.findall(sample)
-        clean = mod.ANSI_ESCAPE_RE.sub("", sample)
+        actual_rpc_codes = (
+            mod.JSONRPC_PARSE_ERROR,
+            mod.JSONRPC_METHOD_NOT_FOUND,
+            mod.JSONRPC_INVALID_PARAMS,
+            mod.JSONRPC_INTERNAL_ERROR,
+        )
+        plane_names = tuple(plane for plane, _ in mod.PLANE_PATH_RULES)
 
         # Assert
-        assert md_hits == [("Guide", "docs/guides/01.md")]
-        assert bt_hits == ["docs/README.md"]
-        assert rc_hits == [("gov-iso", "docs/law.md")]
-        assert bold_hits == ["Zero Cloud"]
-        assert "\x1b" not in clean
-        assert "zero" in mod.WORD_TOKEN_RE.findall(clean.lower())
+        assert actual_rpc_codes == expected_rpc_codes
+        assert set(plane_names) == set(mod.VALID_ARCHITECTURAL_PLANES)
+        assert len(mod.DIGEST_REQUIRED_CHANNELS) == 4
+        assert "the" in mod.CODON_STOPWORDS
+        assert "docs/" in mod.ALLOWED_READ_PREFIXES
+        assert "src" in mod.STRUCTURAL_PATH_SEGMENTS

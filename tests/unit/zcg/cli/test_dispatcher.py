@@ -12,7 +12,7 @@ import pytest
 
 from zcg.cli import dispatcher
 from zcg.cli.parser import CLIAuthorityBlockedError
-from zcg.governance import scaffolder
+from zcg.governance.workspace import scaffolder
 
 
 class TestDispatcher:
@@ -119,5 +119,26 @@ class TestDispatcher:
 
         captured = capsys.readouterr()
         assert "zero-cloud-gravity" in captured.out
+
+        boot_payload = {
+            "layer_id": "persona-tutor",
+            "target_dir": str(ws),
+            "precedence": 86,
+            "dry_run": False,
+        }
+        with (
+            patch("zcg.cli.dispatcher.dispatch_zcg_cli", return_value=(0, boot_payload, None)),
+            patch("zcg.cli.dispatcher.sys.stdout.isatty", return_value=True),
+        ):
+            assert dispatcher.main(["bootstrap-workspace", str(ws), "--id", "persona-tutor"]) == 0
+            tty_out = capsys.readouterr().out
+            assert "Next steps (Zero-Friction Day-0 Setup):" in tty_out
+            assert (
+                dispatcher.main(["bootstrap-workspace", str(ws), "--id", "persona-tutor", "--json"])
+                == 0
+            )
+            json_out = capsys.readouterr().out
+            assert '"layer_id": "persona-tutor"' in json_out
+
         # Assert
         assert "Authority denied" in captured.err

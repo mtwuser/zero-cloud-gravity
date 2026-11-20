@@ -11,7 +11,7 @@
     "framework": "zero-build-html-cockpit",
     "bound_surfaces": ["surfaces/web/", "surfaces/data/"],
     "healthcheck_endpoint": "/healthz",
-    "enabled_modules": ["node_mesh", "telemetry", "work_ledger", "vault"],
+    "enabled_modules": ["work_ledger", "docs_reader", "spatial_atlas", "portal_inbox"],
     "web_assets": {
       "templates_dir": "web/templates",
       "static_dir": "web/static"

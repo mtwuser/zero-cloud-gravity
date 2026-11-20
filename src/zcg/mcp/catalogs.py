@@ -58,7 +58,7 @@ MCP_RESOURCES_CATALOG: tuple[dict[str, Any], ...] = (
     {
         "uri": "zcg://governance/templates",
         "name": "Declarative Stack & Plugin Templates",
-        "description": "Catalog of human-stack, context-stack, framework-stack, and plugin-stack.",
+        "description": "Catalog of human-stack, context-stack, tool-stack, and plugin-stack.",
         "mimeType": "application/json",
     },
     {
@@ -116,7 +116,8 @@ _STR_ARR: dict[str, Any] = {"type": "array", "items": {"type": "string"}}
 MCP_TOOLS_CATALOG: tuple[dict[str, Any], ...] = (
     {"name": "get_layer_overview", "description": "Return a 4-Channel Executive Digest.",
      "inputSchema": {"type": "object", "additionalProperties": False,
-         "properties": {"workspace_dir": _WS, "layer": {"type": "string"}}}},
+         "properties": {"workspace_dir": _WS, "layer": {"type": "string"},
+                        "include_ast_graph": {"type": "boolean", "default": False}}}},
     {"name": "audit_node_drift", "description": "Run read-only verification and drift audit.",
      "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
          "workspace_dir": _WS,

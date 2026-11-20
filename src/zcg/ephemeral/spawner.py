@@ -25,7 +25,6 @@ from zcg.capsules.constants import (
 )
 from zcg.core.constants import (
     CAPSULE_HMAC_HEX_LEN,
-    KEBAB_ID_RE,
     NODE_MANIFEST_CONTRACT_REV,
     NODE_MANIFEST_REL_PATH,
     ROLE_DEFAULT_PRECEDENCE,
@@ -34,12 +33,34 @@ from zcg.core.constants import (
     VALID_ROSTER_ROLES,
     VALID_RUNTIME_PERSISTENCE_MODES,
 )
-from zcg.core.manifests import resolve_template_dir
+from zcg.core.domain import is_kebab_id
+from zcg.core.manifests import read_git_commit, resolve_template_dir, sha256_file
 from zcg.ephemeral.lifecycle import (
     copy_zero_copy,
     default_ephemeral_root,
     reap_expired_ephemeral_forks,
 )
+
+PINNED_RULES_DIGEST_LEN: int = 16
+
+
+def compute_workspace_context_pin(repo_dir: Path, *, model_tier: str = "flash") -> dict[str, str]:
+    """Compute an immutable (git_commit_sha, rules_merkle_digest, model_tier) context pin."""
+    ws = repo_dir.resolve()
+    hasher = hashlib.sha256()
+    rule_paths = [
+        *sorted((ws / ".agents/rules").glob("*.md")),
+        ws / "antigravity/.gemini/config/AGENTS.md",
+    ]
+    for path in rule_paths:
+        if path.is_file():
+            rel = path.relative_to(ws).as_posix()
+            hasher.update(f"{rel}:{sha256_file(path)}\n".encode())
+    return {
+        "git_commit_sha": read_git_commit(ws),
+        "rules_merkle_digest": hasher.hexdigest()[:PINNED_RULES_DIGEST_LEN],
+        "model_tier": model_tier.strip() or "flash",
+    }
 
 
 def _prepare_project_bridge(project_dir: Path) -> tuple[list[str], str, dict[str, Any]]:
@@ -99,7 +120,7 @@ def _validate_spawn_args(
     mount_templates: list[str] | None,
     mount_layers: list[str] | None,
 ) -> None:
-    if not KEBAB_ID_RE.match(role_clean):
+    if not is_kebab_id(role_clean):
         raise ValueError(f"Invalid bot_role {role_clean!r}: must be kebab-case")
     if model_tier not in VALID_AGENT_TIERS:
         raise ValueError(f"Invalid model_tier {model_tier!r}: must be one of {VALID_AGENT_TIERS}")
@@ -130,7 +151,7 @@ def _validate_spawn_args(
             raise ValueError(f"Invalid architectural_plane {p!r}")
     for kind, items in (("mount_template", mount_templates), ("mount_layer", mount_layers)):
         for item in items or []:
-            if not KEBAB_ID_RE.match(item):
+            if not is_kebab_id(item):
                 raise ValueError(f"Invalid {kind} {item!r}: must be kebab-case")
 
 
@@ -247,6 +268,7 @@ def spawn_ephemeral_fork(
         "expires_at_epoch": expires_at,
         "ttl_seconds": ttl_seconds,
         "session_resonance_key": session_secret,
+        "pinned_context": compute_workspace_context_pin(repo_dir, model_tier=model_tier),
         "handback_contract": "4-channel-digest+rcap1",
         **b_extra,
     }

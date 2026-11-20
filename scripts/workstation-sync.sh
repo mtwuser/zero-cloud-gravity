@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.1.0) — Unified Workstation & Engine Runtime Synchronizer
+# ZeroCloudGravity (v1.2.0) — Unified Workstation & Engine Runtime Synchronizer
 # Usage: ./scripts/workstation-sync.sh [sync | setup | status | --auto | --help | --version]
 
 set -euo pipefail
@@ -34,7 +34,7 @@ usage() {
 Usage: ./scripts/workstation-sync.sh [COMMAND] [OPTIONS]
 
 Commands:
-  sync, --sync               Synchronize engine runtime, personal Root 0 workstation, profile, and Stow links (default)
+  sync, --sync               Synchronize engine runtime, governing host node, profile, and Stow links (default)
   setup, --setup             Persist ~/.config/zero-cloud-gravity/workstation.conf and run synchronization
   status, --status           Print workstation and engine runtime status as JSON
   --auto                     Boot-throttled quiet synchronization invoked from ~/.bashrc
@@ -44,7 +44,7 @@ Commands:
 Options:
   --profile <name>           Global AGENTS.md profile: universal-base|academic-base|science-base|business-base|academic|science|technical|business|full
   --lang <code>              Interaction language: en|es|it|fr|de|pt
-  --workstation-dir <path>   Personal Root 0 workstation node path (e.g. ~/<persona>-pc)
+  --workstation-dir <path>   Governing host node path (e.g. ~/<persona>-profile, ~/Work/<corp>-root, or ~/Work/dept-*)
   --dev-repo <path>          Local engine development clone path (e.g. ~/Projects/dev-zero-cloud-gravity)
   --auto-sync <mode>         Shell startup sync policy: boot|always|off (default: boot)
   --no-browser               Suppress automatic browser launches (sets ZCG_NO_BROWSER=1)
@@ -80,7 +80,7 @@ detect_workstation_dir() {
     return
   fi
   local candidate
-  for candidate in "${HOME}"/*-pc; do
+  for candidate in "${HOME}"/*-profile; do
     if [[ -f "${candidate}/system/zcg-node.json" ]]; then
       (cd "${candidate}" && pwd)
       return
@@ -148,17 +148,19 @@ run_sync() {
     fi
   fi
 
-  # 2. Synchronize Personal Root 0 Workstation Node (e.g. $HOME/<persona>-pc)
+  # 2. Synchronize Governing Host Node (e.g. ~/<persona>-profile, ~/Work/<corp>-root, or ~/Work/dept-*)
   if [[ -n "${WS_DIR}" ]] && [[ -f "${WS_DIR}/system/zcg-node.json" ]] && [[ "${WS_DIR}" != "${RUNTIME_DIR}" ]]; then
     if [[ -d "${WS_DIR}/.git" ]] && git -C "${WS_DIR}" diff --quiet && git -C "${WS_DIR}" diff --cached --quiet; then
       run_zcg --repo-dir "${RUNTIME_DIR}" sync-layer "${WS_DIR}" >/dev/null 2>&1 || true
     fi
     if [[ "${ZCG_SKIP_STOW:-0}" != "1" ]] && command -v stow >/dev/null 2>&1; then
-      for bf in .bashrc .profile .bash_logout; do
-        [[ -f "${HOME}/${bf}" ]] && [[ ! -L "${HOME}/${bf}" ]] &&
-          mv "${HOME}/${bf}" "${HOME}/${bf}.backup.$(date +%Y%m%d)" 2>/dev/null || true
-      done
-      [[ -d "${WS_DIR}/bash" ]] && stow -d "${WS_DIR}" -t "${HOME}" -R bash 2>/dev/null || true
+      if [[ -d "${WS_DIR}/bash" ]]; then
+        for bf in .bashrc .profile .bash_logout; do
+          [[ -f "${HOME}/${bf}" ]] && [[ ! -L "${HOME}/${bf}" ]] &&
+            mv "${HOME}/${bf}" "${HOME}/${bf}.backup.$(date +%Y%m%d)" 2>/dev/null || true
+        done
+        stow -d "${WS_DIR}" -t "${HOME}" -R bash 2>/dev/null || true
+      fi
       if [[ -d "${WS_DIR}/git" ]] && { [[ "${ZCG_STOW_GIT:-1}" == "1" ]] || [[ -L "${HOME}/.gitconfig" ]]; }; then
         stow -d "${WS_DIR}" -t "${HOME}" -R git 2>/dev/null || true
       fi
@@ -176,6 +178,10 @@ run_sync() {
     for p in "${HOME}/.gemini/config/skills" "${HOME}/.gemini/config" "${HOME}/.gemini"; do
       [[ -L "${p}" ]] && rm -f "${p}"
     done
+    for gf in AGENTS.md hooks.json; do
+      [[ -f "${HOME}/.gemini/config/${gf}" ]] && [[ ! -L "${HOME}/.gemini/config/${gf}" ]] &&
+        mv "${HOME}/.gemini/config/${gf}" "${HOME}/.gemini/config/${gf}.backup.$(date +%Y%m%d)" 2>/dev/null || true
+    done
     while IFS= read -r -d '' sl; do
       local r_sl
       r_sl="$(readlink -f "${sl}" 2>/dev/null || echo "")"
@@ -191,6 +197,11 @@ run_sync() {
     profile_args+=("--stow")
   fi
   run_zcg "${profile_args[@]}" >/dev/null
+  if [[ -n "${WS_DIR}" ]] && [[ -f "${WS_DIR}/system/zcg-node.json" ]] && [[ "${ZCG_NO_DAEMON:-0}" != "1" ]]; then
+    if ! (command -v systemctl >/dev/null 2>&1 && systemctl --user is-active --quiet zcg-workstation.service 2>/dev/null); then
+      run_zcg --repo-dir "${RUNTIME_DIR}" apply-project "${WS_DIR}" --service-action activate >/dev/null 2>&1 || true
+    fi
+  fi
   if [[ "${ZCG_SKIP_STOW:-0}" != "1" ]]; then
     command -v update-desktop-database >/dev/null 2>&1 &&
       update-desktop-database "${HOME}/.local/share/applications" >/dev/null 2>&1 || true
@@ -282,6 +293,10 @@ case "${CMD}" in
     fi
     if [[ "${NO_SYNC}" == "0" ]]; then
       run_sync "${QUIET_FLAG}" "${DRY_RUN}"
+    fi
+    if [[ "${DRY_RUN}" == "0" ]] && [[ -n "${WS_DIR}" ]]; then
+      WS_ID="$(basename "${WS_DIR}")"
+      echo "Tip: Run 'zcg install-antigravity --agents' (optional) and open http://${WS_ID}.localhost:8790/ to inspect or configure your node."
     fi
     ;;
   status|--status)

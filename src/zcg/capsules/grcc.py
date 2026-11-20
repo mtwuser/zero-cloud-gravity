@@ -35,9 +35,9 @@ from zcg.core.constants import (
     CAPSULE_REF_NAMESPACE,
     EPISTEMIC_GRADE_LABELS,
     GIT_CMD_TIMEOUT_SECONDS,
-    SAFE_GIT_REF_RE,
     VALID_KNOWLEDGE_PREFIXES,
 )
+from zcg.core.domain import is_safe_git_ref
 from zcg.core.epistemics import classify_knowledge_domain, resolve_knowledge_mount_endpoints
 
 
@@ -70,7 +70,7 @@ def resolve_git_branch_commit_sha(branch_ref: str, target_base: Path) -> tuple[s
         not clean_ref
         or ".." in clean_ref
         or clean_ref.startswith("-")
-        or not SAFE_GIT_REF_RE.match(clean_ref)
+        or not is_safe_git_ref(clean_ref)
     ):
         raise ValueError(f"Invalid or unsafe branch_ref: {branch_ref!r}")
     proc = _run_git_plumbing(target_base, ["rev-parse", "--verify", f"{clean_ref}^{{commit}}"])
@@ -178,7 +178,7 @@ def orchestrate_dmcp_branch_projection(
         bool(branch_ref)
         and ".." not in branch_ref
         and not branch_ref.startswith("-")
-        and bool(SAFE_GIT_REF_RE.match(branch_ref))
+        and is_safe_git_ref(branch_ref)
     )
     sha_proc = (
         _run_git_plumbing(repo_dir, ["rev-parse", "--verify", f"{branch_ref}^{{commit}}"])

@@ -69,6 +69,10 @@ class TestSchemaDiscovery:
                 "null_only": None,
                 "custom": _CustomObject(),
                 "meta": {"nested_num": 10},
+                "bad_ip": "999.999.999.999",
+                "bad_uuid36": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
+                "bad_ts": "abcd-ef-gh ij:kl:mn",
+                "spaced_txt": "hello world",
             },
             {
                 "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
@@ -85,6 +89,10 @@ class TestSchemaDiscovery:
                 "raw": bytearray(b"bin"),
                 "null_only": None,
                 "custom": _CustomObject(),
+                "bad_ip": "256.300.1.1",
+                "bad_uuid36": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                "bad_ts": "9999-99-99T99:99:99",
+                "spaced_txt": "another line",
             },
             {
                 "id": "7ba7b810-9dad-11d1-80b4-00c04fd430c9",
@@ -118,6 +126,9 @@ class TestSchemaDiscovery:
         assert by_name["url"].patterns == (StructuralPattern.URL,)
         assert by_name["ts"].patterns == (StructuralPattern.ISO_TIMESTAMP,)
         assert by_name["ip"].patterns == (StructuralPattern.IPV4,)
+        assert by_name["bad_ip"].patterns == ()
+        assert by_name["bad_uuid36"].patterns == ()
+        assert by_name["bad_ts"].patterns == ()
         assert by_name["digest"].patterns == (StructuralPattern.HEXADECIMAL,)
         assert by_name["epoch"].patterns == (StructuralPattern.UNIX_EPOCH,)
         assert by_name["plain_int"].patterns == ()

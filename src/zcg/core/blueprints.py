@@ -6,7 +6,6 @@ Specification: docs/architecture/01_core_and_node_manifest.md
 from __future__ import annotations
 
 import json
-import re
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -31,10 +30,19 @@ from zcg.core.constants import (
 )  # fmt: skip
 from zcg.core.manifests import resolve_template_dir
 
-_KICKOFF_PROMPT_RE = re.compile(
-    r"## Initial Chat Kickoff Prompt \(4-Phase Customizable Progression\)\s*"
-    r"```text\n([\s\S]*?)\n```"
-)
+_KICKOFF_HEADING = "## Initial Chat Kickoff Prompt (4-Phase Customizable Progression)"
+_TEXT_FENCE_OPEN = "```text\n"
+_TEXT_FENCE_CLOSE = "\n```"
+
+
+def extract_kickoff_prompt(markdown_text: str) -> str:
+    """Extract the fenced ```text kickoff prompt block following the canonical heading."""
+    if _KICKOFF_HEADING not in markdown_text:
+        return ""
+    tail = markdown_text.split(_KICKOFF_HEADING, 1)[1].lstrip()
+    if not tail.startswith(_TEXT_FENCE_OPEN) or _TEXT_FENCE_CLOSE not in tail:
+        return ""
+    return tail.removeprefix(_TEXT_FENCE_OPEN).split(_TEXT_FENCE_CLOSE, 1)[0].strip()
 
 
 def resolve_template_lineage_chain(
@@ -66,7 +74,8 @@ def resolve_template_lineage_chain(
             )
             p_grp = d.parent.name
             grp_base = (
-                "software-engineering" if p_grp in ("framework-stack", "plugin-stack") and not ext
+                "software-engineering"
+                if p_grp in ("tool-stack", "plugin-stack") and not ext
                 else ("business-base" if p_grp == "context-stack" and not ext else "")
             )  # fmt: skip
             for cand in (ext, grp_base):
@@ -139,49 +148,66 @@ def render_layer_onboarding_readme(
             "`feature/*` or `directive/*` (`dev`) -> `env/tst` -> `env/pre` -> `master` (`pro`))"
         )
     )
+    prompt_scope = scope_hint.removeprefix("[Fill: ").removesuffix("]")
     phase_b = (
-        f"Phase B (Master Pedagogical DNA, Parallel specialty/* Tracks & Syllabus): Keep master "
-        f"strictly for universal teaching rules in templates/{own_tpl_id}/rules/{own_tpl_id}.md, "
-        f"create/switch specialty/<track> branches, author SYLLABUS.md across School (M1) -> "
-        f"University (M2) -> Professional (M3) -> Mastery (M4), set domain-<topic>:M1 in "
-        f".agents/SESSION.md, and scaffold our first lesson."
-        if is_academic
+        f"Phase B (Workstation Host Coupling, machine/* Branches & 1-Hop Pillars): Audit host "
+        f"configs/manifests (make workstation-audit), keep master for universal habits while "
+        f"isolating host overrides on machine/* branches, and output zcg {next_cmd_goal}."
+        if layer_role == "workstation"
         else (
-            f"Phase B (Sovereign Personal Pillar Rules, Context Tracks & Knowledge Feeds): Keep "
-            f"master for core pillar invariants in templates/{own_tpl_id}/rules/{own_tpl_id}.md, "
-            "isolate parallel tracks via context_branches, link read-only knowledge-feed or scoped "
-            "peer nodes (zcg link), and initialize docs/architecture/ and WORKROAD.md."
-            if is_ind_pillar
+            f"Phase B (Master Pedagogical DNA, Parallel specialty/* Tracks & Syllabus): Keep "
+            f"master strictly for universal teaching rules in templates/{own_tpl_id}/rules/"
+            f"{own_tpl_id}.md, create/switch specialty/<track> branches, author SYLLABUS.md "
+            "across School (M1) -> University (M2) -> Professional (M3) -> Mastery (M4), set "
+            "domain-<topic>:M1 in .agents/SESSION.md, and scaffold our first lesson."
+            if is_academic
             else (
-                "Phase B (Epistemic Knowledge & Spec Atlas): Structure "
-                "docs/{reference,architecture,guides}/ (< 465 lines) with E3..E0 epistemic "
-                "grades and citation_receipt anchors."
-                if layer_role == "knowledge"
+                f"Phase B (Sovereign Personal Pillar Rules, Context Tracks & Knowledge Feeds): "
+                f"Keep master for core pillar invariants in templates/{own_tpl_id}/rules/"
+                f"{own_tpl_id}.md, isolate parallel tracks via context_branches, link read-only "
+                "knowledge-feed or scoped peer nodes (zcg link), and initialize "
+                "docs/architecture/ and WORKROAD.md."
+                if is_ind_pillar
                 else (
-                    "Phase B (Root 0 Roster, Surface Bindings, Departments & Knowledge Twin): "
-                    "Configure .github/CODEOWNERS (make roster), surface_bindings, and output "
-                    f"zcg {next_cmd_goal} plus our symmetric public --role knowledge twin "
-                    "(org-*/gov-*/sci-*/geo-*)."
-                    if layer_role == "corporate"
-                    else "Phase B (Roster, Surface Bindings & Child Topology): Configure "
-                    ".github/CODEOWNERS (make roster), optional plugin-stack plugins "
-                    f"(make apply-template), and output zcg {next_cmd_goal}."
+                    "Phase B (Epistemic Knowledge & Spec Atlas): Structure "
+                    "docs/{reference,architecture,guides}/ (< 465 lines) with E3..E0 epistemic "
+                    "grades and citation_receipt anchors."
+                    if layer_role == "knowledge"
+                    else (
+                        "Phase B (Root 0 Roster, Surface Bindings, Departments & Knowledge Twin): "
+                        "Configure .github/CODEOWNERS (make roster), surface_bindings, and output "
+                        f"zcg {next_cmd_goal} plus our symmetric public --role knowledge twin "
+                        "(org-*/gov-*/sci-*/geo-*)."
+                        if layer_role == "corporate"
+                        else "Phase B (Roster, Surface Bindings & Child Topology): Configure "
+                        ".github/CODEOWNERS (make roster), optional plugin-stack plugins "
+                        f"(make apply-template), and output zcg {next_cmd_goal}."
+                    )
                 )
             )
         )
     )
     phase_d = (
-        f"Phase D (Two-Level Personal Reconciliation & Sync): Reconcile cross-subject or "
-        f"cross-track improvements into {layer_id}:master, run make sync STRATEGY=reconcile, "
-        f"and promote universal workstation habits 1-hop upward to {parent_label} via /enrich and "
-        "make promote before /sclose."
-        if (is_academic or is_ind_pillar)
+        "Phase D (Workstation Sync, Host Audit & Enrichment): Run make sync STRATEGY=reconcile "
+        "&& make diff, verify make workstation-audit, and promote universal engine improvements "
+        "upward via /enrich before /sclose."
+        if layer_role == "workstation"
         else (
-            "Phase D (Upward Enrichment & Sync Reconciliation): Reconcile upstream updates via "
-            "make sync STRATEGY=reconcile (make upstream-diff), verify make env-gate "
-            "ENV=tst|pre|pro, and promote reusable rules upward via /enrich and make promote "
-            "before /sclose."
+            f"Phase D (Two-Level Personal Reconciliation & Sync): Reconcile cross-subject or "
+            f"cross-track improvements into {layer_id}:master, run make sync STRATEGY=reconcile, "
+            f"and promote universal workstation habits 1-hop upward to {parent_label} via /enrich "
+            "and make promote before /sclose."
+            if (is_academic or is_ind_pillar)
+            else (
+                "Phase D (Upward Enrichment & Sync Reconciliation): Reconcile upstream updates "
+                "via make sync STRATEGY=reconcile (make upstream-diff), verify make env-gate "
+                "ENV=tst|pre|pro, and promote reusable rules upward via /enrich and make promote "
+                "before /sclose."
+            )
         )
+    )
+    agents_prefix = (
+        "antigravity/.gemini/config/AGENTS.md and " if layer_role == "workstation" else ""
     )
     return (
         f"# {layer_id} (`{layer_role}`, `precedence: {effective_prec}`)\n\n"
@@ -197,16 +223,22 @@ def render_layer_onboarding_readme(
         f"- **Downstream Topology (Next Tier)**: {children_hint}\n"
         f"- **Authorized Layer Owner (`set-authority`)**: [Fill: Role title & owner email]\n\n"
         f"## Initial Chat Kickoff Prompt (4-Phase Customizable Progression)\n\n```text\n"
-        f"Phase A (Setup & Purpose Alignment): Read the filled Layer Setup Blueprint in README.md, "
-        f"{NODE_MANIFEST_REL_PATH}, and .agents/LAYER_LINEAGE.md. Tailor "
-        f"antigravity/.gemini/config/AGENTS.md and templates/{own_tpl_id}/rules/{own_tpl_id}.md "
-        "with our mission and invariants without duplicating upstream rules, then run make sync "
-        "&& make diff and update the Node Work & Sprint Ledger (WORKROAD.md / WORKTASK.md).\n"
+        f"/sopen — Configure Zero-Cloud Node '{layer_id}' ({tier_title}, "
+        f"lang={interaction_language}):\n"
+        f"- Mission & Scope: [Customize: {prompt_scope}]\n"
+        "- Authorized Owner: [Customize: Role title & owner@domain]\n"
+        f"Phase A (Setup & Purpose Alignment): Write the Mission & Authorized Owner above into "
+        f"README.md (replacing all [Fill: ...] placeholders) and {NODE_MANIFEST_REL_PATH} "
+        f"(zcg set-authority). Tailor {agents_prefix}"
+        f"templates/{own_tpl_id}/rules/{own_tpl_id}.md with our mission and invariants "
+        "without duplicating upstream rules, then "
+        "run make sync && make diff and initialize WORKROAD.md / WORKTASK.md.\n"
         f"{phase_b}\n"
         "Phase C (Daily Bounded-Lot Execution & Verification): Claim work via make task "
         'TASK="<id>", execute 1 bounded lot per turn (3-5 files) with active-layer verification, '
         "and checkpoint via /continue.\n"
-        f"{phase_d}\n```\n\n"
+        f"{phase_d} Finally, mark '- [x] Complete `Layer Setup Blueprint`' in WORKTASK.md and run "
+        "make activate-plugin to unlock the configured Node Workspace web UI.\n```\n\n"
         "## Upstream Upgrade & Version Reconciliation Prompt (4-Step Guided Flow)\n\n```text\n"
         "Step 1 (Topology & Horizon Audit): /sopen — Run make status (inspect sync_topology "
         "4-stage DAG & promotion_pipeline), make horizon, and make upstream-diff against "
@@ -216,7 +248,7 @@ def render_layer_onboarding_readme(
         f"templates while preserving sovereign rules in templates/{own_tpl_id}/rules/"
         f"{own_tpl_id}.md.\n"
         "Step 3 (Selective Stack & Node Plugin Review): Evaluate whether any newly available "
-        "context-stack, framework-stack, or plugin-stack pack adds genuine value without "
+        "context-stack, tool-stack, or plugin-stack pack adds genuine value without "
         "saturating context, then verify make diff (0 drift).\n"
         "Step 4 (Environment / Mastery Gate & Closure): Validate make env-gate ENV=pro "
         "(or ENV=tst|pre|pro on staged enterprise nodes) and close via /sclose.\n```\n"
@@ -312,14 +344,14 @@ def resolve_workspace_setup_state(ws_dir: Path, manifest: dict[str, Any]) -> dic
         and "- [x] Complete `Layer Setup Blueprint`" not in wt_txt
     )
     unfilled_bp = "[Fill:" in rm_txt if has_manifest else "[Fill:" in lin_txt
-    is_pending = unconfigured_ws_clone if role == "workstation" else (unfilled_wt or unfilled_bp)
-    m_prompt = _KICKOFF_PROMPT_RE.search(rm_txt) or _KICKOFF_PROMPT_RE.search(lin_txt)
+    is_pending = unconfigured_ws_clone or unfilled_wt or unfilled_bp
+    raw_prompt = extract_kickoff_prompt(rm_txt) or extract_kickoff_prompt(lin_txt)
     prompt_block = (
-        m_prompt.group(1).strip()
-        if m_prompt
+        raw_prompt
+        if raw_prompt
         else (
             f"Phase A (Personal Root 0 Setup): Run zcg init-fork --id {ws_dir.name} "
-            "--role workstation --precedence 0 --entity-kind individual.\n"
+            "--role workstation --precedence 90 --entity-kind individual.\n"
             "Phase B (Workstation & Hat Branches): Keep master for universal habits and "
             "create hat/* or machine/* branches.\n"
             "Phase C (Mounted Knowledge & Child Nodes): Register gov-*/sci-*/geo-* mounts.\n"

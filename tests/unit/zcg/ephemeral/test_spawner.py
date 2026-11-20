@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from zcg.capsules.constants import MAX_ACTIVE_EPHEMERAL_FORKS
-from zcg.ephemeral.spawner import spawn_ephemeral_fork
+from zcg.ephemeral.spawner import compute_workspace_context_pin, spawn_ephemeral_fork
 
 
 class TestEphemeralSpawner:
@@ -66,7 +66,11 @@ class TestEphemeralSpawner:
         )
 
         # Assert
+        empty_pin = compute_workspace_context_pin(tmp_path / "missing-rules", model_tier=" ")
+        assert empty_pin["model_tier"] == "flash"
+        assert len(empty_pin["rules_merkle_digest"]) == 16
         assert dry["dry_run"] is True
+        assert len(dry["pinned_context"]["rules_merkle_digest"]) == 16
         assert not Path(dry["fork_dir"]).exists()
         assert Path(plain_spawned["fork_dir"]).is_dir()
         fork_dir = Path(spawned["fork_dir"])

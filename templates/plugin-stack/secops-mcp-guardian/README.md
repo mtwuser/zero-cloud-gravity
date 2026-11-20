@@ -23,20 +23,20 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 The `secops-mcp-guardian` plugin hardens cross-node MCP federation (`zcg-mcp`) and security-critical repositories:
 
-1. **HMAC-Authenticated `DMCP` Envelopes**: Signs and verifies federated MCP payloads (`dmcp_protocol.py`) while enforcing operator clearance (`0..100`) and environment stage (`dev | pre | pro`) boundaries.
-2. **Strictly-Read-Only Ephemeral Sandboxes (`orchestrate_ephemeral_fork`)**: Creates isolated, non-mutating workspace views (`sandbox_fork.py`) so cross-layer inspections cannot alter source repositories.
+1. **HMAC-Authenticated `DMCP` Envelopes**: Signs and verifies federated MCP payloads (`src/zcg/capsules/grcc.py`) while enforcing operator clearance (`0..100`) and environment stage (`dev | pre | pro`) boundaries.
+2. **Strictly-Read-Only Ephemeral Sandboxes (`orchestrate_ephemeral_fork`)**: Creates isolated, non-mutating workspace views (`src/zcg/ephemeral/spawner.py`) so cross-layer inspections cannot alter source repositories.
 3. **Cryptographic Citation & Drift Auditing**: Raises `CITATION_DRIFT_DETECTED` or `PATH_CONTAINMENT_VIOLATION` immediately when referenced digests or paths deviate from canonical contracts.
 
 ---
 
 ## 3. Mounting & Cross-References
 
-Declare `secops-mcp-guardian` in `system/zcg-node.json` under `stack_groups.plugin_stack` and synchronize the node:
+Declare `secops-mcp-guardian` in `system/zcg-node.json` under `default_stack_templates` and synchronize the node:
 
 ```bash
 zcg sync-layer /path/to/secops-node
 ```
 
-- **Parent Framework Stack**: `templates/framework-stack/nist-csf-security/README.md`
+- **Parent Security Methodology**: `templates/context-stack/nist-csf-security/README.md`
 - **Contextual MCP Architecture**: `docs/architecture/05_contextual_mcp_and_capsules.md`
 - **Security Reference**: `docs/reference/02_cli_mcp_and_security_reference.md`

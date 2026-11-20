@@ -13,11 +13,11 @@ Every contribution is verified deterministically against eight repository gates 
 | Invariant | Mandatory Requirement |
 | :--- | :--- |
 | **Pure Python 3.14 Stdlib Runtime** | `pyproject.toml` runtime `dependencies` must remain empty (`[]`); rely exclusively on C-backed Python 3.14 standard library primitives (`hashlib.file_digest`, `stat.S_IWUSR`, `Path.is_relative_to`). |
-| **Zero Secret & Identity Leakage** | Personal identities, SSH/GPG keys, OAuth credentials (`~/.gemini/*.json`), and host-local paths must never be committed. Use ISO-neutral examples (`corp-iso-root`, `squad-iso`, `gov-iso`, `alex-pc`). |
+| **Zero Secret & Identity Leakage** | Personal identities, SSH/GPG keys, OAuth credentials (`~/.gemini/*.json`), and host-local paths must never be committed. Use ISO-neutral examples (`corp-iso-root`, `squad-iso`, `gov-iso`, `persona-profile` / `<persona>-profile`). |
 | **GNU Stow Tree Unfolding (`~/.gemini/config/`)** | `~/.gemini/`, `~/.gemini/config/`, and `~/.gemini/config/skills/` must remain real directories on disk so GNU Stow creates granular symlinks for `AGENTS.md`, `hooks.json`, `scripts/`, and global skills without touching local credentials. |
 | **Antigravity 2.0 Token Budget** | `antigravity/.gemini/config/AGENTS.md` must stay strictly **`<= 18,000` bytes** so global rules are 100% inline-injected within Antigravity's `20,000`-token rule budget; detailed workflows belong in on-demand `SKILL.md` files. |
-| **Module Size & Package Purity** | Source modules in `src/zcg/**.py` must stay **`<= 384` lines**; docs, tests, and `SKILL.md` files must stay **`<= 464` lines** (`0` `#####` headings); all `{src,tests}/**/__init__.py` files must be **`0 bytes`**. |
-| **Strict Typing, Linting & Hexagonal Boundaries** | Zero `ruff check`, `ruff format --check`, `mypy --strict`, or `zcg lint-arch` violations (`src/zcg/web/` and `src/zcg/platform/` enforce `0` imports from `cockpit|governance|topology|mcp|cli`). |
+| **Module Size & Package Purity** | Source modules in `src/zcg/**.py` must stay **`<= 384` lines** (`<= 10` `.py` modules/dir); docs, tests, and `SKILL.md` files must stay **`<= 464` lines** (`0` `#####` headings); all `{src,tests}/**/__init__.py` files must be **`0 bytes`**. |
+| **Strict Typing, Linting & Hexagonal Boundaries** | Zero `ruff check`, `ruff format --check`, `mypy --strict`, or `zcg lint-arch` violations (`src/zcg/web/` and `src/zcg/platform/` enforce `0` imports from `plugins|providers|cockpit|governance|topology|mcp|cli`). |
 | **`1:1:1` Symbiosis & `100.00%` Isolated Coverage** | Every `src/zcg/<pkg>/<mod>.py` declares `Specification: docs/architecture/0X_*.md`, maps `1:1` to `tests/unit/zcg/<pkg>/test_<mod>.py` inside the spec table, and passes at **`100.00%` statement and branch coverage in single-file isolation** (`make test-unit-isolated`). |
 
 ---
@@ -30,7 +30,7 @@ Every contribution path enforces three physical isolation zones so personal cred
 
 ```mermaid
 flowchart LR
-    Z1["Zone 1: $HOME Appliance\n~/zero-cloud-gravity + ~/&lt;persona&gt;-pc\n(Read-only runtime & ~/.gemini/*.json)\nOSS_PERSONAL_REPO_PUBLISH_BLOCKED"]
+    Z1["Zone 1: $HOME Appliance\n~/zero-cloud-gravity + ~/&lt;persona&gt;-profile\n(Read-only runtime & ~/.gemini/*.json)\nOSS_PERSONAL_REPO_PUBLISH_BLOCKED"]
     Z2["Zone 2: Contributor / Dev Clone\n~/Projects/contrib-zero-cloud-gravity\n(.agents/ gitignored · WORK*.md & roadmaps/\nstripped on upstream export)"]
     Z3["Zone 3: Public Open-Source Upstream\nmtwuser/zero-cloud-gravity\n(Sterile 1:1:1 code/docs/templates ·\n8/8 GitHub Actions CI gate)"]
     Z1 -.->|"Never exports upward"| Z2
@@ -41,9 +41,9 @@ The table below details the security boundary enforced at each zone:
 
 | Security Zone | Local Path Pattern | What Lives Here | Outbound Isolation Guarantee |
 | :--- | :--- | :--- | :--- |
-| **Zone 1 — `$HOME` Runtime & Personal `Root 0`** | `~/zero-cloud-gravity` & `~/<persona>-pc` | Daily stowed `~/.gemini/config/` runtime, personal `bash/` & `git/` profiles, and local OAuth/SSH state. | Hard-blocked from public export (`entity_kind != "open-source"` triggers `OSS_PERSONAL_REPO_PUBLISH_BLOCKED`). |
+| **Zone 1 — `$HOME` Runtime & Personal `Root 0`** | `~/zero-cloud-gravity` & `~/<persona>-profile` | Daily stowed `~/.gemini/config/` runtime, personal `bash/` & `git/` profiles, and local OAuth/SSH state. | Hard-blocked from public export (`entity_kind != "open-source"` triggers `OSS_PERSONAL_REPO_PUBLISH_BLOCKED`). |
 | **Zone 2 — Isolated Contributor / `dev` Workspace** | `~/Projects/contrib-zero-cloud-gravity` or `ZCG_DEV_REPO_DIR` | Active `feat/*` or `fix/*` branches with `science-base` + `software-engineering` projected in `.agents/rules/` and grouped monthly `.github/dependabot.yml` radar. | `.agents/*` (`SESSION.md`, local telemetry) is gitignored; `make oss-publish` exports via `git archive HEAD` and strips `WORK*.md`, `BACKLOG.md`, `roadmaps/`, and `.github/dependabot.yml`. |
-| **Zone 3 — Public Open-Source Repository** | `github.com/mtwuser/zero-cloud-gravity` | Pure Python 3.14 engine, `16` templates, `17` skills, and `1:1:1` docs/tests. | Protected `master` branch enforcing linear history, Pull Request review for external contributors, and `8/8` GitHub Actions verification ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). |
+| **Zone 3 — Public Open-Source Repository** | `github.com/mtwuser/zero-cloud-gravity` | Pure Python 3.14 engine, `19` templates, `17` skills, and `1:1:1` docs/tests. | Protected `master` branch enforcing linear history, Pull Request review for external contributors, and `8/8` GitHub Actions verification ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). |
 
 ### 2.2. Path A — Standard Community Contributor (GitHub Fork -> Branch -> Pull Request)
 
@@ -82,19 +82,19 @@ Contributors may remain `Anonymous Organization (default)` or request named attr
 
 ### 2.4. Path C — Core Maintainer Sovereign Release Flow (`Private CI -> Public Snapshot`)
 
-Strictly inside private `dev-<repo>` clones (`visibility_scope: "private:open-source:dev"`, isolated in [`mk/oss-contrib.mk`](mk/oss-contrib.mk) + `zcg oss` and enforced by `[OSS_DEV_ONLY_BLOCKED]` so `$HOME` appliances, forks, and organizational nodes are never affected), maintainers operate flexibly: either **directly on `master`** for agile refinements (`git push origin master` triggers private GitHub Actions CI, followed by `zcg-sync --sync`), or via **opt-in branch pre-validation** (`make oss-push-branch` to validate a `feature/*` or `fix/*` branch on private CI without touching `master` $\rightarrow$ `make oss-promote-master` to fast-forward `master`, delete the temporary branch, and sync `$HOME`). When cutting a SemVer release (`/release`), `make oss-publish RELEASE_VERSION=X.Y.Z` exports a single tracker-free snapshot commit and annotated `vX.Y.Z` tag onto public `master`.
+Strictly inside private `dev-<repo>` clones (`visibility_scope: "private:open-source:dev"`, isolated in [`Makefile`](Makefile) `oss-*` recipes + `zcg oss` and enforced by `[OSS_DEV_ONLY_BLOCKED]` so `$HOME` appliances, forks, and organizational nodes are never affected), maintainers operate flexibly: either **directly on `master`** for agile refinements (`git push origin master` triggers private GitHub Actions CI, followed by `zcg-sync --sync`), or via **opt-in branch pre-validation** (`make oss-push-branch` to validate a `feature/*` or `fix/*` branch on private CI without touching `master` $\rightarrow$ `make oss-promote-master` to fast-forward `master`, delete the temporary branch, and sync `$HOME`). When cutting a SemVer release (`/release`), `make oss-publish RELEASE_VERSION=X.Y.Z` exports a single tracker-free snapshot commit and annotated `vX.Y.Z` tag onto public `master`.
 
 ---
 
 ## 3. Extending Components Across the Architecture
 
-1. **Engine Subpackages (`src/zcg/{core,platform,web,topology,governance,cockpit,cli,capsules,ephemeral,mcp}/`)**:
+1. **Engine Subpackages (`src/zcg/{core,platform,web,topology,governance,cockpit,plugins,providers,cli,capsules,ephemeral,mcp}/`)**:
    - Follow **`1. Specification (`docs/architecture/01..06`) -> 2. Isolated `AAA` Unit/Imp/E2E Tests -> 3. Implementation`**.
    - Every test method must include a 1-line docstring and explicit `# Arrange`, `# Act`, and `# Assert` comments covering nominal flows, `N` vs. `N ± 1` cut-points, and bipolar error guards (`0` `# pragma: no cover`).
 2. **Antigravity Skills (`antigravity/.gemini/config/skills/` & `templates/*-stack/*/skills/`)**:
    - Keep `name:` in `SKILL.md` YAML frontmatter `kebab-case` and `1:1` identical to its parent directory name, `< 465` lines total (`8` global skills + `9` stack skills = `17` verified skills).
 3. **`plugin-stack` Reference Dashboards & Sovereign Brand Assets (`templates/plugin-stack/*`)**:
-   - Extend `plugin_shell.html` (operational cockpits) or `base.html` (brand portals), scaffold typed Hexagonal capability modules via `zcg scaffold-plugin-module <plugin-id> <module-name>`, and customize node emblems without engine edits by placing `surfaces/web/static/img/logo.svg` (overriding the built-in `/static/img/logo.svg`).
+   - Extend `plugin_shell.html` (operational cockpits) or `base.html` (brand portals), scaffold typed Hexagonal capability modules via `zcg scaffold-plugin-module <plugin-id> <module-name>`, and customize node emblems without engine edits by placing `surfaces/web/static/brand/<plane>-logo.<ext>` (overriding the built-in `/static/img/logo.svg`).
 4. **Ubuntu 26.04 External Package Recipes (`templates/plugin-stack/workstation-control-tower/assets/external/`)**:
    - Place declarative DEB822 `apt-repo/*.sh`, `deb-url/*.sh`, or `script/*.sh` recipes under `assets/external/` and verify clean `shellcheck` compliance via `make verify`.
 

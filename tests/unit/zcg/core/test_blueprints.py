@@ -96,17 +96,17 @@ class TestBlueprints:
             90,
             "tutor-lab",
             ["academic-base"],
-            "user-pc",
+            "user-profile",
             entity_kind="individual",
             interaction_language="es",
         )
         rm_wallet = blueprints.render_layer_onboarding_readme(
-            "alex-wallet",
+            "persona-wallet",
             "squad",
             88,
-            "alex-wallet",
+            "persona-wallet",
             ["science-base"],
-            "alex-pc",
+            "persona-profile",
             entity_kind="individual",
         )
         rm_know = blueprints.render_layer_onboarding_readme(
@@ -117,6 +117,14 @@ class TestBlueprints:
         )
         rm_squad = blueprints.render_layer_onboarding_readme(
             "squad-alpha", "squad", 50, "squad-alpha", []
+        )
+        rm_ws = blueprints.render_layer_onboarding_readme(
+            "persona-profile",
+            "workstation",
+            90,
+            "persona-profile",
+            ["universal-base"],
+            entity_kind="individual",
         )
         lin_md = blueprints.render_lineage_markdown(
             "", ["| 10 | Root | r | corporate | 1 |"], interaction_language="es"
@@ -129,6 +137,12 @@ class TestBlueprints:
         assert "Epistemic Knowledge & Spec Atlas" in rm_know
         assert "Knowledge Twin" in rm_corp
         assert "Roster, Surface Bindings & Child Topology" in rm_squad and "`none`" in rm_squad
+        assert "Level 0 — Personal Root 0 Workstation Hub" in rm_ws
+        assert "Workstation Host Coupling" in rm_ws and "Workstation Sync, Host Audit" in rm_ws
+        assert "[Customize: [Fill:" not in rm_ws and "[Customize: [Fill:" not in rm_squad
+        assert "antigravity/.gemini/config/AGENTS.md and " in rm_ws
+        assert "antigravity/.gemini/config/AGENTS.md" not in rm_acad
+        assert "with our mission and invariants" in rm_acad
         assert "Applied Template Pack**: `none`" in lin_md and "Spanish (es)" in lin_md
 
     def test_resolve_workspace_setup_state_covers_u0_u1_and_u2_expected(
@@ -159,7 +173,7 @@ class TestBlueprints:
         )
 
         # Arrange — U1 unconfigured workstation clone without README prompt
-        ws_clone = tmp_path / "alice-pc"
+        ws_clone = tmp_path / "alice-profile"
         (ws_clone / "system").mkdir(parents=True)
         (ws_clone / NODE_MANIFEST_REL_PATH).write_text("{}", encoding="utf-8")
         u1_ws = blueprints.resolve_workspace_setup_state(
@@ -186,7 +200,8 @@ class TestBlueprints:
         proj_dir = tmp_path / "service-api"
         (proj_dir / ".agents").mkdir(parents=True)
         (proj_dir / ".agents/LAYER_LINEAGE.md").write_text(
-            "# Configured Lineage\n", encoding="utf-8"
+            "## Initial Chat Kickoff Prompt (4-Phase Customizable Progression)\nNo fence\n",
+            encoding="utf-8",
         )
         u2 = blueprints.resolve_workspace_setup_state(proj_dir, {})
         # Act
@@ -197,6 +212,7 @@ class TestBlueprints:
         assert "Phase A" in u1["kickoff_prompt"]
         assert u1_ws["state"] == "pending_customization" and u1_ws["entity_kind"] == "individual"
         assert "zcg init-fork" in u1_ws["kickoff_prompt"]
+        assert "--precedence 90" in u1_ws["kickoff_prompt"]
         assert u2_engine["state"] == "configured" and u2_engine["kickoff_prompt"] == ""
         assert u2["state"] == "configured" and u2["is_configured"] is True
         assert u2["layer_role"] == "project" and u2["entity_kind"] == "enterprise"

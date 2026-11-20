@@ -20,7 +20,7 @@ from zcg.web.capabilities.crud import (
     ResourceFieldSpec,
     create_crud_router,
 )
-from zcg.web.factory import create_web_app
+from zcg.web.http.factory import create_web_app
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -69,7 +69,9 @@ def _sample_schema() -> CollectionSchema:
         body_field="notes",
         fields=(
             ResourceFieldSpec("title", "Title", FieldKind.TEXT),
-            ResourceFieldSpec("category", "Category", FieldKind.SLUG, default="general"),
+            ResourceFieldSpec(
+                "category", "Category", FieldKind.SLUG, filterable=True, default="general"
+            ),
             ResourceFieldSpec(
                 "stage",
                 "Stage",
@@ -80,7 +82,12 @@ def _sample_schema() -> CollectionSchema:
             ),
             ResourceFieldSpec("notes", "Notes", FieldKind.LONG_TEXT, required=False),
             ResourceFieldSpec(
-                "featured", "Featured", FieldKind.BOOL, required=False, default=False
+                "featured",
+                "Featured",
+                FieldKind.BOOL,
+                required=False,
+                filterable=True,
+                default=False,
             ),
             ResourceFieldSpec("priority", "Priority", FieldKind.INT, required=False),
         ),
@@ -195,6 +202,13 @@ class TestCrud:
                 "/api/collections/catalog-items",
                 query="q=alpha&filter_stage=active",
             )
+            _, _, b_flt_html = await _call(
+                app,
+                "GET",
+                "/api/collections/catalog-items",
+                query="q=alpha",
+                headers=swap,
+            )
             return {
                 "s1": s_post1,
                 "s2": s_post2,
@@ -204,6 +218,7 @@ class TestCrud:
                 "table": b_table,
                 "fb": json.loads(b_fallback),
                 "flt": json.loads(b_flt),
+                "flt_html": b_flt_html,
             }
 
         # Act
@@ -211,7 +226,13 @@ class TestCrud:
 
         # Assert
         assert out["s1"] == 201 and out["s2"] == 201 and b"Beta Draft" in out["p2"]
-        assert b"zcg-card-grid" in out["cards"]
+        assert b"<h2>Catalog Items</h2>" not in out["cards"]
+        assert b"<h3>Catalog Items</h3>" not in out["cards"]
+        assert b"<code>catalog-items</code>" in out["cards"] and b"2 records</span>" in out["cards"]
+        assert b"zcg-card-grid" in out["cards"] and b"+ Add Catalog Items" in out["cards"]
+        assert b"zcg-filter-bar" in out["cards"] and b"zcg-quick-add-bar" in out["cards"]
+        assert b">Reset</button>" not in out["cards"] and b">Reset</button>" in out["flt_html"]
+        assert b"data-zcg-delete=" in out["cards"]
         assert b"zcg-list" in out["list"]
         assert b"zcg-table" in out["table"]
         assert out["fb"]["layout"] == "cards" and out["fb"]["count"] == 2
@@ -226,10 +247,17 @@ class TestCrud:
             fields=(ResourceFieldSpec("title", "Title", FieldKind.TEXT),),
         )
         app = create_web_app(
-            routers=(create_crud_router(tmp_path, schema=minimal, prefix="/api/paged"),)
+            routers=(
+                create_crud_router(
+                    tmp_path,
+                    schema=minimal,
+                    prefix="/api/paged",
+                    target_selector="#custom-paged-panel",
+                ),
+            )
         )
 
-        async def _scenario() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+        async def _scenario() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], bytes]:
             for idx in range(2):
                 await _call(
                     app, "POST", "/api/paged", body=json.dumps({"title": f"Item {idx}"}).encode()
@@ -238,15 +266,24 @@ class TestCrud:
             await _call(app, "POST", "/api/paged", body=json.dumps({"title": "Item 2"}).encode())
             _, _, raw_three_p1 = await _call(app, "GET", "/api/paged", query="page=1&page_size=2")
             _, _, raw_three_p9 = await _call(app, "GET", "/api/paged", query="page=9&page_size=2")
-            return json.loads(raw_two), json.loads(raw_three_p1), json.loads(raw_three_p9)
+            _, _, raw_custom_hx = await _call(
+                app, "GET", "/api/paged", headers=[(b"hx-request", b"true")]
+            )
+            return (
+                json.loads(raw_two),
+                json.loads(raw_three_p1),
+                json.loads(raw_three_p9),
+                raw_custom_hx,
+            )
 
         # Act
-        at_n, at_n_plus_1, clamped_last = asyncio.run(_scenario())
+        at_n, at_n_plus_1, clamped_last, custom_hx = asyncio.run(_scenario())
 
         # Assert
         assert at_n["total_pages"] == 1 and len(at_n["items"]) == 2
         assert at_n_plus_1["total_pages"] == 2 and len(at_n_plus_1["items"]) == 2
         assert clamped_last["page"] == 2 and len(clamped_last["items"]) == 1
+        assert b"<h3>Paged</h3>" in custom_hx
 
     def test_single_item_get_partial_put_and_delete_json_and_swap_expected(
         self, tmp_path: Path
@@ -309,7 +346,7 @@ class TestCrud:
         assert out["s_put"] == 200 and out["put"]["updated"]["title"] == "First"
         assert out["put"]["updated"]["stage"] == "active"
         assert out["s_del_json"] == 200 and out["del_json"]["deleted"] is True
-        assert out["s_del_swap"] == 200 and out["b_del_swap"] == b""
+        assert out["s_del_swap"] == 200 and b"Catalog Items" in out["b_del_swap"]
 
     def test_bipolar_csrf_validation_payload_and_404_not_found_guards_expected(
         self, tmp_path: Path

@@ -15,11 +15,11 @@ from pathlib import Path
 from typing import Any
 
 from zcg.core.constants import (
-    KEBAB_ID_RE,
     NODE_MANIFEST_REL_PATH,
     OWNER_DIR_RWX_BITS,
     VALID_DYNAMIC_RESOLUTION_POLICIES,
 )
+from zcg.core.domain import is_kebab_id
 
 
 def _is_writable_or_creatable(target: Path) -> bool:
@@ -85,7 +85,7 @@ def reap_expired_ephemeral_forks(
                 expired = now >= float(
                     data.get("ephemeral_metadata", {}).get("expires_at_epoch", 0.0)
                 )
-            except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            except OSError, ValueError, TypeError, json.JSONDecodeError:
                 expired = True
         if expired:
             ensure_dirs_writable(child)
@@ -153,7 +153,7 @@ def reap_ephemeral_fork(
                     ensure_dirs_writable(child)
                     shutil.rmtree(child, ignore_errors=True)
     else:
-        if not KEBAB_ID_RE.match(fork_id):
+        if not is_kebab_id(fork_id):
             raise ValueError(f"Invalid fork_id {fork_id!r}: must be kebab-case or 'all'")
         target = (root / fork_id).resolve()
         if not target.is_relative_to(root) or not target.is_dir():

@@ -6,27 +6,30 @@ Specification: docs/architecture/05_contextual_mcp_and_capsules.md
 from __future__ import annotations
 
 import hashlib
-import re
 from pathlib import Path
 from typing import Any
 
 from zcg.capsules.constants import (
     ALLOWED_READ_PREFIXES,
     ALLOWED_ROOT_FILES,
-    BACKTICK_PATH_RE,
-    BOLD_TERM_RE,
     CHARS_PER_TOKEN_ESTIMATE,
-    CITATION_RECEIPT_REF_RE,
     CODON_MAX_SEMANTIC_TAGS,
     CODON_SLUG_MAX_CHARS,
     CODON_STOPWORDS,
     EXON_BULLET_MAX_CHARS,
     EXON_HEADING_MAX_CHARS,
     EXON_MAX_BULLETS,
-    MD_LINK_RE,
-    WORD_TOKEN_RE,
 )
 from zcg.core.constants import CAPSULE_DIGEST_HEX_LEN
+from zcg.core.markdown_scan import (
+    extract_bold_terms,
+    extract_citation_receipt_refs,
+    extract_inline_code_paths,
+    extract_markdown_links,
+    is_markdown_list_item,
+    slugify_heading,
+    tokenize_alnum,
+)
 
 
 def read_non_empty_lines(path: Path) -> list[str]:
@@ -54,15 +57,14 @@ def merge_unique_strings(*groups: list[Any]) -> list[str]:
 
 def slugify_codon(text: str) -> str:
     """Convert heading text into a bounded lowercase kebab-case codon slug."""
-    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:CODON_SLUG_MAX_CHARS]
-    return slug or "section"
+    return slugify_heading(text, max_chars=CODON_SLUG_MAX_CHARS, fallback="section")
 
 
 def extract_codon_tags(heading: str, body_text: str) -> list[str]:
     """Extract up to CODON_MAX_SEMANTIC_TAGS distinct semantic tags from heading and bold terms."""
     tags: list[str] = []
-    for chunk in (heading, *BOLD_TERM_RE.findall(body_text)):
-        for word in WORD_TOKEN_RE.findall(chunk.lower()):
+    for chunk in (heading, *extract_bold_terms(body_text)):
+        for word in tokenize_alnum(chunk, min_len=3):
             if word not in CODON_STOPWORDS and word not in tags:
                 tags.append(word)
                 if len(tags) == CODON_MAX_SEMANTIC_TAGS:
@@ -86,9 +88,7 @@ def extract_axiom_skeleton(heading: str, body_lines: list[str]) -> str:
             continue
         if stripped.startswith(">") or stripped.startswith(("**Mandate", "**Description")):
             exons.append(stripped[:EXON_HEADING_MAX_CHARS])
-        elif not raw.startswith(("  ", "\t")) and (
-            stripped.startswith(("- ", "* ")) or re.match(r"^\d+\.\s", stripped)
-        ):
+        elif not raw.startswith(("  ", "\t")) and is_markdown_list_item(stripped):
             if bullets < EXON_MAX_BULLETS:
                 exons.append(stripped[:EXON_BULLET_MAX_CHARS])
                 bullets += 1
@@ -147,10 +147,12 @@ def extract_l3_links(
     source_file: Path, section_text: str, layer_root: Path
 ) -> list[dict[str, Any]]:
     """Discover path-contained L3 substrate files referenced by Markdown links or receipts."""
-    raw_refs = [m.group(2).split("#")[0].strip() for m in MD_LINK_RE.finditer(section_text)]
-    raw_refs.extend(m.group(1).strip() for m in BACKTICK_PATH_RE.finditer(section_text))
-    for cm in CITATION_RECEIPT_REF_RE.finditer(section_text):
-        raw_refs.extend((f"layers/{cm.group(1)}/{cm.group(2)}", cm.group(2)))
+    raw_refs = [
+        target.partition("#")[0].strip() for _lbl, target in extract_markdown_links(section_text)
+    ]
+    raw_refs.extend(p.strip() for p in extract_inline_code_paths(section_text))
+    for layer_id, rel_p in extract_citation_receipt_refs(section_text):
+        raw_refs.extend((f"layers/{layer_id}/{rel_p}", rel_p))
     seen, links, root_resolved = set[str](), list[dict[str, Any]](), layer_root.resolve()
     for ref in raw_refs:
         if not ref or ref.startswith(("http://", "https://", "mailto:")):

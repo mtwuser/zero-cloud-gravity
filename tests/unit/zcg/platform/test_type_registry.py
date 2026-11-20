@@ -6,6 +6,7 @@ Specification: docs/architecture/01_core_and_node_manifest.md
 from __future__ import annotations
 
 from zcg.platform.type_registry import (
+    PATTERN_VALIDATORS,
     CanonicalTypeRegistry,
     FieldAnalysis,
     SemanticMapper,
@@ -44,6 +45,21 @@ class TestTypeRegistry:
         assert entropy == 2.0
         assert detect_positional_anchors(("only-one",)) == ()
         assert anchors == ((2, "-"),)
+        validators = dict(PATTERN_VALIDATORS)
+        assert validators[StructuralPattern.UUID]("550e8400-e29b-41d4-a716-446655440000") is True
+        assert validators[StructuralPattern.UUID]("short") is False
+        assert validators[StructuralPattern.UUID]("zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz") is False
+        assert validators[StructuralPattern.EMAIL]("ops@example.org") is True
+        assert validators[StructuralPattern.EMAIL]("bad email@example.org") is False
+        assert validators[StructuralPattern.URL]("https://node.localhost/status") is True
+        assert validators[StructuralPattern.URL]("ftp://node.localhost") is False
+        assert validators[StructuralPattern.ISO_TIMESTAMP]("2026-11-10T22:00:00Z") is True
+        assert validators[StructuralPattern.ISO_TIMESTAMP]("short") is False
+        assert validators[StructuralPattern.ISO_TIMESTAMP]("9999-99-99T99:99:99") is False
+        assert validators[StructuralPattern.IPV4]("192.168.1.1") is True
+        assert validators[StructuralPattern.IPV4]("999.999.999.999") is False
+        assert validators[StructuralPattern.HEXADECIMAL]("0123456789abcdef") is True
+        assert validators[StructuralPattern.HEXADECIMAL]("short") is False
 
     def test_registry_pattern_match_and_cardinality_cut_points_expected(self) -> None:
         """Verify high/low cardinality gating, pattern override, and custom rule registration."""

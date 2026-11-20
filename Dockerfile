@@ -1,5 +1,5 @@
-# ZeroCloudGravity v1.0.1 — Hardened Non-Root Contextual MCP Container (Ubuntu 24.04)
-FROM ubuntu:24.04
+# ZeroCloudGravity — Hardened Non-Root Contextual MCP Container (Ubuntu 26.04 LTS · Python 3.14)
+FROM ubuntu:26.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -26,6 +26,7 @@ COPY system ./system
 COPY templates ./templates
 COPY antigravity ./antigravity
 COPY docs ./docs
+COPY scripts ./scripts
 COPY src ./src
 
 RUN python3 -m venv /opt/zcg-venv \

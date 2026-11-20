@@ -5,25 +5,26 @@ Specification: docs/architecture/06_web_and_api_application_engine.md
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Final
 
-from zcg.web.channels import build_swap_response_headers
-from zcg.web.components import render_card, render_item_list, render_kpi_stat, render_table
-from zcg.web.probes import HeartbeatJitterTracker, SamplingCadenceCalculator
-from zcg.web.request import Request, WebResponse, respond
-from zcg.web.resilience import BulkheadIsolationGuard, ContextLoadSnapshot
-from zcg.web.router import APIRouter
-from zcg.web.security import ErrorAction, ErrorSeverity, WebAppError
-from zcg.web.telemetry import (
+from zcg.web.auth.security import ErrorAction, ErrorSeverity, WebAppError
+from zcg.web.http.channels import build_swap_response_headers
+from zcg.web.http.request import Request, WebResponse, respond
+from zcg.web.http.router import APIRouter
+from zcg.web.ops.probes import HeartbeatJitterTracker, SamplingCadenceCalculator
+from zcg.web.ops.resilience import BulkheadIsolationGuard, ContextLoadSnapshot
+from zcg.web.ops.telemetry import (
     EndpointTelemetryInput,
     RouteSignalCollector,
     RuntimeTelemetryScorer,
     TelemetryAuditDAG,
     TelemetryGrade,
 )
-from zcg.web.templates import SafeHTML
+from zcg.web.ui.components import render_card, render_item_list, render_kpi_stat, render_table
+from zcg.web.ui.templates import SafeHTML
 
 DEFAULT_TELEMETRY_PREFIX: Final[str] = "/api/telemetry"
 DEFAULT_CADENCE_CYCLE_SECONDS: Final[float] = 2.0
@@ -52,6 +53,7 @@ def create_telemetry_router(
     jitter_tracker: HeartbeatJitterTracker | None = None,
     bulkhead: BulkheadIsolationGuard | None = None,
     cadence: SamplingCadenceCalculator | None = None,
+    security_posture_provider: Callable[[], Mapping[str, Any]] | None = None,
     prefix: str = DEFAULT_TELEMETRY_PREFIX,
 ) -> APIRouter:
     """Create a domain-neutral Runtime Telemetry, Cadence Probe, and Audit DAG APIRouter."""
@@ -78,10 +80,24 @@ def create_telemetry_router(
         route_rows = [
             {"route": r_name, **metrics} for r_name, metrics in eff_signals.route_summary().items()
         ]
+        flows = eff_signals.flow_partition_summary()
+        posture_doc = (
+            dict(security_posture_provider()) if security_posture_provider is not None else None
+        )
+        posture_kpi = (
+            render_kpi_stat(
+                label="Security Posture",
+                value=f"{posture_doc.get('score', 0)}/100",
+                delta=str(posture_doc.get("grade") or ""),
+            ).value
+            if posture_doc is not None
+            else ""
+        )
         body_html = SafeHTML(
             render_kpi_stat(label="Regime", value=rep.regime.value, delta=f"{rep.score:.1f}").value
             + render_kpi_stat(label="Bulkhead", value=bh_dec.status.value).value
             + render_kpi_stat(label="Audit DAG", value=str(len(nodes))).value
+            + posture_kpi
             + render_table(
                 columns=(
                     ("route", "Route"),
@@ -113,6 +129,8 @@ def create_telemetry_router(
                 "bulkhead_status": bh_dec.status.value,
                 "decisions_count": len(nodes),
                 "integrity_verified": integrity_ok,
+                "flow_partitions": flows,
+                "security_posture": posture_doc,
                 "routes": eff_signals.route_summary(),
             },
         )

@@ -94,6 +94,7 @@ def render_layer_makefile(
     purpose: str | None = None,
     has_plugin_stack: bool | None = None,
     allow_external_links: bool = True,
+    extra_search_roots: Sequence[Path] = (),
 ) -> str:
     """Render a composable Zero-Cloud Node Makefile scoped by Purpose x Role x Active Stacks."""
     ep_res, rd_res = effective_parent.resolve(), repo_dir.resolve()
@@ -111,7 +112,7 @@ def render_layer_makefile(
         purpose=purpose,
         has_plugin_stack=has_plugin_stack,
         allow_external_links=allow_external_links,
-        search_roots=(effective_parent, repo_dir, constants.REPO_DIR),
+        search_roots=(*extra_search_roots, effective_parent, repo_dir, constants.REPO_DIR),
     )
     phony, help_l = " ".join(["help", *sel]), "\n".join(f'\t@echo "  make {t}"' for t in sel)
     recipes = "\n".join(f"{t}:\n{constants.LAYER_MAKEFILE_RECIPES[t]}" for t in sel)
@@ -247,17 +248,12 @@ def sync_workspace_makefile(
         is_gen = not cur_mk or cur_mk.startswith(constants.MAKEFILE_ROLE_HEADER_PREFIX)
         desired = (
             render_layer_makefile(
-                layer_id,
-                layer_role,
-                effective_parent,
-                repo_dir,
-                active_templates=active_templates,
-                purpose=purpose,
-                has_plugin_stack=has_plugin_stack,
-                allow_external_links=allow_external_links,
-            )
-            + c_tail
-        )
+                layer_id, layer_role, effective_parent, repo_dir,
+                active_templates=active_templates, purpose=purpose,
+                has_plugin_stack=has_plugin_stack, allow_external_links=allow_external_links,
+                extra_search_roots=(target_dir,),
+            ) + c_tail
+        )  # fmt: skip
     upgraded = is_gen and cur_mk != desired
     if upgraded:
         files_written.append("Makefile")

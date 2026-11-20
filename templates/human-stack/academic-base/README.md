@@ -10,17 +10,17 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 | Attribute | Canonical Value | Verification & Runtime Role |
 | :--- | :--- | :--- |
-| **`id`** | `academic-base` | Pedagogical persona in `VALID_HUMAN_STACK_IDS` (`constants.py`) |
+| **`id`** | `academic-base` | Pedagogical persona in `CANONICAL_STARTER_TEMPLATES` (`src/zcg/core/constants.py`) |
 | **`stack_group`** | `human-stack` | Cognitive & Epistemic Persona Axis |
 | **`tier`** | `1` (`Domain Persona`) | Mounted via `.agents/rules/academic-base.md` or `--profile academic-base` |
-| **`extends`** | `["universal-base"]` | Inherits all 13 universal mandates from `universal-base` |
+| **`extends`** | `"universal-base"` | Inherits all 13 universal mandates from `universal-base` |
 | **`rules_file`** | [`rules/academic-base.md`](rules/academic-base.md) | Socratic `M1..M4` scaffolding, `verify-mastery`, and anti-spoiler gates |
 
 ---
 
 ## 2. Core Pedagogical Invariants
 
-The `academic-base` rule corpus enforces structured mastery across study workspaces (such as `alex-tutor`):
+The `academic-base` rule corpus enforces structured mastery across study workspaces (such as `<persona>-tutor`):
 
 1. **Progressive Cognitive Scaffolding (`M1 -> M4`)**: Guide learners from `M1` (Intuition & Mental Model) $\rightarrow$ `M2` (Guided Application) $\rightarrow$ `M3` (Edge-Case & Boundary Synthesis) $\rightarrow$ `M4` (Autonomous Mastery Verification).
 2. **Socratic Anti-Spoiler Gate**: Formulate targeted diagnostic prompts and worked partial examples before revealing full closed-form solutions during active study sessions.

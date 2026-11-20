@@ -6,7 +6,7 @@
 
 ## Zero-Build HTML5 Cockpit Accessibility Contract
 
-All five role-default `plugin-stack` cockpits rendered by [surfaces.py](src/zcg/cockpit/surfaces.py) comply with **WCAG 2.2 Level AA** standards:
+All seven role-default `plugin-stack` cockpits rendered by [surfaces.py](src/zcg/cockpit/views/surfaces.py) comply with **WCAG 2.2 Level AA** standards:
 
 | Accessibility Dimension | Concrete Implementation |
 | :--- | :--- |

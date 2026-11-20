@@ -77,6 +77,7 @@ def discover_network_topology(
         )
     )
     nodes: dict[str, dict[str, Any]] = {}
+    local_ports: dict[str, int] = {}
     raw_reg: dict[str, Any] = (
         rr if isinstance(rr := m.get("public_knowledge_registry"), dict) else {}
     )
@@ -85,6 +86,8 @@ def discover_network_topology(
         cm = load_node_manifest(cd)
         cid_m = resolve_node_entity_identity(cd, cm)
         nid = str(cid_m["layer_id"])
+        cd_prec = int(cid_m["precedence"])
+        local_ports[nid] = int(cm.get("cockpit_port") or (DEFAULT_PLUGIN_BASE_PORT + cd_prec))
         same_org_twin = cid_m["governing_root_id"] == gov_root or nid in raw_reg
         if (
             cid_m["is_knowledge_node"]
@@ -180,19 +183,27 @@ def discover_network_topology(
             ln_rel = raw_rel if raw_rel in VALID_NODE_LINK_RELATIONS else "lateral-peer"
             ln_role = str(ln.get("layer_role") or "project").strip()
             ln_prec = int(ln.get("precedence", ROLE_DEFAULT_PRECEDENCE.get(ln_role, 80)))
+            loc_p = local_ports.get(ln_id)
             def_ln_url = (
-                ""
+                (f"http://127.0.0.1:{loc_p}" if loc_p else "")
                 if ln_rel == "knowledge-feed"
-                else f"http://127.0.0.1:{DEFAULT_PLUGIN_BASE_PORT + ln_prec}"
+                else f"http://127.0.0.1:{loc_p or (DEFAULT_PLUGIN_BASE_PORT + ln_prec)}"
             )
             ln_url = str(ln.get("cockpit_url") or def_ln_url).strip()
+            raw_tref = str(ln.get("target_ref") or "").strip()
+            reg_pub = str((pub_reg.get(ln_id) or {}).get("public_url") or "").strip()
+            ln_pub = (
+                raw_tref.rstrip("/").removesuffix(".git")
+                if raw_tref.startswith(("https://", "http://"))
+                else reg_pub
+            )
             ln_packs = [str(p).strip() for p in (ln.get("shared_packs") or []) if str(p).strip()]
             linked_nodes.append(
                 {
                     "node_id": ln_id, "relation": ln_rel, "layer_role": ln_role,
-                    "precedence": ln_prec, "cockpit_url": ln_url,
-                    "target_ref": str(ln.get("target_ref") or ""),
-                    "shared_packs": ln_packs, "hierarchy_relation": f"linked:{ln_rel}",
+                    "precedence": ln_prec, "cockpit_url": ln_url, "public_url": ln_pub,
+                    "target_ref": raw_tref, "shared_packs": ln_packs,
+                    "hierarchy_relation": f"linked:{ln_rel}",
                 }
             )  # fmt: skip
     depts = sorted(

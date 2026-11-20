@@ -9,7 +9,6 @@ from __future__ import annotations
 import ast
 import contextlib
 import json
-import re
 import shutil
 import subprocess
 import sys
@@ -56,6 +55,16 @@ def resolve_effective_workspaces(
     return effective
 
 
+def _line_has_standalone_marker(line: str, marker: str) -> bool:
+    stripped = line.lstrip()
+    if not stripped.startswith(marker):
+        return False
+    rest = stripped[len(marker) :]
+    return not (rest and (rest[0].isalnum() or rest[0] == "_")) and not rest.lstrip().startswith(
+        "&"
+    )
+
+
 def check_universal_python_structure(py_files: list[str]) -> list[str]:
     """Enforce < 465-line cap, 0-byte __init__.py, AAA test markers, and 1:1:1 spec headers."""
     violations: list[str] = []
@@ -86,7 +95,10 @@ def check_universal_python_structure(py_files: list[str]) -> list[str]:
             missing_aaa = [
                 m
                 for m in ("# Arrange", "# Act", "# Assert")
-                if any(not re.search(rf"(?m)^\s*{re.escape(m)}\b(?!\s*&)", b) for b in blocks)
+                if any(
+                    not any(_line_has_standalone_marker(ln, m) for ln in b.splitlines())
+                    for b in blocks
+                )
             ]
             if missing_aaa:
                 violations.append(

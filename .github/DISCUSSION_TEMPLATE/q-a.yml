@@ -4,7 +4,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Ask an architectural or operational question about **ZeroCloudGravity (`zero-cloud-gravity`)**. Please use ISO-neutral examples (`corp-iso-root`, `squad-iso`, `alex-pc`) and omit credentials, OAuth tokens, or private paths.
+        Ask an architectural or operational question about **ZeroCloudGravity (`zero-cloud-gravity`)**. Please use ISO-neutral examples (`corp-iso-root`, `squad-iso`, `persona-profile`) and omit credentials, OAuth tokens, or private paths.
   - type: dropdown
     id: subsystem
     attributes:
@@ -15,7 +15,7 @@ body:
         - "Sovereign Node Manifests, N-Layer Topology & Links (system/zcg-node.json, src/zcg/{core,topology,governance}/)"
         - "Native Python 3.14 ASGI Web Engine & Node Cockpits (src/zcg/{web,cockpit}/)"
         - "Contextual MCP Server, rcap1 Merkle Capsules & Ephemeral Bots (src/zcg/{capsules,ephemeral,mcp}/)"
-        - "Declarative Stack Packs (templates/{human,context,framework,plugin}-stack/)"
+        - "Declarative Stack Packs (templates/{human,context,tool,plugin}-stack/)"
         - "Public Knowledge Corpora & Epistemic Rigor (gov-*, geo-*, sci-*, org-*)"
         - "General Architecture & Horizon Roadmap"
     validations:

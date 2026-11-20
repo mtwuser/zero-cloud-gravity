@@ -1,6 +1,6 @@
 ---
 name: secops-mcp-orchestration
-description: "Orchestrate Fixed departmental MCPs and spawn Autonomous vs. Actionable Ephemeral Security MCPs across 1-framework and multi-framework layers"
+description: "Orchestrate Fixed departmental MCPs and spawn Autonomous vs. Actionable Ephemeral Security MCPs across single-stack and multi-stack 4-group {human,context,tool,plugin}-stack layers"
 ---
 # Skill: Pure-Bot Security Department MCP Orchestration (`secops-mcp-orchestration`)
 

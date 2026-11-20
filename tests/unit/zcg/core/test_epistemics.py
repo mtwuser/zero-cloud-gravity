@@ -20,6 +20,7 @@ class TestEpistemics:
         # Arrange
         ws = tmp_path / "ws"
         (ws / ".agents").mkdir(parents=True)
+        (ws / "README.md").write_text("# Readme without human stack\n", encoding="utf-8")
         parent = tmp_path / "parent"
         (parent / "system").mkdir(parents=True)
         home = tmp_path / "home"
@@ -50,7 +51,8 @@ class TestEpistemics:
 
         # SESSION.md overrides README.md
         (ws / "README.md").write_text(
-            "- **Human-Stack Profile**: domain-maths:M1\n", encoding="utf-8"
+            "# Overview\nUnrelated: ignored\n- **Human-Stack Profile**: domain-maths:M1\n",
+            encoding="utf-8",
         )
         assert epistemics.resolve_effective_human_stack(ws)["scope"] == "layer-blueprint"
         (ws / ".agents/SESSION.md").write_text(
@@ -70,7 +72,17 @@ class TestEpistemics:
         assert res_home["language_scope"] == "workstation-home"
 
         no_match_home = tmp_path / "home2"
-        no_match_home.mkdir()
+        (no_match_home / ".gemini/config").mkdir(parents=True)
+        (no_match_home / ".gemini/config/AGENTS.md").write_text("# No marker\n", encoding="utf-8")
+        assert (
+            epistemics.resolve_effective_interaction_language(ws, home_dir=no_match_home)[
+                "language_scope"
+            ]
+            == "default-en"
+        )
+        (no_match_home / ".gemini/config/AGENTS.md").write_text(
+            "Interaction Language: Invalid (BAD)\n", encoding="utf-8"
+        )
         assert (
             epistemics.resolve_effective_interaction_language(ws, home_dir=no_match_home)[
                 "language_scope"
@@ -105,7 +117,8 @@ class TestEpistemics:
         c_branch = epistemics.classify_knowledge_domain("sci-physics", "knowledge")
         c_custom_sci = epistemics.classify_knowledge_domain("sci-quantum-computing", "knowledge")
         c_gov = epistemics.classify_knowledge_domain("gov-es", "knowledge")
-        c_pub = epistemics.classify_knowledge_domain("pub-alex", "knowledge")
+        c_org = epistemics.classify_knowledge_domain("org-alpha", "knowledge")
+        c_pub = epistemics.classify_knowledge_domain("pub-persona", "knowledge")
         c_custom_know = epistemics.classify_knowledge_domain("atlas-core", "knowledge")
         c_std = epistemics.classify_knowledge_domain("dept-ops", "department")
 
@@ -134,9 +147,10 @@ class TestEpistemics:
         assert c_branch["granularity"] == "branch-repository"
         assert c_custom_sci["canonical_trunk"] == "custom-science"
         assert c_gov["knowledge_domain"] == "jurisdictional-normative"
-        assert c_pub["knowledge_domain"] == "personal-sovereign-public"
-        assert c_pub["default_entity_kind"] == "individual"
-        assert c_pub["default_epistemic_grade"] == "E1"
+        assert c_org["knowledge_domain"] == "organizational-operational"
+        assert c_org["default_entity_kind"] == "enterprise"
+        assert c_org["default_epistemic_grade"] == "E2"
+        assert c_pub["prefix"] is None and c_pub["knowledge_domain"] == "custom-knowledge"
         assert c_custom_know["knowledge_domain"] == "custom-knowledge"
         assert c_std["knowledge_domain"] is None and c_std["default_stack_templates"] == []
         assert ep_local["resolution_mode"] == "local-mcp-clone"
@@ -145,3 +159,4 @@ class TestEpistemics:
         assert ep_pub["stewardship_stage"] == "public-community"
         assert ep_sov["active_endpoint"] == "https://gov.example/iso.git"
         assert ep_infer_pub["stewardship_stage"] == "public-community"
+        assert set(epistemics.PROFILE_TEMPLATE_CHAIN) == set(epistemics.VALID_GLOBAL_PROFILES)

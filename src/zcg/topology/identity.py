@@ -8,7 +8,6 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
-import re
 from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
@@ -35,16 +34,25 @@ from zcg.core.epistemics import classify_knowledge_domain
 from zcg.core.manifests import is_oss_root_manifest, load_node_manifest
 
 
+def _extract_makefile_parent_dir(makefile_text: str) -> str:
+    return next((
+        rhs.strip() for lhs, sep, rhs in (ln.partition("?=") for ln in makefile_text.splitlines())
+        if sep and lhs.strip() in ("PARENT_DIR", "ZCG_PARENT_DIR") and rhs.strip()
+    ), "")  # fmt: skip
+
+
+def _extract_org_prefix(node_id: str) -> str:
+    return next((node_id.split(m, 1)[0] for m in ("-dept-", "-squad-") if m in node_id), "")
+
+
 def resolve_default_parent_dir(workspace_dir: Path, parent_dir: Path | None = None) -> Path | None:
     """Resolve an explicit, Makefile-configured, mounted, or sibling governing parent_dir."""
     if parent_dir is not None:
         return parent_dir.resolve()
     ws = workspace_dir.resolve()
     for mk in (ws / "Makefile", ws / PROJECT_ZCG_MK_REL_PATH):
-        if mk.is_file() and (
-            m := re.search(r"^(?:ZCG_)?PARENT_DIR\s*\?=\s*(.+)$", mk.read_text("utf-8"), re.M)
-        ):
-            cand = Path(m.group(1).strip())
+        if mk.is_file() and (raw_parent := _extract_makefile_parent_dir(mk.read_text("utf-8"))):
+            cand = Path(raw_parent)
             if cand.is_dir() and cand.resolve() != ws and (cand / NODE_MANIFEST_REL_PATH).is_file():
                 return cand.resolve()
     if ws.parent.name == "layers" and (ws.parent.parent / NODE_MANIFEST_REL_PATH).is_file():
@@ -112,7 +120,7 @@ def resolve_node_entity_identity(
     is_ind_ws = (
         (lrole == "workstation" and lid not in OSS_WORKSTATION_IDS)
         or prec >= INDIVIDUAL_MIN_PRECEDENCE
-        or k_dom["default_entity_kind"] == "individual"
+        or lid.lower().startswith("pub-")
     )
     is_gov = 1 <= prec <= PUBLIC_GOV_MAX_PRECEDENCE or lid.lower().startswith(PUBLIC_GOV_PREFIXES)
     ek = (
@@ -137,12 +145,7 @@ def resolve_node_entity_identity(
             p_root = str(p_id["governing_root_id"] or pm.get("layer_id", eff_p.name))
             p_ek = str(p_id["entity_kind"])
 
-    org_pfx = re.split(r"-(?:dept|squad)-", lid)[0] if ("-dept-" in lid or "-squad-" in lid) else ""
-    up_org_pfx = (
-        re.split(r"-(?:dept|squad)-", up_lid)[0]
-        if ("-dept-" in up_lid or "-squad-" in up_lid)
-        else ""
-    )
+    org_pfx, up_org_pfx = _extract_org_prefix(lid), _extract_org_prefix(up_lid)
     conflict_pfx = bool(org_pfx and p_root and not p_root.startswith(org_pfx))
     is_root_ek = (
         lrole == "corporate"

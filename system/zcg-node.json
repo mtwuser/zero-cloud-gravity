@@ -16,23 +16,128 @@
   "mounted_layers_dir": "layers",
   "mounted_layers": [],
   "excluded_contexts": {
-    "web": [
-      "governance",
+    "core": [
       "topology",
-      "mcp",
       "capsules",
+      "ephemeral",
+      "web",
+      "platform",
+      "governance",
+      "plugins",
+      "providers",
       "cockpit",
-      "cli",
-      "ephemeral"
+      "mcp",
+      "cli"
+    ],
+    "topology": [
+      "capsules",
+      "ephemeral",
+      "web",
+      "platform",
+      "governance",
+      "plugins",
+      "providers",
+      "cockpit",
+      "mcp",
+      "cli"
+    ],
+    "ephemeral": [
+      "topology",
+      "web",
+      "platform",
+      "governance",
+      "plugins",
+      "providers",
+      "cockpit",
+      "mcp",
+      "cli"
+    ],
+    "capsules": [
+      "topology",
+      "ephemeral",
+      "web",
+      "platform",
+      "governance",
+      "plugins",
+      "providers",
+      "cockpit",
+      "mcp",
+      "cli"
+    ],
+    "web": [
+      "topology",
+      "capsules",
+      "ephemeral",
+      "platform",
+      "governance",
+      "plugins",
+      "providers",
+      "cockpit",
+      "mcp",
+      "cli"
     ],
     "platform": [
-      "governance",
       "topology",
-      "mcp",
       "capsules",
+      "ephemeral",
+      "governance",
+      "plugins",
+      "providers",
       "cockpit",
-      "cli",
-      "ephemeral"
+      "mcp",
+      "cli"
+    ],
+    "governance": [
+      "capsules",
+      "ephemeral",
+      "web",
+      "platform",
+      "plugins",
+      "providers",
+      "cockpit",
+      "mcp",
+      "cli"
+    ],
+    "plugins": [
+      "capsules",
+      "ephemeral",
+      "platform",
+      "providers",
+      "cockpit",
+      "mcp",
+      "cli"
+    ],
+    "providers": [
+      "capsules",
+      "ephemeral",
+      "web",
+      "platform",
+      "plugins",
+      "cockpit",
+      "mcp",
+      "cli"
+    ],
+    "cockpit": [
+      "capsules",
+      "ephemeral",
+      "mcp",
+      "cli"
+    ],
+    "mcp": [
+      "platform",
+      "plugins",
+      "providers",
+      "cockpit",
+      "cli"
+    ],
+    "cli": [
+      "capsules",
+      "ephemeral",
+      "web",
+      "platform",
+      "plugins",
+      "providers",
+      "mcp"
     ]
   },
   "default_stack_templates": [
@@ -44,14 +149,17 @@
     "scientific-methodology",
     "software-engineering",
     "corporate-operations",
+    "spatial-simulation",
     "nist-csf-security",
+    "self-hosted-container",
     "google-cloud-iac",
     "workstation-control-tower",
     "corporate-root-hub",
     "node-work-cockpit",
     "tutor-study-cockpit",
     "secops-mcp-guardian",
-    "knowledge-stewardship-portal"
+    "knowledge-stewardship-portal",
+    "sovereign-wallet-cockpit"
   ],
   "baseline_guardrails": [
     "Enforce 1:1:1 symmetry across docs/architecture, tests/unit, and src/zcg.",
@@ -85,7 +193,7 @@
       ],
       "canonical_templates": [],
       "invariants": [
-        "Preserve strict acyclic DAG layering (core -> topology -> governance -> cockpit -> capsules -> ephemeral -> mcp)."
+        "Preserve strict acyclic DAG layering (core -> {topology, capsules, web} -> {ephemeral, platform, governance} -> {mcp, plugins, providers} -> cockpit -> cli)."
       ]
     },
     {
@@ -163,5 +271,22 @@
     }
   },
   "federated_mcps": [],
+  "domain_governance": {
+    "canonical_domain": "zerocloudgravity.org",
+    "developer_domain": "zerocloudgravity.dev",
+    "local_dev_zone": "zero-cloud-gravity-workstation.localhost"
+  },
+  "network_egress_policy": {
+    "allowed_domains": [
+      "github.com",
+      "zerocloudgravity.org",
+      "zerocloudgravity.dev"
+    ]
+  },
+  "surface_access": {
+    "default_ring": "R3",
+    "protect_mutating_ops": true,
+    "protect_staging_portal": true
+  },
   "governing_root_id": "zero-cloud-gravity-workstation"
 }

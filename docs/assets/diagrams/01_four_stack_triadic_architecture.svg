@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 480" width="1100" height="480" role="img" aria-labelledby="t1 d1">
+  <title id="t1">ZeroCloudGravity 4-Stack Matrix and Triadic Node-Layer-Network Topology</title>
+  <desc id="d1">Blueprint diagram showing the four orthogonal stacks (human-stack, context-stack, tool-stack, plugin-stack) composed across the Lex Superior 0..100 Node, Layer, and Network hierarchy.</desc>
+  <defs>
+    <pattern id="bpGrid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#1e3a5f" stroke-width="0.8"/>
+    </pattern>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#081221"/>
+      <stop offset="100%" stop-color="#0d1f38"/>
+    </linearGradient>
+  </defs>
+  <rect width="1100" height="480" rx="12" fill="url(#bgGrad)"/>
+  <rect width="1100" height="480" rx="12" fill="url(#bpGrid)"/>
+  <rect x="12" y="12" width="1076" height="456" rx="8" fill="none" stroke="#2d5a88" stroke-width="1.5"/>
+
+  <text x="36" y="46" fill="#7dd3fc" font-family="ui-monospace,monospace" font-size="12" font-weight="700" letter-spacing="1.2">BLUEPRINT 01 · ORTHOGONAL 4-STACK ALGEBRA × TRIADIC TOPOLOGY (LEX SUPERIOR 0..100)</text>
+  <text x="36" y="68" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="14">Stateless Python 3.14 Engine Core (0 Runtime Deps · 113 Verified 1:1:1 Modules) Composed Across Sovereign Nodes</text>
+
+  <!-- Left Column: 4 Composable Stack Groups -->
+  <rect x="36" y="92" width="490" height="352" rx="8" fill="#0b192c" fill-opacity="0.82" stroke="#38bdf8" stroke-width="1.3"/>
+  <text x="54" y="118" fill="#38bdf8" font-family="ui-monospace,monospace" font-size="13" font-weight="700">AXIS X · 4 COMPOSABLE STACK GROUPS (19 PACKS)</text>
+
+  <rect x="54" y="134" width="454" height="68" rx="6" fill="#102642" stroke="#60a5fa" stroke-width="1"/>
+  <text x="70" y="156" fill="#93c5fd" font-family="ui-monospace,monospace" font-size="12" font-weight="700">1. human-stack (4) · Zero-Dependency Cognition &amp; Global Skills</text>
+  <text x="70" y="176" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">universal-base · academic-base · science-base · business-base (M1..M4)</text>
+  <text x="70" y="193" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="11">/sopen · /continue · /sclose · /review · /enrich · /architecture · /audit · /governance</text>
+
+  <rect x="54" y="212" width="454" height="68" rx="6" fill="#102642" stroke="#34d399" stroke-width="1"/>
+  <text x="70" y="234" fill="#6ee7b7" font-family="ui-monospace,monospace" font-size="12" font-weight="700">2. context-stack (6) · Normative Epistemic, Security &amp; Engineering Rigor</text>
+  <text x="70" y="254" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">academic-curriculum · scientific-methodology · software-engineering</text>
+  <text x="70" y="271" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="11">corporate-operations · spatial-simulation · nist-csf-security (E3&gt;E2&gt;E1&gt;E0)</text>
+
+  <rect x="54" y="290" width="454" height="68" rx="6" fill="#102642" stroke="#fbbf24" stroke-width="1"/>
+  <text x="70" y="312" fill="#fcd34d" font-family="ui-monospace,monospace" font-size="12" font-weight="700">3. tool-stack (2 + Isolated .zcg/tools/&lt;id&gt;/ Optional Providers)</text>
+  <text x="70" y="332" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">self-hosted-container · google-cloud-iac · zcg-skill-auditor · osv+bwrap</text>
+  <text x="70" y="349" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="11">calibrated-decisions + offline LiteRT · wallet-analytics · /mcp HTTP</text>
+
+  <rect x="54" y="368" width="454" height="62" rx="6" fill="#102642" stroke="#c084fc" stroke-width="1"/>
+  <text x="70" y="390" fill="#d8b4fe" font-family="ui-monospace,monospace" font-size="12" font-weight="700">4. plugin-stack (7) · Editable Native Python 3.14 ASGI Surfaces</text>
+  <text x="70" y="410" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">workstation · corporate-root · node-work · tutor · secops · knowledge · wallet</text>
+
+  <!-- Composition Bridge -->
+  <path d="M 526 268 L 570 268" stroke="#7dd3fc" stroke-width="2.2" stroke-dasharray="5 4"/>
+  <circle cx="548" cy="268" r="14" fill="#0f2942" stroke="#7dd3fc" stroke-width="1.5"/>
+  <text x="548" y="273" text-anchor="middle" fill="#7dd3fc" font-family="ui-monospace,monospace" font-size="14" font-weight="700">×</text>
+
+  <!-- Right Column: Triadic Topology -->
+  <rect x="574" y="92" width="490" height="352" rx="8" fill="#0b192c" fill-opacity="0.82" stroke="#34d399" stroke-width="1.3"/>
+  <text x="592" y="118" fill="#6ee7b7" font-family="ui-monospace,monospace" font-size="13" font-weight="700">AXIS Y · TRIADIC TOPOLOGY (NODE × LAYER × NETWORK)</text>
+
+  <rect x="592" y="134" width="454" height="72" rx="6" fill="#0f293a" stroke="#38bdf8" stroke-width="1.1"/>
+  <text x="608" y="156" fill="#7dd3fc" font-family="ui-monospace,monospace" font-size="12" font-weight="700">ROOT 0 SOVEREIGN GOVERNORS (PRECEDENCE 1..10 &amp; 90)</text>
+  <text x="608" y="176" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">Public Admin (1..4) · Enterprise Root 0 (:8710) · Personal Workstation (:8790)</text>
+  <text x="608" y="194" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="11">Declares domain_governance, SHA-256 plugin allowlist &amp; network_egress_policy</text>
+
+  <rect x="592" y="218" width="454" height="74" rx="6" fill="#0f293a" stroke="#34d399" stroke-width="1.1"/>
+  <text x="608" y="240" fill="#6ee7b7" font-family="ui-monospace,monospace" font-size="12" font-weight="700">1-HOP FUNCTIONAL, EPISTEMIC &amp; PERSONAL PILLARS (5..89)</text>
+  <text x="608" y="260" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">domain-policy (5) · knowledge (gov-*/sci-*/geo-* :8720) · department (15..45)</text>
+  <text x="608" y="278" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="11">Personal Pillars: &lt;p&gt;-profile (:8790) · tutor · work · wallet · security · game</text>
+
+  <rect x="592" y="304" width="454" height="62" rx="6" fill="#0f293a" stroke="#fbbf24" stroke-width="1.1"/>
+  <text x="608" y="326" fill="#fcd34d" font-family="ui-monospace,monospace" font-size="12" font-weight="700">DELIVERY SQUADS, PROJECTS &amp; rcap1 CAPSULE CONSULTATION (50..80)</text>
+  <text x="608" y="346" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">rcap1 L0/L1 (88.7% / 67.0% compaction in ~16 ms) · DMCP/GRCC zero-checkout Git</text>
+
+  <rect x="592" y="378" width="454" height="52" rx="6" fill="#132f28" stroke="#6ee7b7" stroke-width="1.1"/>
+  <text x="608" y="400" fill="#a7f3d0" font-family="ui-monospace,monospace" font-size="12" font-weight="700">TWO-WORLD RECONCILIATION GUARANTEE (0 ENGINE FORKS)</text>
+  <text x="608" y="418" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">zcg-sync &amp; make sync upgrade engine packs while preserving sovereign node rules</text>
+</svg>

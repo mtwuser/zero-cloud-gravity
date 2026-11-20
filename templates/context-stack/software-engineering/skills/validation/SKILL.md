@@ -33,9 +33,11 @@ Verify initial page rendering, cache-bypass reload, layout integrity, and CSS to
 | 1.1 | Navigate to URL | Page loads, no blank screen, no 500 |
 | 1.2 | Hard reload (Ctrl+Shift+R) | Same result on cache-bypass |
 | 1.3 | Visual scan | Layout correct, no broken elements, no overflow |
-| 1.4 | Framework chrome | Header/footer/nav visible (`data-zcg-surface="cockpit"` present on Zero-Cloud Cockpit/Plugin shell surfaces) |
-| 1.5 | CSS tokens | DevTools → Elements → verify CSS custom properties (`var(--zcg-*)`) active on elements |
-| 1.6 | Orientation & probes | Orientation markers (`data-zcg-view-indicator`) and `/healthz` liveness probe respond cleanly |
+| 1.4 | Framework chrome | Header/footer/nav visible (`data-zcg-surface="cockpit"` and contextual `data-surface-purpose` comprehension banner present across `/`, `/dashboard`, `/portal`, and `Wallet`) |
+| 1.5 | CSS tokens & canonical origins | DevTools → Elements → verify CSS custom properties (`var(--zcg-*)`) active and `100%` canonical `*.localhost` / domain origins (`0` raw `127.0.0.1` UI links) |
+| 1.6 | Orientation, posture & probes | Orientation markers (`data-zcg-view-indicator`) and `/healthz` confirm `layer_id` match, `security_posture_score: 100`, and `overlay_boot_status: "CLEAN"` |
+| 1.7 | `U1 ⊥ U2 ⊥ U3` chrome & scope uniqueness | Exactly `1` view heading (`<h1>` in `.zcg-stage-head`) with `0` repeated view headings inside `#zcg-capability-stage` / `[data-admin-panel]`, and exactly `1` global `.zcg-ws-scope` bar (`0` duplicate scope switchers inside fragments) |
+| 1.8 | `1:1` CLI disclosures & contextual gating | `CLI & Tracked Files` hints list strictly the active view's files/commands and canonical `[TASK/BKL/ROAD/VAL-NNN]` prefix; `0` staged-only `Gate [DEV..PRO]` pills on `direct` personal nodes and `0` `workstation-audit` hints on non-workstation nodes |
 
 ### 2.2. `V2` — Interaction Check
 
@@ -67,9 +69,9 @@ Inspect browser Console, Network XHR/fetch payloads, and DOM container hierarchy
 | Step | Action | What to verify |
 |------|--------|---------------|
 | 4.1 | Console tab open during ALL interactions | No errors (red), no unexpected warnings |
-| 4.2 | Network tab: XHR/fetch/HTMX requests | Correct request method, headers (`HX-Request: true` returning HTML partial fragment rather than full page), response format |
-| 4.3 | Network tab: status codes | 200/201 for success (or 286 to stop HTMX polling via `respond_poll`), 4xx for client errors, no 500s |
-| 4.4 | Elements tab: DOM after dynamic update | New element inside correct parent container via `hx-swap="innerHTML"` (never orphaned outside conditional grid wrapper) |
+| 4.2 | Network tab: native `zcg-swap.js` / XHR / fetch | Correct request method, partial swap & Double-Submit CSRF headers (`X-ZCG-Swap` / `HX-Request: true`, `X-ZCG-CSRF-Token`, `x-zcg-surface-ring`, `x-zcg-disclosure-tier`), response format |
+| 4.3 | Network tab: status codes | 200/201 for success (or 286 to stop polling via `respond_poll`), 401/403/429 on guarded ring/rate boundaries, no 500s |
+| 4.4 | Elements tab: DOM & island re-hydration | New element inside target container via `data-zcg-target` / `innerHTML` swap with `window.ZCGHydrator.hydrateAll` active (`0` inline `<script>` inside fragments; `WCAG 2.2 AA` tabular parity on `Zone.Z4` `SpatialLens` switches) |
 | 4.5 | Source attribution | External errors (browser extensions, 3rd-party) vs application code |
 
 > **Key heuristic**: If a JS error shows `<anonymous>:2:NNNNN` with minified
@@ -142,6 +144,8 @@ The table below maps frequent UI/DOM anti-patterns to the validation pass (`V1..
 | Browser extension console error | V4.1: error from `<anonymous>` source | Extension injects monitoring scripts | Verify in incognito mode |
 | Missing framework observability | V1.4: can't distinguish framework vs app HTML | No visual/DOM markers | Add data attributes + dev-mode overlay |
 | State loss on dynamic update | V3.4: URL state lost after partial update | Missing URL push on navigation | Push URL state on search/filter actions |
+| Duplicate shell heading / scope bar | V1.7: repeated `<h2>`/`<h3>` or second scope bar inside `#zcg-capability-stage` | Chrome hoisted to `.zcg-stage-head` without pruning child fragments | Apply UI Hoist `[WIRE] -> [CONSOLIDATE] -> [PRUNE]` (`U1 ⊥ U2 ⊥ U3`) |
+| Unscoped CLI hints or leaked stage gates | V1.8: shared CLI tuple across views or `Gate [DEV..PRO]` on `direct` personal nodes | Copy-pasted metadata tuple or ungated pipeline/host control | Drive hints from `1:1` per-view descriptors and gate by `(layer_role × promotion_pipeline × exposure_posture)` |
 
 ## 5. Validation Report Template
 

@@ -10,10 +10,10 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 | Attribute | Canonical Value | Verification & Runtime Role |
 | :--- | :--- | :--- |
-| **`id`** | `software-engineering` | Domain specialization in `VALID_CONTEXT_STACK_IDS` (`constants.py`) |
+| **`id`** | `software-engineering` | Domain specialization in `CANONICAL_STARTER_TEMPLATES` (`src/zcg/core/constants.py`) |
 | **`stack_group`** | `context-stack` | Domain Methodology & Practice Axis |
 | **`tier`** | `2` (`Domain Specialization`) | Materialized into `.agents/rules/software-engineering.md` via `zcg sync-layer` |
-| **`extends`** | `["science-base"]` | Transitively resolves `universal-base -> science-base -> software-engineering` |
+| **`extends`** | `"science-base"` | Transitively resolves `universal-base -> science-base -> software-engineering` |
 | **`rules_file`** | [`rules/software-engineering.md`](rules/software-engineering.md) | Strict typing, $M_{\text{cluster}}$ refactoring, AppSec/MCP-Sec, and `100%` unit coverage |
 
 ---
@@ -31,7 +31,7 @@ The `software-engineering` specialization governs all application, CLI, library,
 
 ## 3. Mounting & Cross-References
 
-Declare `software-engineering` in `system/zcg-node.json` under `stack_groups.context_stack` and synchronize the node:
+Declare `software-engineering` in `system/zcg-node.json` under `default_stack_templates` and synchronize the node:
 
 ```bash
 zcg sync-layer /path/to/software-node

@@ -10,10 +10,10 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 | Attribute | Canonical Value | Verification & Runtime Role |
 | :--- | :--- | :--- |
-| **`id`** | `universal-base` | Root identity in `VALID_HUMAN_STACK_IDS` (`constants.py`) |
+| **`id`** | `universal-base` | Root identity in `CANONICAL_STARTER_TEMPLATES` (`src/zcg/core/constants.py`) |
 | **`stack_group`** | `human-stack` | Cognitive & Epistemic Persona Axis |
 | **`tier`** | `0` (`Global Foundation`) | Always active at the top of `~/.gemini/config/AGENTS.md` |
-| **`extends`** | `[]` (`Root`) | Base of the DAG (`academic-base`, `science-base`, `business-base` extend it) |
+| **`extends`** | `null` (`Root`) | Base of the DAG (`academic-base`, `science-base`, `business-base` extend it) |
 | **`rules_file`** | [`rules/universal-base.md`](rules/universal-base.md) | 13 behavioral mandates + universal commit & priority-chain governance |
 
 ---
@@ -37,8 +37,8 @@ The `universal-base` rule corpus establishes the 13 non-negotiable operational l
 Activate `universal-base` as the global workstation profile or inspect its full specification in the reference catalog:
 
 ```bash
-zcg set-global-profile universal-base --lang es --workstation-dir "$HOME/alex-pc"
+zcg set-global-profile universal-base --lang es --workstation-dir "$HOME/<persona>-profile"
 ```
 
 - **Catalog Reference**: `docs/reference/01_stack_and_plugin_matrix.md`
-- **Workstation Guide**: `docs/guides/01_workstation_and_global_profiles.md`
+- **Workstation Guide**: `docs/guides/01_personal_workstation_and_day0_setup.md`

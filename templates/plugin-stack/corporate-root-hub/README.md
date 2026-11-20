@@ -1,6 +1,6 @@
 # `corporate-root-hub` (`plugin-stack`) — Tier 2 `Root 0` Enterprise Portfolio Hub Surface
 
-> Tier 2 runtime surface plugin extending `corporate-operations` for `Root 0` (`corporate_root`) hubs (`acme-root`), multi-node portfolio telemetry, and intranet cockpit generation.
+> Tier 2 runtime surface plugin extending `corporate-operations` for `Root 0` (`corporate`) hubs (`acme-root`), multi-node portfolio telemetry, and intranet cockpit generation.
 
 ---
 
@@ -21,9 +21,9 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 ## 2. Core Enterprise Hub Capabilities
 
-The `corporate-root-hub` plugin equips `corporate_root` repositories with cross-portfolio visibility and governance enforcement:
+The `corporate-root-hub` plugin equips `corporate` repositories with cross-portfolio visibility and governance enforcement:
 
-1. **Multi-Node Topology Aggregation**: Discovers and audits federated child nodes (`node` / `subnode`) registered in the corporate portfolio, aggregating `WORKROAD.md` and `WORKTASK.md` completion states.
+1. **Multi-Node Topology Aggregation**: Discovers and audits federated child nodes (`department` / `squad`) registered in the corporate portfolio, aggregating `WORKROAD.md` and `WORKTASK.md` completion states.
 2. **RBAC & Stage-Gate Enforcement**: Integrates `zcg manage-roster`, `zcg record-decision`, and `zcg check-env-promotion` into the hub's intranet cockpit (`zcg apply-project . --service-action activate` / `GET /dashboard`) with `ZCG_NO_BROWSER=1` headless safety.
 3. **1-Hop Directive Delegation (`zcg delegate-to-child` / `make delegate`)**: Dispatches bounded work directives from the corporate hub to child repositories with deterministic receipt tracking.
 
@@ -31,7 +31,7 @@ The `corporate-root-hub` plugin equips `corporate_root` repositories with cross-
 
 ## 3. Mounting & Cross-References
 
-Declare `corporate-root-hub` in `system/zcg-node.json` under `stack_groups.plugin_stack` and synchronize the hub:
+Declare `corporate-root-hub` in `system/zcg-node.json` under `default_stack_templates` and synchronize the hub:
 
 ```bash
 zcg sync-layer /path/to/corporate-hub

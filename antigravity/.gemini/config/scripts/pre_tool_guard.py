@@ -6,11 +6,11 @@ Specification: docs/architecture/03_governance_and_work_ledger.md
 
 from __future__ import annotations
 
+import ast
 import json
-import re
 import shlex
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 _FILE_WRITE_TOOLS = frozenset({"write_file", "edit_file"})
 _SEPARATOR_CHARS = frozenset(";&|()\n")
@@ -63,44 +63,138 @@ _MATERIALIZED_LAYER_RULE_MSG = (
     "Promote rule updates upward via 'zcg promote-from-project <dir> --source <file> "
     "--to-layer <layer-id> --create-pr'."
 )
-_MATERIALIZED_LAYER_RULE_RE = re.compile(r"(?:^|/)\.agents/rules/layer-\d{2}-[a-z0-9-]+\.md$")
-_MUTATING_GIT_RE = re.compile(
-    r"(?:^|[;&|(`]\s*|\$\(\s*|\n\s*)git\s+"
-    r"(?:(?:-[Cc]|--git-dir|--work-tree)\s+\S+\s+|-\S+\s+)*"
-    r"(?:add|commit|push|reset\s+--hard|clean\s+-[a-zA-Z]*f|subtree\s+(?:add|pull|push|merge))\b"
+_LAYER_RULE_PREFIX = "layer-"
+_LAYER_RULE_SUFFIX = ".md"
+_LAYER_RANK_DIGITS = 2
+_PYTHON_WRITE_ATTRS = frozenset(
+    {"write_text", "write_bytes", "open", "write", "move", "replace", "rename"}
 )
-_ALEMBIC_MUTATE_RE = re.compile(
-    r"(?:^|[;&|(`]\s*|\$\(\s*|\n\s*)(?:python[0-9.]*\s+-m\s+)?alembic\s+"
-    r"(?:-[cnxh]\s+\S+\s+|-\S+\s+)*(?:revision|upgrade|downgrade)\b"
-)
-_PYTHON_WRITE_CALL_RE = re.compile(
-    r"\b(?:write_text|write_bytes|open|write|copy\w*|move|replace|rename)\s*\("
-)
-_PYTHON_EXEC_CALL_RE = re.compile(
-    r"\b(?:os\.system|subprocess\.(?:run|call|check_call|check_output|Popen))\s*\("
-)
-_INLINE_PATH_TOKEN_RE = re.compile(r"['\"]([^'\"]+)['\"]")
-_SHELL_WRITE_FALLBACK_RE = re.compile(
-    r"(?:[0-9]*>>?|[0-9]*>\|?|&>>?|\btee\s+(?:-\S+\s+)*"
-    r"|\b(?:cp|mv|install)\s+(?:-\S+\s+)*\S+\s+|\bdd\s+[^;&|`\n]*?\bof=)"
-    r"\s*['\"]?([^\s'\";&|()`<>]+)"
-)
+_SUBPROCESS_EXEC_ATTRS = frozenset({"run", "call", "check_call", "check_output", "Popen"})
+
+
+def _is_materialized_layer_rule(norm: str) -> bool:
+    parts = PurePosixPath(norm).parts
+    if len(parts) < 3 or parts[-3:-1] != (".agents", "rules"):
+        return False
+    fname = parts[-1]
+    if not (fname.startswith(_LAYER_RULE_PREFIX) and fname.endswith(_LAYER_RULE_SUFFIX)):
+        return False
+    stem = fname.removeprefix(_LAYER_RULE_PREFIX).removesuffix(_LAYER_RULE_SUFFIX)
+    rank, sep, slug = stem.partition("-")
+    return (
+        bool(sep)
+        and len(rank) == _LAYER_RANK_DIGITS
+        and rank.isdigit()
+        and bool(slug)
+        and all(c.islower() or c.isdigit() or c == "-" for c in slug)
+    )
 
 
 def _classify_protected_path(raw_path: str) -> str | None:
     cleaned = raw_path.replace("\\", "/").strip().strip("'\"")
     while cleaned.startswith("./"):
-        cleaned = cleaned[2:]
+        cleaned = cleaned.removeprefix("./")
     norm = cleaned if cleaned.startswith("/") else f"/{cleaned}"
     if "/alembic/versions/" in norm and norm.endswith(".py"):
         return "alembic_file"
-    if _MATERIALIZED_LAYER_RULE_RE.search(norm):
+    if _is_materialized_layer_rule(norm):
         return "materialized_layer_rule"
     if norm.endswith("/__init__.py") and (
         "/tests/" in norm or ("/src/" in norm and "_framework/" not in norm)
     ):
         return "init_purity"
     return None
+
+
+def _extract_quoted_literals(text: str) -> list[str]:
+    literals: list[str] = []
+    quote = ""
+    buf: list[str] = []
+    escaped = False
+    for ch in text:
+        if escaped:
+            if quote:
+                buf.append(ch)
+            escaped = False
+        elif ch == "\\":
+            escaped = True
+        elif not quote and ch in ("'", '"'):
+            quote = ch
+            buf = []
+        elif ch == quote:
+            if buf:
+                literals.append("".join(buf))
+            quote = ""
+        elif quote:
+            buf.append(ch)
+    return literals
+
+
+def _analyze_python_inline_code(code: str) -> tuple[bool, bool, list[str]]:
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return True, True, _extract_quoted_literals(code)
+    has_write = False
+    has_exec = False
+    str_literals: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            str_literals.append(node.value)
+        elif isinstance(node, ast.Call):
+            fn = node.func
+            name = (
+                fn.id
+                if isinstance(fn, ast.Name)
+                else (fn.attr if isinstance(fn, ast.Attribute) else "")
+            )
+            owner = (
+                fn.value.id
+                if isinstance(fn, ast.Attribute) and isinstance(fn.value, ast.Name)
+                else ""
+            )
+            if name in _PYTHON_WRITE_ATTRS or name.startswith("copy"):
+                has_write = True
+            if (owner == "os" and name == "system") or (
+                owner == "subprocess" and name in _SUBPROCESS_EXEC_ATTRS
+            ):
+                has_exec = True
+    return has_write, has_exec, str_literals
+
+
+def _extract_command_substitutions(cmd: str) -> list[str]:
+    subs: list[str] = []
+    n = len(cmd)
+    idx = 0
+    open_len = len("$(")
+    while idx < n:
+        if cmd.startswith("$(", idx):
+            depth = 1
+            cur = idx + open_len
+            while cur < n and depth > 0:
+                if cmd.startswith("$(", cur):
+                    depth += 1
+                    cur += open_len
+                    continue
+                if cmd[cur] == "(":
+                    depth += 1
+                elif cmd[cur] == ")":
+                    depth -= 1
+                    if depth == 0:
+                        break
+                cur += 1
+            subs.append(cmd[idx + open_len : cur])
+            idx = cur + 1
+        elif cmd[idx] == "`":
+            end = cmd.find("`", idx + 1)
+            if end == -1:
+                subs.append(cmd[idx + 1 :])
+                break
+            subs.append(cmd[idx + 1 : end])
+            idx = end + 1
+        else:
+            idx += 1
+    return [s.strip() for s in subs if s.strip()]
 
 
 def _split_shell_segments(cmd: str) -> list[list[str]]:
@@ -157,12 +251,10 @@ def _extract_subshell_command(tokens: list[str]) -> str | None:
             tok == "-c" or (tok.startswith("-") and not tok.startswith("--") and tok.endswith("c"))
         ):
             return tokens[idx + 1]
-        if (
-            prog.startswith("python")
-            and tok == "-c"
-            and _PYTHON_EXEC_CALL_RE.search(tokens[idx + 1])
-        ):
-            return " ".join(_INLINE_PATH_TOKEN_RE.findall(tokens[idx + 1]))
+        if prog.startswith("python") and tok == "-c":
+            _, has_exec, str_literals = _analyze_python_inline_code(tokens[idx + 1])
+            if has_exec:
+                return " ".join(str_literals)
     return None
 
 
@@ -204,7 +296,8 @@ def _detect_protected_write_in_segment(
     raw_tokens: list[str], stripped_tokens: list[str]
 ) -> str | None:
     for idx, tok in enumerate(raw_tokens[:-1]):
-        if tok in _OUTPUT_REDIRECT_OPS and (hit := _classify_protected_path(raw_tokens[idx + 1])):
+        op = tok if tok in _OUTPUT_REDIRECT_OPS else tok.lstrip("0123456789")
+        if op in _OUTPUT_REDIRECT_OPS and (hit := _classify_protected_path(raw_tokens[idx + 1])):
             return hit
     if not stripped_tokens:
         return None
@@ -224,19 +317,23 @@ def _detect_protected_write_in_segment(
                 return hit
     elif prog.startswith("python") and "-c" in args:
         code = " ".join(args[args.index("-c") + 1 :])
-        if _PYTHON_WRITE_CALL_RE.search(code):
-            for candidate in _INLINE_PATH_TOKEN_RE.findall(code):
+        has_write, _, str_literals = _analyze_python_inline_code(code)
+        if has_write:
+            for candidate in str_literals:
                 if hit := _classify_protected_path(candidate):
                     return hit
     return None
 
 
 def _inspect_command_string(cmd: str) -> str | None:
-    has_cmd_subst = "$(" in cmd or "`" in cmd
+    for inner_cmd in _extract_command_substitutions(cmd):
+        if inner_hit := _inspect_command_string(inner_cmd):
+            return inner_hit
     try:
         segments = _split_shell_segments(cmd)
     except ValueError:
-        segments, has_cmd_subst = [], True
+        dequoted = cmd.replace("'", " ").replace('"', " ").replace("`", " ")
+        segments = _split_shell_segments(dequoted)
     for raw_seg in segments:
         seg = _strip_leading_env_and_wrappers(raw_seg)
         if (sub_cmd := _extract_subshell_command(seg)) and (
@@ -249,14 +346,6 @@ def _inspect_command_string(cmd: str) -> str | None:
             return "alembic"
         if write_hit := _detect_protected_write_in_segment(raw_seg, seg):
             return write_hit
-    if has_cmd_subst:
-        if _MUTATING_GIT_RE.search(cmd):
-            return "git"
-        if _ALEMBIC_MUTATE_RE.search(cmd):
-            return "alembic"
-        for match in _SHELL_WRITE_FALLBACK_RE.finditer(cmd):
-            if hit := _classify_protected_path(match.group(1)):
-                return hit
     return None
 
 

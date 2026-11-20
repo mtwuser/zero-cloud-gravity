@@ -12,7 +12,7 @@ class TestConstants:
     """Verify nominal constants, stack purity, and Google/Antigravity nomenclature."""
 
     def test_starter_templates_match_canonical_four_stack_matrix_expected(self) -> None:
-        """Verify starter template catalog equals the canonical 4 + 4 + 2 + 6 = 16 matrix."""
+        """Verify starter template catalog equals the canonical 4 + 6 + 2 + 7 = 19 matrix."""
         # Arrange
         expected_matrix = (
             "universal-base",
@@ -23,7 +23,9 @@ class TestConstants:
             "scientific-methodology",
             "software-engineering",
             "corporate-operations",
+            "spatial-simulation",
             "nist-csf-security",
+            "self-hosted-container",
             "google-cloud-iac",
             "workstation-control-tower",
             "corporate-root-hub",
@@ -31,6 +33,7 @@ class TestConstants:
             "tutor-study-cockpit",
             "secops-mcp-guardian",
             "knowledge-stewardship-portal",
+            "sovereign-wallet-cockpit",
         )
 
         # Act
@@ -38,7 +41,9 @@ class TestConstants:
 
         # Assert
         assert actual == expected_matrix
-        assert len(actual) == 16
+        assert len(actual) == 19
+        assert len(constants.BUILTIN_COCKPIT_PLUGINS) == 7
+        assert "secops-mcp-guardian" in constants.BUILTIN_COCKPIT_PLUGINS
         assert set(constants.BUILTIN_COCKPIT_PLUGINS).issubset(actual)
         assert constants.ROLE_DEFAULT_COCKPIT_PLUGIN["knowledge"] == "knowledge-stewardship-portal"
 
@@ -63,13 +68,22 @@ class TestConstants:
         assert "link" in constants.LAYER_MAKEFILE_RECIPES
         assert "unlink" in constants.LAYER_MAKEFILE_RECIPES
         assert "hr-process" in constants.VALID_NODE_LINK_RELATIONS
+        assert "co-sovereign-union" in constants.VALID_NODE_LINK_RELATIONS
         assert "venture" in constants.DEFAULT_CONTEXT_BRANCH_PREFIXES
         assert "project" in constants.VALID_LAYER_ROLES
-        assert "pub-" in constants.VALID_KNOWLEDGE_PREFIXES
-        assert constants.KNOWLEDGE_DOMAIN_TAXONOMY["pub-"]["default_entity_kind"] == "individual"
+        assert constants.PUBLIC_GOV_PREFIXES == ("gov-", "geo-")
+        assert constants.VALID_KNOWLEDGE_PREFIXES == ("gov-", "sci-", "geo-", "org-")
+        assert "pub-" not in constants.KNOWLEDGE_DOMAIN_TAXONOMY
         assert "economic" in constants.CANONICAL_SCIENCE_TRUNKS["social"]
         assert "sci-economic" in constants.DEFAULT_PUBLIC_KNOWLEDGE_REGISTRY
         assert "lint-skills" in constants.CONSUMER_ALLOWED_OPS
         assert "check-handoff" in constants.CONSUMER_ALLOWED_OPS
+        assert "scaffold-web-app" in constants.CONSUMER_ALLOWED_OPS
         assert "install-plugin" in constants.MAINTAINER_ALLOWED_OPS
         assert "scaffold-plugin-module" in constants.MAINTAINER_ALLOWED_OPS
+        assert constants.TOOL_RUNTIME_REL_DIR == ".zcg/tools"
+        assert constants.SIDECAR_MANIFEST_REL_PATH == ".agents/sidecar.json"
+        assert constants.SIDECAR_MANIFEST_CONTRACT_REV == "zcg-sidecar-v1"
+        assert "tool-stack" in constants.CANONICAL_STACK_GROUP_DIRS
+        assert constants.TEMPLATE_STACK_GROUP_DIRS == constants.CANONICAL_STACK_GROUP_DIRS
+        assert constants.VALID_TEMPLATE_KINDS == constants.CANONICAL_STACK_GROUP_DIRS

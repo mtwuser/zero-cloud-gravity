@@ -10,7 +10,6 @@ import hashlib
 import json
 import os
 import platform
-import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -116,11 +115,12 @@ def parse_skill_frontmatter(skill_md: Path, repo_dir: Path | None = None) -> dic
     if lines and lines[0].strip() == "---":
         for idx in range(1, min(len(lines), MAX_SKILL_FRONTMATTER_LINES)):
             if lines[idx].strip() == "---":
-                fm = "\n".join(lines[1:idx])
-                if name_m := re.search(r"^name:\s*(.+)$", fm, re.MULTILINE):
-                    name = name_m.group(1).strip().strip("'\"")
-                if desc_m := re.search(r"^description:\s*(.+)$", fm, re.MULTILINE):
-                    description = desc_m.group(1).strip().strip("'\"")
+                fm_pairs = {
+                    k.strip(): v.strip().strip("'\"")
+                    for k, _, v in (ln.partition(":") for ln in lines[1:idx])
+                }
+                name = fm_pairs.get("name") or name
+                description = fm_pairs.get("description", "")
                 break
     return {
         "name": name,
@@ -259,8 +259,8 @@ def inspect_single_template_dir(
         if assets_dir.is_dir()
         else []
     )
-    raw_k = str(meta.get("kind", "framework-stack"))
-    eff_k = raw_k if raw_k in VALID_TEMPLATE_KINDS else "framework-stack"
+    raw_k = str(meta.get("kind", "tool-stack"))
+    eff_k = raw_k if raw_k in VALID_TEMPLATE_KINDS else "tool-stack"
     parent_grp = tpl_dir.parent.name if tpl_dir.parent.name in TEMPLATE_STACK_GROUP_DIRS else eff_k
     return {
         "template_name": tpl_dir.name, "source_layer": source_layer, "kind": eff_k,
@@ -270,6 +270,7 @@ def inspect_single_template_dir(
         "upstream_framework": meta.get("upstream_framework"),
         "runtime_service": meta.get("runtime_service"),
         "rules": rules, "skills": skills, "governance_files": gov, "assets": assets,
+        "associated_global_skills": [str(s) for s in meta.get("associated_global_skills", [])],
         "recommended_surface_bindings": list(meta.get("recommended_surface_bindings", [])),
     }  # fmt: skip
 
@@ -287,6 +288,29 @@ def discover_templates_catalog(
         for source_layer, ldir in search_targets
         for _tpl_name, tpl_dir in iter_layer_template_dirs(ldir)
     ]
+
+
+def collect_layer_effective_bindings(
+    layer_dir: Path, manifest: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Merge manifest surface_bindings with active template.json recommended_surface_bindings."""
+    effective, seen_ids = list[dict[str, Any]](), set[str]()
+    candidates = list(manifest.get("surface_bindings") or [])
+    for tpl_name in manifest.get("default_stack_templates", []):
+        tpl_dir = resolve_template_dir(Path(layer_dir), str(tpl_name))
+        meta_file = tpl_dir / "template.json" if tpl_dir is not None else None
+        if meta_file is not None and meta_file.is_file():
+            loaded = json.loads(meta_file.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                candidates.extend(loaded.get("recommended_surface_bindings", []))
+    for raw_b in candidates:
+        if isinstance(raw_b, dict):
+            bid = str(raw_b.get("binding_id", ""))
+            if not bid or bid not in seen_ids:
+                if bid:
+                    seen_ids.add(bid)
+                effective.append(raw_b)
+    return effective
 
 
 def canonicalize_local_node_url(
@@ -325,7 +349,8 @@ def canonicalize_local_node_url(
     eff_env = q_env or ("pro" if (is_pub_know and active_env == "pro") else active_env)
     clean_slug = clean_id.lower().removeprefix("corp-").removesuffix("-root") or clean_id.lower()
     raw_zone = local_dev_zone.strip().lower().strip(".")
-    zone_stem = raw_zone.removesuffix(".localhost")
+    raw_stem = raw_zone.removesuffix(".localhost")
+    zone_stem = "" if raw_stem == "localhost" else raw_stem
     ldz = f"{zone_stem}.localhost" if zone_stem else f"{clean_slug}.localhost"
     is_root = layer_role in ("corporate", "workstation") or zone_stem == clean_slug
     root_host = ldz if (zone_stem and zone_stem in clean_slug) else f"{clean_slug}.localhost"

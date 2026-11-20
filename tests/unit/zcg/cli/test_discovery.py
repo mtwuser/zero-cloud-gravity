@@ -15,7 +15,7 @@ import pytest
 from zcg.cli import discovery
 from zcg.cli.parser import CLIAuthorityBlockedError, CLIUsageError
 from zcg.core.constants import NODE_MANIFEST_REL_PATH
-from zcg.governance import scaffolder
+from zcg.governance.workspace import scaffolder
 
 
 class TestDiscovery:

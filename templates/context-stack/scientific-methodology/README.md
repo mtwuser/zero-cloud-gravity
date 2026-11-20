@@ -10,10 +10,10 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 | Attribute | Canonical Value | Verification & Runtime Role |
 | :--- | :--- | :--- |
-| **`id`** | `scientific-methodology` | Domain specialization in `VALID_CONTEXT_STACK_IDS` (`constants.py`) |
+| **`id`** | `scientific-methodology` | Domain specialization in `CANONICAL_STARTER_TEMPLATES` (`src/zcg/core/constants.py`) |
 | **`stack_group`** | `context-stack` | Domain Methodology & Practice Axis |
 | **`tier`** | `2` (`Domain Specialization`) | Materialized into `.agents/rules/scientific-methodology.md` via `zcg sync-layer` |
-| **`extends`** | `["science-base"]` | Transitively resolves `universal-base -> science-base -> scientific-methodology` |
+| **`extends`** | `"science-base"` | Transitively resolves `universal-base -> science-base -> scientific-methodology` |
 | **`rules_file`** | [`rules/scientific-methodology.md`](rules/scientific-methodology.md) | Formal hypothesis falsifiability, `E3..E0` corpus curation, `rcap1` capsules |
 
 ---
@@ -30,7 +30,7 @@ The `scientific-methodology` specialization governs research workspaces and foun
 
 ## 3. Mounting & Cross-References
 
-Declare `scientific-methodology` in `system/zcg-node.json` under `stack_groups.context_stack` and synchronize the node:
+Declare `scientific-methodology` in `system/zcg-node.json` under `default_stack_templates` and synchronize the node:
 
 ```bash
 zcg sync-layer /path/to/knowledge-node

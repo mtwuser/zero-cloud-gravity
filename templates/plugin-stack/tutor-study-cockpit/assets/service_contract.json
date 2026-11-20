@@ -2,7 +2,7 @@
   "service_id": "tutor-study-cockpit",
   "contract_version": "zcg-service-v1",
   "bind_host": "127.0.0.1",
-  "enabled_modules": ["crud", "vault", "node_mesh", "telemetry"],
+  "enabled_modules": ["work_ledger", "docs_reader", "crud", "vault", "spatial_atlas", "portal_inbox"],
   "data_scopes": ["node", "network", "federation"],
   "surfaces": [
     "surfaces/web/index.html",

@@ -1,0 +1,20 @@
+{
+  "schema_version": "zcg-upgrade-notes-v1",
+  "releases": [
+    {
+      "version": "1.2.0",
+      "reconciliation_level": "guided",
+      "title": "6-Pillar <persona>-profile Constellation, 4-Group Stack Taxonomy & Root 0 Mesh Governance",
+      "highlights": [
+        "Personal Root 0 standardized as <persona>-profile (:8790) across 6 personal pillars",
+        "4-group template taxonomy ({human,context,tool,plugin}-stack) and modular capabilities",
+        "Root 0 mesh_governance (full-mesh | hierarchical-only | curated-matrix) & .md auto-draft studio"
+      ],
+      "reconciliation_steps": [
+        "Run make status and make upstream-diff against our authoritative 1-hop upstream source.",
+        "Run make sync STRATEGY=reconcile so upstream rule updates stage non-destructively in .agents/proposals/from-upstream/ while keeping templates/<layer_id>/rules/<layer_id>.md intact.",
+        "Review any staged proposals, verify make diff (0 operational drift), and commit cleanly."
+      ]
+    }
+  ]
+}

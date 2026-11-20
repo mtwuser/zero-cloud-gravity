@@ -14,13 +14,15 @@ description: "Constructive work-lifecycle orchestration (roadmaps → WORKROAD �
 
 ### Promotion Flow
 
-Work flows strictly from left to right:
-`roadmaps/ → WORKROAD.md (or ROADMAP.md) / BACKLOG.md → WORKTASK.md → CHANGELOG.md`
+Work flows strictly from left to right with **4 canonical `1:1` ledger item prefixes**:
+`roadmaps/ → WORKROAD.md ([ROAD-NNN]) / BACKLOG.md ([BKL-NNN]) → WORKTASK.md ([TASK-NNN]) + WORKVALI.md ([VAL-NNN]) → CHANGELOG.md`
+
+- **Canonical `1:1` Ledger Prefixes**: Always tag entries with their tracker-owned prefix (`[TASK-NNN]` in `WORKTASK.md`, `[BKL-NNN]` in `BACKLOG.md`, `[ROAD-NNN]` in `WORKROAD.md`, and `[VAL-NNN]` in `WORKVALI.md`) so CLI tools, Kanban/tracker views, and cross-node proposals trace each item unambiguously to its source ledger.
 
 #### 1. Future Roadmap (`roadmaps/`) → Active Roadmap (`WORKROAD.md` / `ROADMAP.md`)
 - Select the next roadmap by priority number.
 - Execute **deep-analysis** before promotion according to the active `workspace_mode` (`make status` / `.agents/rules/*.md`):
-  - **Technical / Hybrid Mode (`software-engineering` / `framework-stack/*`)**: `1. Guides/Specs -> 2. Tests [E2E -> Imp -> Unit] -> 3. Code` (audit specs, tests, and code).
+  - **Technical / Hybrid Mode (`software-engineering` / `tool-stack/*` / `plugin-stack/*`)**: `0. 4-Layer Placement & Zero-Cloud Neutrality Gate (Core vs. Engine vs. Plugins vs. Providers) -> 1. Guides/Specs -> 2. Tests [E2E -> Imp -> Unit] -> 3. Code` (audit placement, specs, tests, and code in short consolidated lots).
   - **Business Mode (`business-base` / `context-stack/*` / `Root 0` / `Department`)**: `1. Normative Policies & Lex Superior (0..100) -> 2. Corporate Ledgers (corporate/), Modular Corpus (docs/) & Traceable IDs ([DEPT]-[TYPE]-[YYYY]-[NNN]) -> 3. Cross-Surface Contracts & Sign-Off Gates` (audit corporate ledgers, statutory/scientific corpora, policies, and downstream department/squad impact).
 - Enrich the roadmap with your findings, then promote its phase checklist to `WORKROAD.md`.
 
@@ -90,8 +92,8 @@ Match execution autonomy to the operation's cadence, consolidation level, and bl
 
 1. **Enforce the 1-Hop Horizon, Strict Intra-Workspace Subtree Containment (`layers/<child>/`) & Dual Authority Gate**:
    - `Root 0` (`corporate`) delivers exclusively to its immediate child `Department` / `domain-policy` layers mounted under `layers/<child-layer-id>/` (`Department` delivers to `Squad`). Never skip tiers and **never mutate or suggest `cd <sibling-repo> && git commit` on external sibling directories outside `<PROJECT_ROOT>`**.
-   - **Same-Owner Direct Subtree Mode (`delivery_mode: "direct_subtree"`)**: When the parent actor is also an authorized `owner` or `maintainer` of `layers/<child>/system/zcg-node.json`, `make delegate` updates `layers/<child>/<surface>` in place and emits `zcg subtree push <child> <branch>`.
-   - **Cross-Owner Proposal / PR Mode (`delivery_mode: "proposal_pr"`, `--create-pr` or `CROSS_OWNER_CHILD_DELEGATION`)**: When the parent actor is not an authorized owner/maintainer of the child layer (or `--create-pr` is passed), `make delegate` stages the directive or artifact non-destructively under `layers/<child>/.agents/proposals/from-<parent-id>/`, adds a `P0` review item in `layers/<child>/WORKTASK.md`, and emits `zcg subtree push <child> delegate/<TICKET-ID>` for child-owner PR review.
+   - **Same-Owner Direct Subtree Mode (`delivery_mode: "direct_subtree"`)**: When the parent actor is also an authorized `owner` or `maintainer` of `layers/<child>/system/zcg-node.json`, `make delegate` updates `layers/<child>/<surface>` in place and emits `git subtree push --prefix=layers/<child> <repo> <branch>`.
+   - **Cross-Owner Proposal / PR Mode (`delivery_mode: "proposal_pr"`, `--create-pr` or `CROSS_OWNER_CHILD_DELEGATION`)**: When the parent actor is not an authorized owner/maintainer of the child layer (or `--create-pr` is passed), `make delegate` stages the directive or artifact non-destructively under `layers/<child>/.agents/proposals/from-<parent-id>/`, adds a `P0` review item in `layers/<child>/WORKTASK.md`, and emits `git subtree push --prefix=layers/<child> <repo> delegate/<TICKET-ID>` for child-owner PR review.
 2. **Traceable Ticket Registration (`## Outbound Delegations`) & Non-Destructive Staging**:
    - **Trackers (`WORKTASK.md`, `BACKLOG.md`, `WORKROAD.md`, `ROADMAP.md`, `WORKVALI.md`)**: Appends a traceable directive (`- [ ] **[P1 · [<TICKET-ID>] · Delegated from '<parent-id>']**: ...`) into `layers/<child>/<tracker>` (or stages a proposal if cross-owner) and logs `- [/] **[<TICKET-ID> -> <child-id> (<surface>, stage: delegated)]**` under `## Outbound Delegations` in the parent's `WORKTASK.md`.
    - **Roadmaps, Corporate Ledgers & Rules (`roadmaps`, `corporate`, `rules`)**: Delivers `--source <rel-path>` into `layers/<child>/<surface>`. If the target file already exists and `--force` is not passed (or if cross-owner), stages non-destructively at `layers/<child>/.agents/proposals/from-<parent-id>/<file>` and adds a `P0` review item in `layers/<child>/WORKTASK.md`.
@@ -129,7 +131,8 @@ Match execution autonomy to the operation's cadence, consolidation level, and bl
      ```bash
      make promote SOURCE=<roadmaps/file.md|corporate/policy.md|WORKVALI.md|BACKLOG.md>
      ```
-3. **Isomorphic `dev -> tst -> pre -> pro` Promotion Gate & $N$-Departmental Surface Consensus (`make env-gate`)**:
+3. **Isomorphic `dev -> tst -> pre -> pro` Promotion Gate (`direct` vs. `staged`) & $N$-Departmental Surface Consensus (`make env-gate`)**:
+   - **Pipeline Applicability (`promotion_pipeline: "direct"` vs. `"staged"`)**: Nodes configured with `promotion_pipeline: "direct"` (such as personal workstations and private personal pillars) operate directly on their active branch without exposing staged `Gate [DEV..PRO]` pills in UI views; nodes configured with `promotion_pipeline: "staged"` (enterprise, software engineering, and public-staged nodes) enforce the progressive `dev -> tst -> pre -> pro` gates below and surface `environment_gates` in `Validations`.
    - Verifies stage readiness (`0` open `P0` in `WORKTASK.md` + `member` role for `tst`, `0` unchecked items in `WORKVALI.md` + `validator`/`owner` authority for `pre`, `CHANGELOG.md` + `owner` or internal parent `owner` overarching authority `UPSTREAM_HIERARCHICAL_AUTHORITY` for `pro`) and evaluates `evaluate_multilayer_surface_consensus` across all `co_owning_layers` matching `FILES`:
      - **`RECONCILED_FLOW`**: All $N$ co-owning layers satisfied $\rightarrow$ proceeds to `pre`/`pro`.
      - **`ITERATION_REQUIRED`** (`REJECTED`/`DEFERRED`/`PENDING`): Iterate on the same task branch in `dev`/`tst` and re-validate in `pre`.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.1.0) — Sovereign Zero-Cloud Antigravity Node Bootstrapper
+# ZeroCloudGravity (v1.2.0) — Sovereign Zero-Cloud Antigravity Node Bootstrapper
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,7 +24,7 @@ Bootstrap a ZeroCloudGravity workstation or sovereign node environment.
 Options:
   --profile <name>              Global profile: universal-base|academic-base|science-base|business-base|academic|science|technical|business|full
   --lang <code>                 Interaction language: en|es|it|fr|de|pt (default: en)
-  --workstation-dir <path>      Personal Root 0 workstation node path (auto-detected if ~/*-pc exists)
+  --workstation-dir <path>      Governing host node path (e.g. ~/<persona>-profile, ~/Work/<corp>-root, or ~/Work/dept-*; auto-detected if ~/*-profile exists)
   --auto-sync <mode>            Shell startup sync policy: boot|always|off (default: boot)
   --stow                        Stow antigravity/.gemini/config into $HOME and register zcg-mcp
   --install-antigravity <mode>  Install/update Google Antigravity: agents|cli|ide|all
@@ -114,7 +114,7 @@ if [[ ! -x "${VENV_DIR}/bin/python" ]]; then
 fi
 
 if [[ -z "${WORKSTATION_DIR}" ]]; then
-  for _cand in "${HOME}"/*-pc; do
+  for _cand in "${HOME}"/*-profile; do
     if [[ -f "${_cand}/system/zcg-node.json" ]]; then
       WORKSTATION_DIR="$(cd "${_cand}" && pwd)"
       break
@@ -133,6 +133,10 @@ fi
 if [[ "${RUN_STOW}" == "1" ]]; then
   if [[ "${DRY_RUN}" == "0" ]]; then
     STOW_ROOT="${WORKSTATION_DIR:-${REPO_DIR}}"
+    for _gf in AGENTS.md hooks.json; do
+      [[ -f "${HOME}/.gemini/config/${_gf}" ]] && [[ ! -L "${HOME}/.gemini/config/${_gf}" ]] &&
+        mv "${HOME}/.gemini/config/${_gf}" "${HOME}/.gemini/config/${_gf}.backup.$(date +%Y%m%d)" 2>/dev/null || true
+    done
     while IFS= read -r -d '' _sl; do
       _r_sl="$(readlink -f "${_sl}" 2>/dev/null || echo "")"
       if [[ ! -e "${_sl}" ]] || [[ "${_r_sl}" != "${STOW_ROOT}/"* ]]; then
@@ -183,3 +187,18 @@ if [[ -n "${INSTALL_AGY}" ]]; then
 fi
 
 echo "ZeroCloudGravity node initialized (profile=${PROFILE}, lang=${LANG_CODE}, dry_run=${DRY_RUN})."
+if [[ "${DRY_RUN}" == "0" ]]; then
+  echo ""
+  echo "Next steps (Zero-Friction Day-0 Setup):"
+  echo "  1. Optional — install Google Antigravity Agents / CLI:"
+  echo "       ${REPO_DIR}/scripts/install-antigravity.sh --agents"
+  if [[ -n "${WORKSTATION_DIR}" ]]; then
+    WS_ID="$(basename "${WORKSTATION_DIR}")"
+    echo "  2. Activate & open your Workstation Node Web Studio:"
+    echo "       zcg apply-project ${WORKSTATION_DIR} --service-action activate"
+    echo "       http://${WS_ID}.localhost:8790/"
+  else
+    echo "  2. Bootstrap your Personal Root 0 Profile (or couple any corporate/department host via --workstation-dir):"
+    echo "       zcg bootstrap-workspace ~/<persona>-profile --id <persona>-profile --purpose individual-sovereign"
+  fi
+fi

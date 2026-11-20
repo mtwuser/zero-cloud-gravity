@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 460" width="1100" height="460" role="img" aria-labelledby="t3 d3">
+  <title id="t3">ZeroCloudGravity Architectural Bridge from v1.2.0 Sovereign Engine to v2.0.0 Cryptographic Mesh</title>
+  <desc id="d3">Blueprint roadmap diagram connecting the v1.2.0 Spatial Atlas, Watch-Only Multi-Ring Treasury, and rcap1 Provenance engine to the v2.0.0 Ed25519 PublicationSeal, CoreInheritanceProof, HKDF-SHA256 Epoch Chains, and Sandboxed P2P Surfaces.</desc>
+  <defs>
+    <pattern id="bpGrid3" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#1e3a5f" stroke-width="0.8"/>
+    </pattern>
+    <linearGradient id="bgGrad3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#081221"/>
+      <stop offset="100%" stop-color="#0d1f38"/>
+    </linearGradient>
+  </defs>
+  <rect width="1100" height="460" rx="12" fill="url(#bgGrad3)"/>
+  <rect width="1100" height="460" rx="12" fill="url(#bpGrid3)"/>
+  <rect x="12" y="12" width="1076" height="436" rx="8" fill="none" stroke="#2d5a88" stroke-width="1.5"/>
+
+  <text x="36" y="46" fill="#7dd3fc" font-family="ui-monospace,monospace" font-size="12" font-weight="700" letter-spacing="1.2">BLUEPRINT 03 · SOVEREIGN EVOLUTION BRIDGE: v1.2.0 VERIFIED ENGINE -&gt; v2.0.0 CRYPTOGRAPHIC HORIZON</text>
+  <text x="36" y="68" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="14">Strict 3-Vector Orthogonality: Security AuthZ (R0..R3) ⊥ Epistemic Provenance (W_interaction) ⊥ Treasury Transparency (0% Plutocracy)</text>
+
+  <!-- Left Box: v1.2.0 Consolidated Sovereign Engine -->
+  <rect x="36" y="92" width="486" height="332" rx="8" fill="#0b192c" fill-opacity="0.86" stroke="#38bdf8" stroke-width="1.4"/>
+  <text x="54" y="118" fill="#38bdf8" font-family="ui-monospace,monospace" font-size="13" font-weight="700">v1.2.0 · CONSOLIDATED ZERO-CLOUD ENGINE (SHIPPED)</text>
+
+  <rect x="54" y="134" width="450" height="62" rx="6" fill="#102642" stroke="#60a5fa" stroke-width="1"/>
+  <text x="70" y="155" fill="#93c5fd" font-family="ui-monospace,monospace" font-size="12" font-weight="700">Zone.Z4 2D/3D Exploded-Layer Blueprint Spatial Atlas</text>
+  <text x="70" y="175" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">Rest distance d_0(u,v) + Sphere overlap lenses V_u ∩ V_v · 60 FPS Float32Array</text>
+
+  <rect x="54" y="206" width="450" height="66" rx="6" fill="#102642" stroke="#34d399" stroke-width="1"/>
+  <text x="70" y="227" fill="#6ee7b7" font-family="ui-monospace,monospace" font-size="12" font-weight="700">Multi-Ring Watch-Only Treasury (R0 / R2 / R3) + Phantom</text>
+  <text x="70" y="247" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">BTC BIP-173 · EVM EIP-55 · Solana Base58 · Base-100/% Privacy Shield</text>
+  <text x="70" y="263" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="11">0 private keys/balances in Git · &lt;persona&gt;-work agreed-settlement airlock</text>
+
+  <rect x="54" y="282" width="450" height="62" rx="6" fill="#102642" stroke="#fbbf24" stroke-width="1"/>
+  <text x="70" y="303" fill="#fcd34d" font-family="ui-monospace,monospace" font-size="12" font-weight="700">HMAC rcap1 Capsules + SHA-256 Surface Attestation Seal</text>
+  <text x="70" y="323" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">citation_receipt (@sha256_16:E3..E0) · /.well-known/zcg-attestation.json</text>
+
+  <rect x="54" y="354" width="450" height="54" rx="6" fill="#102642" stroke="#c084fc" stroke-width="1"/>
+  <text x="70" y="375" fill="#d8b4fe" font-family="ui-monospace,monospace" font-size="12" font-weight="700">Isolated tool-stack (.zcg/tools/) &amp; Streamable HTTP /mcp</text>
+  <text x="70" y="394" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">zcg-skill-auditor SARIF · Gemini Decisions (0 output tok) + offline LiteRT Gemma 4</text>
+
+  <!-- Arrow Bridge -->
+  <path d="M 526 258 L 574 258" stroke="#6ee7b7" stroke-width="2.5"/>
+  <polygon points="574,258 564,252 564,264" fill="#6ee7b7"/>
+
+  <!-- Right Box: v2.0.0 Cryptographic Composite Node Mesh -->
+  <rect x="578" y="92" width="486" height="332" rx="8" fill="#0b192c" fill-opacity="0.86" stroke="#34d399" stroke-width="1.4"/>
+  <text x="596" y="118" fill="#6ee7b7" font-family="ui-monospace,monospace" font-size="13" font-weight="700">v2.0.0 · CRYPTOGRAPHIC COMPOSITE MESH (HORIZON T5)</text>
+
+  <rect x="596" y="134" width="450" height="62" rx="6" fill="#0f293a" stroke="#38bdf8" stroke-width="1"/>
+  <text x="612" y="155" fill="#7dd3fc" font-family="ui-monospace,monospace" font-size="12" font-weight="700">1. OpenSSL 3 Ed25519 PublicationSeal &amp; CoreInheritanceProof</text>
+  <text x="612" y="175" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">Signed Git commit chains (prev_seal_slice_16) proving canonical core lineage</text>
+
+  <rect x="596" y="206" width="450" height="66" rx="6" fill="#0f293a" stroke="#34d399" stroke-width="1"/>
+  <text x="612" y="227" fill="#6ee7b7" font-family="ui-monospace,monospace" font-size="12" font-weight="700">2. Bidirectional Repo &lt;-&gt; Runtime &lt;-&gt; DNS Attestation</text>
+  <text x="612" y="247" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">RFC 9421 HTTP Message Signatures + did:web + _zcg-attest.&lt;domain&gt; DNS TXT</text>
+  <text x="612" y="263" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="11">Root 0 bilateral anti-spoofing + Δt temporal continuity verification</text>
+
+  <rect x="596" y="282" width="450" height="62" rx="6" fill="#0f293a" stroke="#fbbf24" stroke-width="1"/>
+  <text x="612" y="303" fill="#fcd34d" font-family="ui-monospace,monospace" font-size="12" font-weight="700">3. X25519 + HKDF-SHA256 Epoch-Slice Purpose Chains (0..N)</text>
+  <text x="612" y="323" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">Ratcheted per-epoch vault &amp; capsule keys; continuity dominates stake (α ≫ β)</text>
+
+  <rect x="596" y="354" width="450" height="54" rx="6" fill="#0f293a" stroke="#c084fc" stroke-width="1"/>
+  <text x="612" y="375" fill="#d8b4fe" font-family="ui-monospace,monospace" font-size="12" font-weight="700">4. Sandboxed P2P federated-surface &amp; eIDAS 2.0 / WebAuthn</text>
+  <text x="612" y="394" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">Dedicated-subdomain &lt;iframe sandbox&gt; bundles (0 host .py) + zero-PII identity</text>
+</svg>

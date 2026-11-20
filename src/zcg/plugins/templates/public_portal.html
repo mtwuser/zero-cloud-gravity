@@ -1,0 +1,161 @@
+<div data-zcg-portal="{{ portal_kind }}">
+  <div class="zcg-compass" data-surface-purpose="public-portal">
+    <span>{{ icon_globe }} <strong>Public Sovereign Website (<code>/portal</code>):</strong> <code>{{ canonical_domain }}</code> ({{ portal_kind }} · Mode: <code>{{ exposure_mode }}</code>{% if availability_note %} · {{ availability_note }}{% endif %})</span>
+    <span class="zcg-badge">{{ icon_shield }} Caller Ring: {{ caller_ring }} · Tier: {{ effective_tier }}</span>
+  </div>
+  {% if is_hub %}
+  <section class="zcg-card" id="overview">
+    <div class="zcg-card__header">
+      <h2>{{ icon_compass }} {{ hub_title }}</h2>
+      <span class="zcg-badge">Personal Root 0 Hub</span>
+    </div>
+    <p>{{ hub_summary }}</p>
+    {% if not public_facets %}
+    <p class="zcg-muted-note">No child pillar subdomains (<code>work</code>, <code>tutor</code>, <code>game</code>, <code>wallet</code>) are publicly exposed yet. Enable Public Exposure on individual child pillars to delegate public facets here.</p>
+    {% endif %}
+    <div class="zcg-tabs">
+      <a class="zcg-btn zcg-btn--secondary" href="/.well-known/zcg-attestation.json">{{ icon_check }} Surface Attestation Seal</a>
+    </div>
+  </section>
+  {% endif %}
+  {% if public_facets %}
+  <section class="zcg-card" id="constellation" data-zcg-facets="constellation">
+    <div class="zcg-card__header">
+      <h3>{{ icon_layers }} Delegated Subdomains &amp; Active Sovereign Facets</h3>
+      <span class="zcg-badge">Purpose-Scoped Access</span>
+    </div>
+    <ul>
+      {% for facet in public_facets %}
+      <li><strong>{{ facet.label }}</strong> (<code>{{ facet.pillar }}</code> · <code>{{ facet.purpose }}</code>): {{ facet.summary }} <a href="{{ facet.public_url | safe_url }}">Open</a></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+  {% if is_oss %}
+  <section class="zcg-card" id="overview">
+    <div class="zcg-card__header">
+      <h2>{{ icon_sparkles }} Sovereign Zero-Cloud Platform &amp; 2D/3D Mesh</h2>
+      <span class="zcg-badge">Dev Plane: {{ secondary_domain }}</span>
+    </div>
+    <p>Zero-phone-home Python 3.14 Native ASGI engine (<code>143</code> verified modules, <code>19</code> composable stack packs, <code>0</code> runtime dependencies) bridging <code>v1.2.0</code> surface rings toward <code>v2.0.0</code> cryptographic attestation (<code>Ed25519</code>, <code>RFC 9421</code>, <code>did:web</code>).</p>
+    <div class="zcg-tabs">
+      <a class="zcg-btn" href="/api/modules/spatial-atlas?format=html">{{ icon_layers }} Fullscreen 2D/3D Spatial Atlas</a>
+      <a class="zcg-btn zcg-btn--secondary" href="{{ clean_prefix }}/stewardship">{{ icon_vault }} Public R0 Stewardship &amp; Patronage</a>
+      <a class="zcg-btn zcg-btn--secondary" href="/.well-known/zcg-attestation.json">{{ icon_check }} Attestation Seal</a>
+    </div>
+  </section>
+  <div id="atlas">{{ spatial_atlas_safe }}</div>
+  <section class="zcg-card" data-zcg-virtues="root-0">
+    <div class="zcg-card__header">
+      <h3>{{ icon_compass }} Why Join the Sovereign Network with Your Node</h3>
+      <span class="zcg-badge">Individuals · Science · Enterprises</span>
+    </div>
+    <ul>
+      {% for virtue in network_virtues %}
+      <li><strong>{{ virtue.title }}:</strong> {{ virtue.summary }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  <section class="zcg-card" id="directory" data-zcg-directory="validated-network">
+    <div class="zcg-card__header">
+      <h3>{{ icon_globe }} Validated Public Network Directory (Repository &harr; Domain)</h3>
+      <span class="zcg-badge">Attested Horizon Registry</span>
+    </div>
+    <table class="zcg-table" aria-label="Validated Public Sovereign Nodes">
+      <thead><tr><th>Node ID</th><th>Public Domain</th><th>Repository</th><th>Role</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for entry in validated_directory %}
+        <tr>
+          <td><code>{{ entry.node_id }}</code></td>
+          <td><code>{{ entry.public_domain }}</code></td>
+          <td><a href="{{ entry.repository_url | safe_url }}">{{ entry.repository_url }}</a></td>
+          <td>{{ entry.entity_role }}</td>
+          <td><span class="zcg-chip">{{ entry.attestation_status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+  {% if is_cv %}
+  <section class="zcg-card" id="overview">
+    <div class="zcg-card__header">
+      <h2>{{ icon_briefcase }} {{ cv_full_name }}</h2>
+      <span class="zcg-badge">Withheld Private Fields: {{ cv_withheld_count }}</span>
+    </div>
+    <p>{{ cv_headline }} · Contact: <code>{{ cv_public_contact }}</code></p>
+    <ul>
+      {% for item in cv_entries %}
+      <li><strong>{{ item.label }}:</strong> {{ item.value }} <small class="zcg-chip">{{ item.disclosure_tier }}</small></li>
+      {% endfor %}
+    </ul>
+    <div class="zcg-tabs">
+      <a class="zcg-btn" href="{{ clean_prefix }}/cv/print">{{ icon_book }} Download / Print A4 CV (PDF)</a>
+      <a class="zcg-btn zcg-btn--secondary" href="{{ clean_prefix }}/cv/download.md">CV (.md)</a>
+      <a class="zcg-btn zcg-btn--secondary" href="{{ clean_prefix }}/cv/download.json">CV (.json)</a>
+    </div>
+  </section>
+  {% endif %}
+  {% if is_corp %}
+  <section class="zcg-card" id="overview">
+    <div class="zcg-card__header">
+      <h2>{{ icon_layers }} {{ node_id }} — Corporate Brand &amp; Intranet Gateway</h2>
+      <span class="zcg-badge">Intranet Zone: {{ secondary_domain }}</span>
+    </div>
+    <p id="gateway">Authoritative brand surface on <code>{{ canonical_domain }}</code> paired with isolated departmental operations on <code>{{ secondary_domain }}</code> (<code>dept-finance</code>, <code>dept-ops</code>, <code>dept-hr</code>) governed by OIDC Identity &amp; monotonic <code>R0..R3</code> capability rings.</p>
+    <div class="zcg-tabs">
+      <a class="zcg-btn" href="/auth/session?format=html">{{ icon_user }} Employee &amp; Partner Sign-In (Google / OIDC)</a>
+      <a class="zcg-btn zcg-btn--secondary" href="/.well-known/zcg-attestation.json">{{ icon_check }} Fiduciary Surface Seal</a>
+    </div>
+  </section>
+  {% endif %}
+  {% if has_contact %}
+  <section class="zcg-card" id="contact" data-island="portal-channels" data-hydrate="eager">
+    <div class="zcg-card__header">
+      <h3>{{ icon_globe }} Public Channels &amp; Purpose-Scoped Node Handshake</h3>
+      <span class="zcg-badge" data-channel-status aria-live="polite">Zero-SaaS Local Inbox</span>
+    </div>
+    {% if social_links %}
+    <div class="zcg-tabs">
+      {% for sl in social_links %}
+      <a class="zcg-btn zcg-btn--secondary zcg-btn--sm" href="{{ sl.url | safe_url }}">{{ sl.label }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if contact_phone %}
+    <p>
+      <strong>Direct Phone:</strong> <code>{{ contact_phone }}</code>
+      <button type="button" class="zcg-btn zcg-btn--secondary zcg-btn--sm" data-copy-phone="{{ contact_phone }}">Copy Phone</button>
+    </p>
+    {% endif %}
+    {% if contact_email %}
+    <form method="post" action="{{ clean_prefix }}/contact" data-portal-form="contact">
+      <p><strong>Direct Message (<code>{{ contact_email }}</code>):</strong></p>
+      <div class="zcg-tabs">
+        <input name="sender_name" placeholder="Your name" required aria-label="Your name">
+        <input name="sender_contact" placeholder="Your email or handle" required aria-label="Your contact">
+        <input name="subject" placeholder="Subject" aria-label="Subject">
+        <input name="message" placeholder="Concise message" required aria-label="Message">
+        <button type="submit" class="zcg-btn zcg-btn--sm">Send Message</button>
+      </div>
+    </form>
+    {% endif %}
+    {% if peer_handshake_enabled %}
+    <form method="post" action="{{ clean_prefix }}/handshake" data-portal-form="handshake">
+      <p><strong>Node-to-Node Purpose Handshake Request:</strong></p>
+      <div class="zcg-tabs">
+        <input name="peer_node_id" placeholder="your-node-id (kebab-case)" required aria-label="Peer node ID">
+        <select name="purpose" aria-label="Handshake purpose">
+          {% for purp in supported_purposes %}
+          <option value="{{ purp }}">{{ purp }}</option>
+          {% endfor %}
+        </select>
+        <input name="peer_domain_or_repo" placeholder="Domain or repo URL (optional)" aria-label="Peer domain or repo">
+        <input name="note" placeholder="Purpose note" aria-label="Purpose note">
+        <button type="submit" class="zcg-btn zcg-btn--secondary zcg-btn--sm">Request Link</button>
+      </div>
+    </form>
+    {% endif %}
+  </section>
+  {% endif %}
+</div>

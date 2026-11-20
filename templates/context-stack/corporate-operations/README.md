@@ -10,17 +10,17 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 | Attribute | Canonical Value | Verification & Runtime Role |
 | :--- | :--- | :--- |
-| **`id`** | `corporate-operations` | Domain specialization in `VALID_CONTEXT_STACK_IDS` (`constants.py`) |
+| **`id`** | `corporate-operations` | Domain specialization in `CANONICAL_STARTER_TEMPLATES` (`src/zcg/core/constants.py`) |
 | **`stack_group`** | `context-stack` | Domain Methodology & Practice Axis |
 | **`tier`** | `2` (`Domain Specialization`) | Materialized into `.agents/rules/corporate-operations.md` via `zcg sync-layer` |
-| **`extends`** | `["business-base"]` | Transitively resolves `universal-base -> business-base -> corporate-operations` |
+| **`extends`** | `"business-base"` | Transitively resolves `universal-base -> business-base -> corporate-operations` |
 | **`rules_file`** | [`rules/corporate-operations.md`](rules/corporate-operations.md) | Portfolio alignment, 1-hop delegation (`make delegate`), RBAC & audit trails |
 
 ---
 
 ## 2. Core Operational & Governance Invariants
 
-The `corporate-operations` specialization governs enterprise hubs (`corporate_root`) and their child operational nodes:
+The `corporate-operations` specialization governs enterprise hubs (`corporate`) and their child operational nodes:
 
 1. **1-Hop Downward Delegation & Portfolio Traceability**: Coordinate cross-repository initiatives from `roadmaps/` $\rightarrow$ `WORKROAD.md` $\rightarrow$ `WORKTASK.md` via `zcg delegate-to-child` (`make delegate`), maintaining deterministic parent-child linkage without hidden multi-hop mutations.
 2. **RBAC Roster & Decision Ledger Integrity**: Validate operator clearance (`0..100`) and environment stage gates (`dev | pre | pro`) via `zcg manage-roster` (`make roster`), `zcg record-decision` (`make decision`), and `zcg check-env-promotion` (`make env-gate`).
@@ -30,7 +30,7 @@ The `corporate-operations` specialization governs enterprise hubs (`corporate_ro
 
 ## 3. Mounting & Cross-References
 
-Declare `corporate-operations` in `system/zcg-node.json` under `stack_groups.context_stack` and synchronize the node:
+Declare `corporate-operations` in `system/zcg-node.json` under `default_stack_templates` and synchronize the node:
 
 ```bash
 zcg sync-layer /path/to/corporate-node

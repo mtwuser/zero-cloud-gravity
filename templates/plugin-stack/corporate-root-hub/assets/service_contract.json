@@ -2,7 +2,7 @@
   "service_id": "corporate-root-hub",
   "contract_version": "zcg-service-v1",
   "bind_host": "127.0.0.1",
-  "enabled_modules": ["node_mesh", "work_ledger", "crud", "vault", "data_pipeline"],
+  "enabled_modules": ["work_ledger", "docs_reader", "spatial_atlas", "portal_inbox", "data_pipeline"],
   "data_scopes": ["node", "network", "federation"],
   "surfaces": [
     "surfaces/web/index.html",

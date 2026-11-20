@@ -12,7 +12,7 @@ import pytest
 
 from zcg.cli import commands
 from zcg.cli.parser import CLIAuthorityBlockedError, CLIUsageError
-from zcg.governance import scaffolder
+from zcg.governance.workspace import scaffolder
 
 
 class TestCommands:
@@ -51,6 +51,15 @@ class TestCommands:
             assert commands.dispatch_c2(repo, True, "apply-project", [str(repo)]) == {"ok": "app"}
             assert commands.dispatch_c2(repo, True, "apply-project", [str(proj)]) == {"ok": "app"}
 
+        with pytest.raises(CLIUsageError, match="--standalone and --parent-dir"):
+            commands.dispatch_c2(
+                repo, True, "scaffold-web-app", [str(proj), "--standalone", "--parent-dir", "."]
+            )
+        with patch("zcg.cli.commands.orchestrate_web_app_scaffold", return_value={"ok": "webapp"}):
+            assert commands.dispatch_c2(
+                repo, True, "scaffold-web-app", [str(proj), "--port", "8090", "--standalone"]
+            ) == {"ok": "webapp"}
+
         # 3. set-global-profile, start-task, scaffold-template, init-fork, register-subtree
         with pytest.raises(CLIUsageError, match="set-global-profile"):
             commands.dispatch_c2(repo, True, "set-global-profile", [])
@@ -76,12 +85,25 @@ class TestCommands:
 
         with pytest.raises(CLIUsageError, match="scaffold-plugin-module"):
             commands.dispatch_c2(repo, True, "scaffold-plugin-module", ["only-plugin"])
+        with pytest.raises(CLIUsageError, match="--overlay and --in-pack"):
+            commands.dispatch_c2(
+                repo, True, "scaffold-plugin-module", ["p1", "m1", "--overlay", "--in-pack"]
+            )
         with (
             patch("zcg.cli.commands.enforce_cli_authority"),
             patch("zcg.cli.commands.scaffold_plugin_module", return_value={"ok": "pmod"}),
         ):
             assert commands.dispatch_c2(
                 repo, True, "scaffold-plugin-module", ["alpha-portal", "batch-verifier"]
+            ) == {"ok": "pmod"}
+            assert commands.dispatch_c2(
+                repo,
+                True,
+                "scaffold-plugin-module",
+                ["local", "ops-note", "--overlay", "--target-dir", str(proj)],
+            ) == {"ok": "pmod"}
+            assert commands.dispatch_c2(
+                repo, True, "scaffold-plugin-module", ["alpha-portal", "m2", "--in-pack"]
             ) == {"ok": "pmod"}
 
         # Assert
@@ -98,17 +120,35 @@ class TestCommands:
 
         with pytest.raises(CLIUsageError, match="Usage: zcg link"):
             commands.dispatch_c2(repo, True, "link", [])
-        with patch("zcg.cli.commands.links.link_node", return_value={"ok": "link"}):
+        (repo / "surfaces/data").mkdir(parents=True, exist_ok=True)
+        (repo / "surfaces/data/node_scope.json").write_text("{}", encoding="utf-8")
+        with (
+            patch("zcg.cli.commands.links.link_node", return_value={"ok": "link"}),
+            patch("zcg.cli.commands.manage_plugin_service") as mps_mock,
+        ):
             assert commands.dispatch_c2(
-                repo, True, "link", ["--target", "org-alpha", "--relation", "hr-process"]
+                repo, False, "link", ["--target", "org-alpha", "--relation", "hr-process"]
             ) == {"ok": "link"}
             assert commands.dispatch_c2(
                 repo, True, "link", ["--from", "https://example.org/org-alpha.git"]
             ) == {"ok": "link"}
-        with patch("zcg.cli.commands.links.unlink_node", return_value={"ok": "unlink"}):
-            assert commands.dispatch_c2(repo, True, "unlink", ["--target", "org-alpha"]) == {
-                "ok": "unlink"
+            mps_mock.assert_called_once()
+        with (
+            patch(
+                "zcg.cli.commands.links.unlink_node",
+                return_value={"ok": "unlink", "removed": True},
+            ),
+            patch("zcg.cli.commands.manage_plugin_service") as mps_un_mock,
+        ):
+            assert commands.dispatch_c2(repo, False, "unlink", ["--target", "org-alpha"]) == {
+                "ok": "unlink",
+                "removed": True,
             }
+            assert commands.dispatch_c2(repo, True, "unlink", ["--target", "org-alpha"]) == {
+                "ok": "unlink",
+                "removed": True,
+            }
+            mps_un_mock.assert_called_once()
         with patch("zcg.cli.commands.links.spinout_branch_to_project", return_value={"ok": "spin"}):
             assert commands.dispatch_c2(
                 repo,

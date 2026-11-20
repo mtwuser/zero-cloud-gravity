@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.1.0) — Ubuntu Physical Workstation Restore & Provisioner
+# ZeroCloudGravity (v1.2.0) — Ubuntu Physical Workstation Restore & Provisioner
 # Usage: ./scripts/workstation-restore.sh [<workstation-dir>] [--all | --antigravity | --packages | --stow | --nvm | --gnome | --external] [--dry-run]
 
 set -euo pipefail
@@ -89,7 +89,7 @@ fi
 if [[ "${MODE}" == "--all" ]] || [[ "${MODE}" == "--packages" ]] || [[ "${MODE}" == "interactive" ]]; then
   if [[ -f "${SYSTEM_DIR}/packages-manual.txt" ]] && confirm "Install APT packages?"; then
     echo "=== Step 1: APT packages ==="
-    if grep -q ':i386$' "${SYSTEM_DIR}/packages-manual.txt" && ! dpkg --print-foreign-architectures | grep -qx 'i386'; then
+    if grep -q ':i386$' "${SYSTEM_DIR}/packages-manual.txt" && ! dpkg --print-foreign-architectures | grep -sx 'i386' >/dev/null; then
       sudo dpkg --add-architecture i386
     fi
     sudo apt-get update
@@ -230,7 +230,7 @@ if [[ "${MODE}" == "--all" ]] || [[ "${MODE}" == "--external" ]] || [[ "${MODE}"
         setup_repo() { :; }
         # shellcheck source=/dev/null
         source "${pkg_file}"
-        if ! { dpkg -s "${CHECK}" &>/dev/null && apt-cache policy "${CHECK}" 2>/dev/null | grep -q 'http'; }; then
+        if ! { dpkg -s "${CHECK}" &>/dev/null && apt-cache policy "${CHECK}" 2>/dev/null | grep -s 'http' >/dev/null; }; then
           echo "  -> Setting up repo: ${NAME}"
           setup_repo
           NEED_UPDATE=true
@@ -262,10 +262,10 @@ if [[ "${MODE}" == "--all" ]] || [[ "${MODE}" == "--external" ]] || [[ "${MODE}"
         if ! dpkg -s "${CHECK}" &>/dev/null; then
           TMP_DIR="$(mktemp -d)"
           if curl -fsSL -o "${TMP_DIR}/download" "${URL}"; then
-            if echo "${URL}" | grep -qi '\.zip$'; then
+            if [[ "${URL,,}" == *.zip ]]; then
               command -v unzip &>/dev/null || sudo apt-get install -y -qq unzip
               unzip -q "${TMP_DIR}/download" -d "${TMP_DIR}"
-              DEB_FILE="$(find "${TMP_DIR}" -name '*.deb' | head -1)"
+              DEB_FILE="$(find "${TMP_DIR}" -name '*.deb' -print -quit)"
             else
               DEB_FILE="${TMP_DIR}/download"
             fi

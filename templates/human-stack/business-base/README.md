@@ -10,17 +10,17 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 | Attribute | Canonical Value | Verification & Runtime Role |
 | :--- | :--- | :--- |
-| **`id`** | `business-base` | Corporate persona in `VALID_HUMAN_STACK_IDS` (`constants.py`) |
+| **`id`** | `business-base` | Corporate persona in `CANONICAL_STARTER_TEMPLATES` (`src/zcg/core/constants.py`) |
 | **`stack_group`** | `human-stack` | Cognitive & Epistemic Persona Axis |
 | **`tier`** | `1` (`Domain Persona`) | Mounted via `.agents/rules/business-base.md` or `--profile business-base` |
-| **`extends`** | `["universal-base"]` | Inherits all 13 universal mandates from `universal-base` |
+| **`extends`** | `"universal-base"` | Inherits all 13 universal mandates from `universal-base` |
 | **`rules_file`** | [`rules/business-base.md`](rules/business-base.md) | Executive clarity, `corporate/` document parity, RBAC & financial rigor |
 
 ---
 
 ## 2. Core Executive & Organizational Invariants
 
-The `business-base` rule corpus governs multi-node corporate hubs (`corporate_root`) and operational program workspaces:
+The `business-base` rule corpus governs multi-node corporate hubs (`corporate`) and operational program workspaces:
 
 1. **Executive Clarity & Pyramid Synthesis**: Lead every strategic document or decision record with the bottom-line recommendation, quantified risk/return trade-offs, and explicit accountability (`Owner × Stage × Gate`).
 2. **Corporate Surface Parity (`corporate/**/*.md < 465` lines)**: Maintain `1:1:1` alignment between strategic roadmaps (`roadmaps/`), active work ledgers (`WORKROAD.md` / `WORKTASK.md`), and formal corporate policies (`corporate/`).

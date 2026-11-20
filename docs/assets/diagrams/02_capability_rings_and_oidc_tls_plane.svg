@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 480" width="1100" height="480" role="img" aria-labelledby="t2 d2">
+  <title id="t2">ZeroCloudGravity R0..R3 Capability Rings, Google OIDC PKCE, TLS 1.3 and 3-World Domain Isolation</title>
+  <desc id="d2">Blueprint diagram illustrating monotonic R0 to R3 surface rings, progressive Google OIDC S256 PKCE session elevation, TLS 1.3 transport hardening, and isolated OSS, Corporate, and Personal domains.</desc>
+  <defs>
+    <pattern id="bpGrid2" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#1e3a5f" stroke-width="0.8"/>
+    </pattern>
+    <linearGradient id="bgGrad2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#081221"/>
+      <stop offset="100%" stop-color="#0d1f38"/>
+    </linearGradient>
+  </defs>
+  <rect width="1100" height="480" rx="12" fill="url(#bgGrad2)"/>
+  <rect width="1100" height="480" rx="12" fill="url(#bpGrid2)"/>
+  <rect x="12" y="12" width="1076" height="456" rx="8" fill="none" stroke="#2d5a88" stroke-width="1.5"/>
+
+  <text x="36" y="46" fill="#7dd3fc" font-family="ui-monospace,monospace" font-size="12" font-weight="700" letter-spacing="1.2">BLUEPRINT 02 · MONOTONIC R0..R3 CAPABILITY RINGS, GOOGLE OIDC PKCE &amp; TLS 1.3 TRANSPORT</text>
+  <text x="36" y="68" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="14">Progressive Web Elevation (/auth/oidc/login S256 PKCE -&gt; __zcg_session) + Zero-Literal Runtime IAM</text>
+
+  <!-- Concentric / Layered Rings R0 -> R3 -->
+  <rect x="36" y="92" width="540" height="352" rx="8" fill="#0b192c" fill-opacity="0.85" stroke="#38bdf8" stroke-width="1.3"/>
+  <text x="54" y="118" fill="#38bdf8" font-family="ui-monospace,monospace" font-size="13" font-weight="700">PRE-BODY ASGI RING &amp; DISCLOSURE PROJECTION (R0 &lt; R1 &lt; R2 &lt; R3)</text>
+
+  <rect x="54" y="134" width="504" height="68" rx="6" fill="#0f253d" stroke="#7dd3fc" stroke-width="1"/>
+  <text x="70" y="156" fill="#7dd3fc" font-family="ui-monospace,monospace" font-size="12" font-weight="700">R0 · public (core_summary) — Open Visitors &amp; Sliding-Window Rate Cap</text>
+  <text x="70" y="175" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">/portal (OSS 3D Atlas | Personal CV | Corporate Brand), /stewardship, /.well-known/*</text>
+  <text x="70" y="192" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="11">429 SURFACE_RATE_LIMIT_EXCEEDED · 404 DOCS_DISABLED in pro · sha384 SRI guard</text>
+
+  <rect x="54" y="212" width="504" height="68" rx="6" fill="#0f253d" stroke="#34d399" stroke-width="1"/>
+  <text x="70" y="234" fill="#6ee7b7" font-family="ui-monospace,monospace" font-size="12" font-weight="700">R1 · scoped-external (verified_competency) — guest | linked-peer</text>
+  <text x="70" y="253" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">ZCG_SCOPED_EXTERNAL_EMAILS or bilateral zcg link Bearer · Route fnmatch containment</text>
+  <text x="70" y="270" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="11">Unlocks expanded A4 PDF / .md / .json CV dossier &amp; B2B capsules while blocking R2</text>
+
+  <rect x="54" y="290" width="504" height="68" rx="6" fill="#0f253d" stroke="#fbbf24" stroke-width="1"/>
+  <text x="70" y="312" fill="#fcd34d" font-family="ui-monospace,monospace" font-size="12" font-weight="700">R2 · network-member (day1_onboarding) — Workspace / Cloud Identity + Groups</text>
+  <text x="70" y="331" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">Google IAP JWT or OIDC S256 PKCE (email_verified: true, hd + required_groups)</text>
+  <text x="70" y="348" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="11">Departmental RBAC: dept-finance accesses R2 treasury; others get 403 GROUP_FORBIDDEN</text>
+
+  <rect x="54" y="368" width="504" height="62" rx="6" fill="#0f253d" stroke="#f472b6" stroke-width="1"/>
+  <text x="70" y="390" fill="#f9a8d4" font-family="ui-monospace,monospace" font-size="12" font-weight="700">R3 · operator (deep_context) — Sovereign Owner / Maintainer Plane</text>
+  <text x="70" y="409" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">ZCG_OPERATOR_EMAILS or *.localhost loopback · Full /dashboard + ?tier= CV preview</text>
+
+  <!-- Right Column: 3 Isolated Identity Worlds & Transport Security -->
+  <rect x="596" y="92" width="468" height="224" rx="8" fill="#0b192c" fill-opacity="0.85" stroke="#34d399" stroke-width="1.3"/>
+  <text x="614" y="118" fill="#6ee7b7" font-family="ui-monospace,monospace" font-size="13" font-weight="700">3 ISOLATED IDENTITY &amp; DOMAIN WORLDS (0 GIT LITERALS)</text>
+
+  <rect x="614" y="132" width="432" height="52" rx="5" fill="#10293d" stroke="#38bdf8" stroke-width="1"/>
+  <text x="628" y="152" fill="#7dd3fc" font-family="ui-monospace,monospace" font-size="11.5" font-weight="700">World 1 · OSS Platform: zerocloudgravity.org + .dev</text>
+  <text x="628" y="171" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="11.5">Public R0 Flagship + Workspace OIDC (maintainer@ R3, validators@ R2)</text>
+
+  <rect x="614" y="192" width="432" height="52" rx="5" fill="#10293d" stroke="#fbbf24" stroke-width="1"/>
+  <text x="628" y="212" fill="#fcd34d" font-family="ui-monospace,monospace" font-size="11.5" font-weight="700">World 2 · Enterprise: &lt;corp&gt;.com (Public) + &lt;corp&gt;.net (Intranet)</text>
+  <text x="628" y="231" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="11.5">.com E2EE Mail intact · .net on Cloud Identity Free ($0 Gmail cost)</text>
+
+  <rect x="614" y="252" width="432" height="52" rx="5" fill="#10293d" stroke="#c084fc" stroke-width="1"/>
+  <text x="628" y="272" fill="#d8b4fe" font-family="ui-monospace,monospace" font-size="11.5" font-weight="700">World 3 · Personal Sovereign: *.localhost + pub-&lt;persona&gt;</text>
+  <text x="628" y="291" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="11.5">Non-Gmail Google OIDC -&gt; R3 on own node, R1 guest on partner nodes</text>
+
+  <!-- Transport Box -->
+  <rect x="596" y="328" width="468" height="116" rx="8" fill="#0b192c" fill-opacity="0.85" stroke="#c084fc" stroke-width="1.3"/>
+  <text x="614" y="352" fill="#d8b4fe" font-family="ui-monospace,monospace" font-size="13" font-weight="700">STDLIB OPENSSL 3 TLS 1.3 / mTLS &amp; KEYLESS CLOUD RUN CD</text>
+  <text x="614" y="374" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">• Loopback *.localhost HTTP = W3C Secure Context (0 HSTS pollution)</text>
+  <text x="614" y="394" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">• Non-loopback blocks plaintext (PLAINTEXT_NON_LOOPBACK_BLOCKED)</text>
+  <text x="614" y="414" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12">• Keyless GitHub OIDC WIF -&gt; Cloud Run UID 10001 (dev -&gt; tst -&gt; pre -&gt; pro)</text>
+  <text x="614" y="432" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="11">HSTS + ; Secure cookies auto-enabled on TLS 1.3 &amp; CIDR X-Forwarded-Proto</text>
+</svg>

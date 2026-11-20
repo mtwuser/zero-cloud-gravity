@@ -30,6 +30,7 @@ from zcg.cli.discovery import (
 from zcg.cli.parser import CLIAuthorityBlockedError, CLIUsageError
 from zcg.core.constants import REPO_DIR
 from zcg.core.manifests import read_version
+from zcg.governance.workspace.onboarding_studio import format_bootstrap_tty_guide
 
 
 def dispatch_zcg_cli(
@@ -99,9 +100,17 @@ def main(argv: list[str] | None = None) -> int:
     if idx >= len(args):
         print("Error: Missing subcommand (run 'zcg --help')", file=sys.stderr)
         return 1
-    code, payload, err_msg = dispatch_zcg_cli(repo_dir, dry_run, args[idx], args[idx + 1 :])
+    subcmd = args[idx]
+    raw_rest = args[idx + 1 :]
+    is_boot = subcmd in ("bootstrap", "bootstrap-workspace")
+    force_json = "--json" in raw_rest if is_boot else False
+    eff_rest = [a for a in raw_rest if a != "--json"] if is_boot else raw_rest
+    code, payload, err_msg = dispatch_zcg_cli(repo_dir, dry_run, subcmd, eff_rest)
     if err_msg is not None:
         print(f"Error: {err_msg}", file=sys.stderr)
     if payload is not None and not payload.get("streamed"):
-        print(json.dumps(payload, indent=2))
+        if is_boot and not force_json and sys.stdout.isatty():
+            print(format_bootstrap_tty_guide(payload))
+        else:
+            print(json.dumps(payload, indent=2))
     return code

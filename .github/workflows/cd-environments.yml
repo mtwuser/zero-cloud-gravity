@@ -1,0 +1,171 @@
+name: Keyless Multi-Environment CD (tst -> pre -> pro)
+
+on:
+  push:
+    branches:
+      - "env/tst"
+      - "env/pre"
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Target deployment stage (plan-only, tst, pre, or pro)"
+        required: true
+        default: "plan-only"
+        type: choice
+        options:
+          - plan-only
+          - tst
+          - pre
+          - pro
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zcg-cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan-manifests:
+    name: Synthesize & Verify Keyless Cloud Manifests (dev -> pro)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          allow-prereleases: true
+
+      - name: Synthesize Cloud Run, IAP & DNS manifests (zerocloudgravity.org + .dev)
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPATH: "src"
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from zcg.providers.cloud_gcp import materialize_cloud_deployment_manifest
+          from zcg.cockpit.routing.provenance import materialize_node_provenance_surfaces
+          from zcg.cockpit.views.surfaces import resolve_node_intranet_topology
+          from zcg.core.manifests import load_node_manifest
+
+          ws = Path.cwd().resolve()
+          manifest = load_node_manifest(ws)
+          lid = str(manifest["layer_id"])
+          for env_name in ("dev", "tst", "pre", "pro"):
+              topo = resolve_node_intranet_topology(
+                  manifest, layer_id=lid, active_env=env_name, workspace_dir=ws
+              )
+              if env_name == "pro":
+                  materialize_node_provenance_surfaces(ws, manifest, topo, active_env="pro")
+              doc = materialize_cloud_deployment_manifest(
+                  ws, manifest, topo, active_env=env_name, env_vars={}
+              )
+              print(f"[{env_name}] fqdn={doc['fqdn']} dev_fqdn={doc['developer_fqdn']}")
+          pro_doc = json.loads((ws / "surfaces/infra/cloud_deployment_pro.json").read_text("utf-8"))
+          assert pro_doc["fqdn"] == "zerocloudgravity.org"
+          assert pro_doc["developer_fqdn"] == "zerocloudgravity.dev"
+          assert pro_doc["cloud_run"]["uid"] == 10001
+          PY
+
+      - name: Upload synthesized deployment & attestation manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: zcg-cloud-deployment-manifests
+          path: |
+            surfaces/infra/*.json
+            surfaces/attestation/*.json
+          retention-days: 14
+
+  deploy-stage:
+    name: Deploy Keyless Cloud Run Scale-to-Zero
+    needs: plan-manifests
+    if: >-
+      (
+        github.ref == 'refs/heads/env/tst' ||
+        github.ref == 'refs/heads/env/pre' ||
+        startsWith(github.ref, 'refs/tags/v') ||
+        (github.event_name == 'workflow_dispatch' && inputs.target_env != 'plan-only')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    environment: >-
+      ${{
+        github.event_name == 'workflow_dispatch' && inputs.target_env ||
+        (startsWith(github.ref, 'refs/tags/v') && 'pro') ||
+        (github.ref == 'refs/heads/env/pre' && 'pre') ||
+        'tst'
+      }}
+    steps:
+      - name: Checkout repository
+        if: ${{ vars.ZCG_GCP_WIF_PROVIDER != '' && vars.ZCG_GCP_PROJECT_ID != '' }}
+        uses: actions/checkout@v7
+
+      - name: Authenticate to Google Cloud via Keyless Workload Identity Federation (0 JSON keys)
+        if: ${{ vars.ZCG_GCP_WIF_PROVIDER != '' && vars.ZCG_GCP_PROJECT_ID != '' }}
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.ZCG_GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.ZCG_GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud SDK
+        if: ${{ vars.ZCG_GCP_WIF_PROVIDER != '' && vars.ZCG_GCP_PROJECT_ID != '' }}
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build, Push & Deploy Non-Root ASGI Surface (UID 10001 · Scale-to-Zero)
+        if: ${{ vars.ZCG_GCP_WIF_PROVIDER != '' && vars.ZCG_GCP_PROJECT_ID != '' }}
+        env:
+          GCP_PROJECT: ${{ vars.ZCG_GCP_PROJECT_ID }}
+          GCP_REGION: ${{ vars.ZCG_GCP_REGION || 'europe-west1' }}
+          AR_REPO: ${{ vars.ZCG_ARTIFACT_REGISTRY_REPO || 'zcg-containers' }}
+          TARGET_STAGE: >-
+            ${{
+              github.event_name == 'workflow_dispatch' && inputs.target_env ||
+              (startsWith(github.ref, 'refs/tags/v') && 'pro') ||
+              (github.ref == 'refs/heads/env/pre' && 'pre') ||
+              'tst'
+            }}
+          ZCG_SURFACE_SESSION_KEY: ${{ secrets.ZCG_SURFACE_SESSION_KEY }}
+          ZCG_GOOGLE_OIDC_CLIENT_ID: ${{ secrets.ZCG_GOOGLE_OIDC_CLIENT_ID }}
+          ZCG_OPERATOR_EMAILS: ${{ secrets.ZCG_OPERATOR_EMAILS }}
+          ZCG_MEMBER_EMAILS: ${{ secrets.ZCG_MEMBER_EMAILS }}
+          ZCG_SCOPED_EXTERNAL_EMAILS: ${{ secrets.ZCG_SCOPED_EXTERNAL_EMAILS }}
+          ZCG_WORKSPACE_DOMAINS: ${{ vars.ZCG_WORKSPACE_DOMAINS || 'zerocloudgravity.org' }}
+        run: |
+          STAGE="$(echo "${TARGET_STAGE}" | tr -d '[:space:]')"
+          DOCS_MODE="authenticated"
+          [[ "${STAGE}" == "pro" ]] && DOCS_MODE="disabled"
+          IMAGE_URI="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${AR_REPO}/zero-cloud-gravity:${GITHUB_SHA}"
+          SERVICE_NAME="zero-cloud-gravity-${STAGE}"
+
+          gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+          docker build -t "${IMAGE_URI}" .
+          docker push "${IMAGE_URI}"
+
+          gcloud run deploy "${SERVICE_NAME}" \
+            --project="${GCP_PROJECT}" \
+            --region="${GCP_REGION}" \
+            --image="${IMAGE_URI}" \
+            --platform=managed \
+            --allow-unauthenticated \
+            --min-instances=0 \
+            --max-instances=3 \
+            --cpu-throttling \
+            --port=8080 \
+            --command="python3" \
+            --args="-m,zcg.cockpit.ops.asgi,--workspace,/opt/zero-cloud-gravity,--host,0.0.0.0,--port,8080,--behind-tls-proxy,--docs-mode,${DOCS_MODE}" \
+            --set-env-vars="^|^ZCG_NO_BROWSER=1|PYTHONDONTWRITEBYTECODE=1|ZCG_ACTIVE_ENV=${STAGE}|ZCG_WORKSPACE_DOMAINS=${ZCG_WORKSPACE_DOMAINS}|ZCG_GOOGLE_OIDC_CLIENT_ID=${ZCG_GOOGLE_OIDC_CLIENT_ID}|ZCG_SURFACE_SESSION_KEY=${ZCG_SURFACE_SESSION_KEY}|ZCG_OPERATOR_EMAILS=${ZCG_OPERATOR_EMAILS}|ZCG_MEMBER_EMAILS=${ZCG_MEMBER_EMAILS}|ZCG_SCOPED_EXTERNAL_EMAILS=${ZCG_SCOPED_EXTERNAL_EMAILS}"
+
+          SERVICE_URL="$(gcloud run services describe "${SERVICE_NAME}" --project="${GCP_PROJECT}" --region="${GCP_REGION}" --format='value(status.url)')"
+          curl -fsSL "${SERVICE_URL}/healthz" >/dev/null
+          curl -fsSL "${SERVICE_URL}/.well-known/zcg-attestation.json" >/dev/null
+          echo "Verified live ${STAGE} deployment at ${SERVICE_URL}"

@@ -5,6 +5,8 @@ Specification: docs/architecture/01_core_and_node_manifest.md
 
 from __future__ import annotations
 
+import contextlib
+import sqlite3
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -14,7 +16,11 @@ from typing import Any
 import pytest
 
 from zcg.core.domain import DomainEntity, Identifier, RepositoryPort
-from zcg.core.sqlite_repo import SQLiteRepositoryAdapter
+from zcg.core.sqlite_repo import (
+    SQLiteMigrationStep,
+    SQLiteRepositoryAdapter,
+    apply_sqlite_user_version_migrations,
+)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -57,7 +63,7 @@ class TestSqliteRepo:
     ) -> None:
         """Verify create, get_by_id, list_all DESC, update, delete, and security guards."""
         # Arrange
-        ws = tmp_path / "alex-work"
+        ws = tmp_path / "persona-work"
         ws.mkdir()
         db_file = ws / ".agents/data/work.sqlite3"
         repo = _CandidateSQLiteRepo(db_file, workspace_root=ws)
@@ -106,3 +112,37 @@ class TestSqliteRepo:
             _InvalidTableRepo(tmp_path / "bad.sqlite3")
         with pytest.raises(ValueError, match="PATH_CONTAINMENT_VIOLATION"):
             _CandidateSQLiteRepo(tmp_path / "escape.sqlite3", workspace_root=ws)
+
+    def test_pragma_user_version_schema_migrations_idempotency_and_guards_expected(
+        self, tmp_path: Path
+    ) -> None:
+        """Verify PRAGMA user_version SQL + callable migrations, idempotency, and order guards."""
+
+        # Arrange
+        def _seed_meta(conn: sqlite3.Connection) -> None:
+            conn.execute("INSERT INTO schema_audit_notes (note) VALUES ('v2-callable')")
+
+        class _MigratedRepo(_CandidateSQLiteRepo):
+            schema_migrations = (
+                (1, "CREATE TABLE IF NOT EXISTS schema_audit_notes (note TEXT NOT NULL);"),
+                (2, _seed_meta),
+            )
+
+        db_path = tmp_path / "evolved.sqlite3"
+        bad_steps: tuple[SQLiteMigrationStep, ...] = ((2, "SELECT 1;"), (2, "SELECT 1;"))
+
+        # Act
+        repo_v2 = _MigratedRepo(db_path)
+        ver_first = repo_v2.get_schema_version()
+        repo_reopened = _MigratedRepo(db_path)
+        ver_second = repo_reopened.get_schema_version()
+        plain_ver = _CandidateSQLiteRepo(tmp_path / "plain.sqlite3").get_schema_version()
+        with contextlib.closing(sqlite3.connect(db_path)) as check_conn:
+            notes = [r[0] for r in check_conn.execute("SELECT note FROM schema_audit_notes")]
+            with pytest.raises(ValueError, match="strictly ascending"):
+                apply_sqlite_user_version_migrations(check_conn, bad_steps)
+
+        # Assert
+        assert ver_first == 2 and ver_second == 2
+        assert plain_ver == 0
+        assert notes == ["v2-callable"]

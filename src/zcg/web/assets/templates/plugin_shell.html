@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block extra_head %}
+  <link rel="stylesheet" href="/static/css/plugin.css">
+  <script src="/static/js/islands/plugin-island.js" defer></script>
+{% endblock %}
+{% block header %}
+  <div class="zcg-top-bar" data-zcg-plane="workspace">
+    <div class="zcg-top-bar__left">
+      <a class="zcg-brand zcg-brand--compact zcg-brand--link" href="/" title="Return to {{ layer_id }} Workspace">
+        <img class="zcg-brand-logo" src="{% if brand_logo_url %}{{ brand_logo_url | safe_url }}{% else %}/static/img/logo.svg{% endif %}" alt="ZeroCloudGravity" width="28" height="28">
+        {% if lineage_crumb_html %}<span class="zcg-sr-only">{{ layer_id }}</span>{% else %}<strong class="zcg-top-bar__title">{{ layer_id }}</strong>{% endif %}
+      </a>
+      {{ lineage_crumb_html }}
+    </div>
+    <div class="zcg-context-strip">{{ env_switcher_html }}{{ branch_badge_html }}{{ user_menu_html }}</div>
+  </div>
+{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+  <div class="zcg-internal-shell" data-plugin-id="{{ plugin_id }}" data-enabled-modules="{{ enabled_modules_csv }}">
+    <aside class="zcg-sidebar" aria-label="Workspace views and active capabilities">
+      <div class="zcg-sidebar__section">
+        <span class="zcg-sidebar__heading">Workspace</span>
+        {{ nav_tabs }}
+      </div>
+      {% if capability_tabs %}
+      <div class="zcg-sidebar__section zcg-sidebar__section--capabilities">
+        {{ capability_tabs }}
+      </div>
+      {% endif %}
+    </aside>
+    <div class="zcg-stage">
+      {% if orientation_bar_html %}{{ orientation_bar_html }}{% else %}<header class="zcg-stage-head" data-surface-purpose="plugin-workbench"><div class="zcg-stage-head__main"><h1 class="zcg-stage-head__title" data-zcg-view-indicator="1">{{ layer_id }} — {{ panel_title }}</h1></div></header>{% endif %}
+      <section id="zcg-capability-stage" aria-live="polite">{{ overview_fragment }}</section>
+    </div>
+  </div>
+{% endblock %}
+{% block island %}{% endblock %}
+{% block footer %}
+  {{ provenance_footer_html }}
+{% endblock %}

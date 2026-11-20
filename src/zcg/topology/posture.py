@@ -6,7 +6,6 @@ Specification: docs/architecture/02_triadic_topology_and_twin_surfaces.md
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import subprocess
 import tempfile
@@ -19,15 +18,16 @@ from zcg.core.constants import (
     DEFAULT_PLUGIN_BASE_PORT,
     NODE_MANIFEST_REL_PATH,
     ROLE_DEFAULT_PRECEDENCE,
-    SAFE_GIT_REF_RE,
     VALID_ENVIRONMENTS,
     VALID_LAYER_ROLES,
 )
+from zcg.core.domain import is_safe_git_ref, is_safe_git_remote, is_safe_host
 from zcg.core.manifests import load_node_manifest
 from zcg.topology.identity import resolve_default_parent_dir, resolve_node_entity_identity
 
 VALID_SETUP_PURPOSES: Final[tuple[str, ...]] = (
     "individual-sovereign",
+    "academic-tutor",
     "enterprise-network",
     "public-institution",
     "knowledge-commons",
@@ -35,7 +35,14 @@ VALID_SETUP_PURPOSES: Final[tuple[str, ...]] = (
     "b2b-consortium",
 )
 VALID_GOVERNANCE_POSTURES: Final[tuple[str, ...]] = ("sovereign", "managed")
-PERSONAL_CONSTELLATION_PILLARS: Final[tuple[str, ...]] = ("pc", "tutor", "work", "wallet")
+PERSONAL_CONSTELLATION_PILLARS: Final[tuple[str, ...]] = (
+    "profile",
+    "tutor",
+    "work",
+    "wallet",
+    "security",
+    "game",
+)
 VALID_SETTLEMENT_MODES: Final[tuple[str, ...]] = (
     "none",
     "manual-reference",
@@ -47,15 +54,16 @@ VALID_SURFACE_ORIGIN_MODES: Final[tuple[str, ...]] = (
     "cloud-ephemeral",
 )
 DEFAULT_INSPECT_TIMEOUT_SECONDS: Final[int] = 15
-SAFE_HOST_RE: Final[re.Pattern[str]] = re.compile(r"^[a-zA-Z0-9.-]+(?::[0-9]{1,5})?$")
-SAFE_GIT_REMOTE_RE: Final[re.Pattern[str]] = re.compile(
-    r"^(?:https?|ssh|git|file)://[^\s]+$|^git@[a-zA-Z0-9.-]+:[a-zA-Z0-9._/-]+$"
-)
 _PURPOSE_MATRIX: Final[dict[str, tuple[str, str, tuple[str, ...]]]] = {
     "individual-sovereign": (
         "workstation",
         "individual",
         ("universal-base", "workstation-control-tower"),
+    ),
+    "academic-tutor": (
+        "department",
+        "individual",
+        ("academic-base", "academic-curriculum", "tutor-study-cockpit"),
     ),
     "enterprise-network": (
         "corporate",
@@ -110,12 +118,21 @@ def resolve_purpose_archetype(purpose: str, *, layer_role: str | None = None) ->
             else def_tpls
         )
     )
+    def_prec = (
+        90
+        if clean_purpose == "individual-sovereign" and eff_role == "workstation"
+        else (
+            86
+            if clean_purpose == "academic-tutor" and layer_role is None
+            else ROLE_DEFAULT_PRECEDENCE[eff_role]
+        )
+    )
     return {
         "purpose": clean_purpose,
         "default_role": eff_role,
         "default_entity_kind": def_ek,
         "default_governance_posture": posture,
-        "default_precedence": ROLE_DEFAULT_PRECEDENCE[eff_role],
+        "default_precedence": def_prec,
         "default_templates": list(tpls),
         "personal_constellation_pillars": (
             list(PERSONAL_CONSTELLATION_PILLARS) if clean_purpose == "individual-sovereign" else []
@@ -132,9 +149,9 @@ def _classify_personal_pillar(
     if exp_pillar in PERSONAL_CONSTELLATION_PILLARS:
         return exp_pillar
     if layer_role == "workstation":
-        return "pc"
-    for suffix in ("tutor", "work", "wallet"):
-        if layer_id == suffix or layer_id.endswith(f"-{suffix}"):
+        return "profile"
+    for suffix in PERSONAL_CONSTELLATION_PILLARS:
+        if suffix != "profile" and (layer_id == suffix or layer_id.endswith(f"-{suffix}")):
             return suffix
     return None
 
@@ -211,7 +228,7 @@ def resolve_surface_origin(
     pub_override = str(eff_env.get("ZCG_SURFACE_PUBLIC_ORIGIN") or "").strip().rstrip("/")
     if pub_override:
         scheme, sep, host_part = pub_override.partition("://")
-        if scheme not in ("http", "https") or not sep or not SAFE_HOST_RE.match(host_part):
+        if scheme not in ("http", "https") or not sep or not is_safe_host(host_part):
             raise ValueError(f"INVALID_SURFACE_ORIGIN_HOST: {pub_override!r}")
         return {
             "origin_mode": "cloud-ephemeral",
@@ -220,7 +237,7 @@ def resolve_surface_origin(
         }
     f_host = forwarded_host.strip()
     if f_host:
-        if not SAFE_HOST_RE.match(f_host):
+        if not is_safe_host(f_host):
             raise ValueError(f"INVALID_SURFACE_ORIGIN_HOST: {forwarded_host!r}")
         proto = "http" if forwarded_proto.strip().lower() == "http" else "https"
         origin = f"{proto}://{f_host}"
@@ -268,9 +285,9 @@ def _checkout_node_source(
     clean_ref = source_ref.strip()
     if not clean_ref or clean_ref.startswith("-"):
         raise ValueError(f"UNSAFE_GIT_REMOTE_REF: {source_ref!r}")
-    if not SAFE_GIT_REF_RE.match(branch) or ".." in branch:
+    if not is_safe_git_ref(branch) or ".." in branch:
         raise ValueError(f"Invalid branch {branch!r}")
-    if SAFE_GIT_REMOTE_RE.match(clean_ref) is None:
+    if not is_safe_git_remote(clean_ref):
         local_dir = Path(clean_ref).expanduser().resolve()
         m_file = local_dir / NODE_MANIFEST_REL_PATH
         if not m_file.is_file():

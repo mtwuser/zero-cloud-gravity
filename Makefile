@@ -1,4 +1,4 @@
-# ZeroCloudGravity Engine & Workstation Makefile (v1.1.0)
+# ZeroCloudGravity Engine & Workstation Makefile (v1.2.0)
 export PYTHONDONTWRITEBYTECODE := 1
 export ZCG_NO_BROWSER := 1
 
@@ -36,7 +36,7 @@ help:
 	@echo "  make test                Run Unit + Imp + E2E suites at 100% branch coverage"
 	@echo "  make verify              Run full 8-stage ./scripts/verify-repo.sh gate"
 	@echo "  make stage-showcase      Provision live [CAP-01..CAP-10] ASGI showcase (ARGS=--stop)"
-	@OSS_CONTRIB="$(OSS_CONTRIB)" PYTHONPATH=src $(PYTHON) -c 'from pathlib import Path; from zcg.governance.oss_contrib import should_expose_oss_targets; should_expose_oss_targets(Path.cwd()) and print("\n".join(["  make oss-push-branch     Push active feat/* or fix/* branch to private dev-<repo> CI (dev-only)", "  make oss-promote-master  Fast-forward verified branch to private master, clean branch & sync", "  make oss-publish         Export tracker-free snapshot to public upstream (CREATE_PR=1 for PR flow)"]))'
+	@OSS_CONTRIB="$(OSS_CONTRIB)" PYTHONPATH=src $(PYTHON) -c 'from pathlib import Path; from zcg.governance.work.oss_contrib import should_expose_oss_targets; should_expose_oss_targets(Path.cwd()) and print("\n".join(["  make oss-push-branch     Push active feat/* or fix/* branch to private dev-<repo> CI (dev-only)", "  make oss-promote-master  Fast-forward verified branch to private master, clean branch & sync", "  make oss-publish         Export tracker-free snapshot to public upstream (CREATE_PR=1 for PR flow)"]))'
 
 setup-dev:
 	@$(PYTHON) -m venv .venv
@@ -114,4 +114,16 @@ verify:
 stage-showcase:
 	@$(ZCG) stage-showcase $(ARGS)
 
--include mk/oss-contrib.mk
+# Isolated Open-Source Engine Contribution Targets (active only on private dev-<repo> clones)
+OSS_REMOTE_URL ?= git@github.com:mtwuser/zero-cloud-gravity.git
+
+.PHONY: oss-push-branch oss-promote-master oss-publish
+
+oss-push-branch:
+	@$(ZCG) $(if $(filter 1,$(DRY_RUN)),--dry-run,) oss push-branch . $(if $(filter 1,$(VERIFY)),--verify,)
+
+oss-promote-master:
+	@$(ZCG) $(if $(filter 1,$(DRY_RUN)),--dry-run,) oss promote-master .
+
+oss-publish: $(if $(filter 0,$(VERIFY)),,verify)
+	@$(ZCG) $(if $(filter 1,$(DRY_RUN)),--dry-run,) oss publish . --remote-url "$(OSS_REMOTE_URL)" --release-version "$(RELEASE_VERSION)" $(if $(CONTRIB_BRANCH),--contrib-branch "$(CONTRIB_BRANCH)",) $(if $(filter 1,$(CREATE_PR)),--create-pr,)

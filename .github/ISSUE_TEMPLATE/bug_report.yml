@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for reporting an issue in **ZeroCloudGravity**. Please use ISO-neutral examples (`corp-iso-root`, `squad-iso`, `alex-pc`) and omit personal credentials, OAuth tokens, or private paths.
+        Thank you for reporting an issue in **ZeroCloudGravity**. Please use ISO-neutral examples (`corp-iso-root`, `squad-iso`, `persona-profile`) and omit personal credentials, OAuth tokens, or private paths.
   - type: dropdown
     id: component
     attributes:

@@ -27,7 +27,9 @@ from zcg.capsules.constants import (
 from zcg.core.constants import MCP_JSONRPC_PROTOCOL_REV, REPO_DIR
 from zcg.core.manifests import read_version
 from zcg.mcp.catalogs import MCP_TOOLS_CATALOG
+from zcg.mcp.http_transport import run_mcp_http_server
 from zcg.mcp.orchestrator import EphemeralOrchestrationMixin
+from zcg.web.auth.tls import TLSTransportConfig
 
 
 def _extract_result_json(result: dict[str, Any]) -> dict[str, Any]:
@@ -262,6 +264,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--log-dir", type=Path, default=None)
     p.add_argument("--layer-id", default=None)
     p.add_argument("--layer-role", default=None)
+    p.add_argument("--http-port", type=int, default=None)
+    p.add_argument("--http-host", default="127.0.0.1")
+    p.add_argument("--tls-certfile", type=Path, default=None)
+    p.add_argument("--tls-keyfile", type=Path, default=None)
+    p.add_argument("--tls-client-ca", type=Path, default=None)
+    p.add_argument("--behind-tls-proxy", action="store_true")
     p.add_argument("--self-test", action="store_true")
     ns = p.parse_args(argv)
     if ns.self_test:
@@ -273,5 +281,14 @@ def main(argv: list[str] | None = None) -> int:
         layer_role_override=ns.layer_role,
         log_dir=ns.log_dir,
     )
+    if ns.http_port is not None:
+        tls_cfg = TLSTransportConfig(
+            certfile=ns.tls_certfile,
+            keyfile=ns.tls_keyfile,
+            client_ca_file=ns.tls_client_ca,
+            behind_tls_proxy=bool(ns.behind_tls_proxy),
+        )
+        run_mcp_http_server(srv, host=ns.http_host, port=ns.http_port, tls_config=tls_cfg)
+        return 0
     run_stdio_loop(srv)
     return 0

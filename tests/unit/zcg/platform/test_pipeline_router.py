@@ -12,7 +12,7 @@ from typing import Any
 import pytest
 
 from zcg.platform.pipeline_router import DataPipelineRuntime, create_data_pipeline_router
-from zcg.web.factory import create_web_app
+from zcg.web.http.factory import create_web_app
 
 
 async def _call(

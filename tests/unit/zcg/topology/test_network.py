@@ -97,11 +97,11 @@ class TestNetwork:
         corp_topo = network.discover_network_topology(corp_root)
         dept_topo = network.discover_network_topology(dept_a, parent_dir=corp_root)
         squad_topo = network.discover_network_topology(squad_a, parent_dir=dept_a)
-        ws_dir = tmp_path / "user-pc"
+        ws_dir = tmp_path / "user-profile"
         _write_manifest(
             ws_dir,
             {
-                "layer_id": "user-pc",
+                "layer_id": "user-profile",
                 "layer_role": "workstation",
                 "entity_kind": "individual",
                 "linked_nodes": [
@@ -112,7 +112,7 @@ class TestNetwork:
                         "precedence": 20,
                         "shared_packs": ["corporate-operations"],
                     },
-                    {"node_id": "user-pc", "relation": "lateral-peer"},
+                    {"node_id": "user-profile", "relation": "lateral-peer"},
                     {"node_id": "peer-lab", "relation": "invalid-fallback"},
                 ],
             },

@@ -162,12 +162,17 @@ class TestSurfaceComposer:
             repo_dir=eng,
             dry_run=True,
         )
+        (node_dir / "templates/custom-portal").mkdir(parents=True)
+        (node_dir / "templates/custom-portal/template.json").write_text(
+            json.dumps({"stack_group": "plugin-stack"}), encoding="utf-8"
+        )
         live_node = surface_composer.sync_workspace_makefile(
             node_dir,
             layer_id="dept-custom",
             layer_role="department",
             effective_parent=par,
             repo_dir=eng,
+            active_templates=["custom-portal"],
         )
         native_node = tmp_path / "node-native"
         native_node.mkdir()

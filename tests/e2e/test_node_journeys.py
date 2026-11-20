@@ -17,10 +17,10 @@ import pytest
 
 from zcg.capsules.citations import verify_epistemic_context_claims
 from zcg.cli.dispatcher import dispatch_zcg_cli
-from zcg.cockpit.asgi import create_node_cockpit_asgi_app
+from zcg.cockpit.ops.asgi import create_node_cockpit_asgi_app
 from zcg.core.constants import REPO_DIR
 from zcg.mcp.server import ZeroCloudMCPServer, run_stdio_loop
-from zcg.web.request import Message, Scope
+from zcg.web.http.request import Message, Scope
 
 
 def _run_zcg(subcmd: str, *args: str) -> dict[str, object]:
@@ -117,8 +117,10 @@ class TestNodeJourneys:
 
         # Assert
         assert root_boot["active_cockpit_url"] == "http://127.0.0.1:8710/?env=dev"
+        assert ".localhost" in str(root_boot["active_dashboard_url"])
         assert dept_boot["layer_role"] == "department"
         assert squad_boot["active_cockpit_url"] == "http://127.0.0.1:8750/?env=dev"
+        assert ".localhost" in str(squad_boot["active_dashboard_url"])
         assert done_res["task_status"] == "completed"
         assert prom_res["target_template"] == "dept-iso-eng"
         assert sync_res["layer_id"] == "squad-iso-grid"
@@ -245,33 +247,33 @@ class TestNodeJourneys:
     def test_personal_sovereign_triad_links_spinout_and_five_vertical_cockpits_expected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Verify Personal Triad (:8790/:8786/:8787), spinout, links, and V1..V5 ASGI cockpits."""
+        """Verify Personal Triad (:8790/:8786/:8787), spinout, links, and composable cockpits."""
         # Arrange
         monkeypatch.setenv("HOME", str(tmp_path / "home"))
         monkeypatch.setenv("ZCG_NO_BROWSER", "1")
         monkeypatch.setenv("ZCG_NO_DAEMON", "1")
         monkeypatch.setenv("ZCG_RESONANCE_KEY", "iso-triad-resonance-key")
-        pc_dir = tmp_path / "alex-pc"
-        tutor_dir = tmp_path / "alex-tutor"
-        work_dir = tmp_path / "alex-work"
+        profile_dir = tmp_path / "persona-profile"
+        tutor_dir = tmp_path / "persona-tutor"
+        work_dir = tmp_path / "persona-work"
         org_dir = tmp_path / "org-alpha"
         sec_dir = tmp_path / "secops-alpha"
         spin_dir = tmp_path / "saas-spinout"
         git_bin = shutil.which("git") or "/usr/bin/git"
 
         _run_zcg(
-            "bootstrap", str(pc_dir), "--id", "alex-pc", "--role", "workstation",
+            "bootstrap", str(profile_dir), "--id", "persona-profile", "--role", "workstation",
             "--precedence", "90", "--entity-kind", "individual", "--lang", "es",
             "--templates", "universal-base,workstation-control-tower",
         )  # fmt: skip
         _run_zcg(
-            "bootstrap", str(tutor_dir), "--id", "alex-tutor", "--role", "department",
-            "--precedence", "86", "--entity-kind", "individual", "--parent-dir", str(pc_dir),
+            "bootstrap", str(tutor_dir), "--id", "persona-tutor", "--role", "department",
+            "--precedence", "86", "--entity-kind", "individual", "--parent-dir", str(profile_dir),
             "--lang", "es", "--templates", "academic-base,academic-curriculum,tutor-study-cockpit",
         )  # fmt: skip
         _run_zcg(
-            "bootstrap", str(work_dir), "--id", "alex-work", "--role", "department",
-            "--precedence", "87", "--entity-kind", "individual", "--parent-dir", str(pc_dir),
+            "bootstrap", str(work_dir), "--id", "persona-work", "--role", "department",
+            "--precedence", "87", "--entity-kind", "individual", "--parent-dir", str(profile_dir),
             "--lang", "es", "--templates", "business-base,software-engineering,node-work-cockpit",
         )  # fmt: skip
         _run_zcg(
@@ -293,10 +295,10 @@ class TestNodeJourneys:
         # Act — 1. Context branches (opportunity/*, venture/*, engagement/*) + spinout-project
         for args in (
             ["init", "-b", "master"],
-            ["config", "user.email", "alex@personal.local"],
-            ["config", "user.name", "Alex"],
+            ["config", "user.email", "persona@personal.local"],
+            ["config", "user.name", "Operator"],
             ["add", "."],
-            ["commit", "-m", "chore: bootstrap alex-work"],
+            ["commit", "-m", "chore: bootstrap persona-work"],
         ):
             subprocess.run([git_bin, "-C", str(work_dir), *args], check=True, capture_output=True)
 
@@ -331,11 +333,11 @@ class TestNodeJourneys:
 
         # 2. Bidirectional tutor <-> work links, HR & B2B links, and citation_receipt proof
         _run_zcg(
-            "link", str(work_dir), "--target", "alex-tutor", "--relation", "knowledge-feed",
+            "link", str(work_dir), "--target", "persona-tutor", "--relation", "knowledge-feed",
             "--ref", str(tutor_dir), "--packs", "academic-curriculum",
         )  # fmt: skip
         _run_zcg(
-            "link", str(tutor_dir), "--target", "alex-work", "--relation", "knowledge-feed",
+            "link", str(tutor_dir), "--target", "persona-work", "--relation", "knowledge-feed",
             "--ref", str(work_dir),
         )  # fmt: skip
         _run_zcg(
@@ -348,7 +350,7 @@ class TestNodeJourneys:
         )  # fmt: skip
 
         consult_res = _run_zcg(
-            "consult-layer", str(work_dir), "--layer", "alex-tutor", "--query", "Hermitian"
+            "consult-layer", str(work_dir), "--layer", "persona-tutor", "--query", "Hermitian"
         )
         tutor_mcp = ZeroCloudMCPServer(repo_dir=tutor_dir, log_dir=tutor_dir / "logs")
         q_raw = tutor_mcp.call_tool(
@@ -373,22 +375,26 @@ class TestNodeJourneys:
             tutor_dir,
         )
 
-        # 3. Validate composable multi-module Reference Dashboards end-to-end across the node fleet
+        # 3. Validate Day-0 Pending Setup Studio -> Phase D Configured Workspace across node fleet
         async def _verify_composable_dashboards() -> dict[str, Any]:
             app_tutor = create_node_cockpit_asgi_app(tutor_dir)
-            app_pc = create_node_cockpit_asgi_app(pc_dir)
+            app_profile = create_node_cockpit_asgi_app(profile_dir)
             app_work = create_node_cockpit_asgi_app(work_dir)
             app_spin = create_node_cockpit_asgi_app(spin_dir)
             app_sec = create_node_cockpit_asgi_app(sec_dir)
             app_org = create_node_cockpit_asgi_app(org_dir)
+            _, pend_tutor = await _asgi_req(app_tutor, "GET", "/")
+            for nd in (tutor_dir, profile_dir, work_dir, sec_dir, org_dir):
+                (nd / "README.md").write_text("# Configured\n", encoding="utf-8")
+                (nd / "WORKTASK.md").write_text("- [x] Complete setup.\n", encoding="utf-8")
 
             _, h_tutor = await _asgi_req(app_tutor, "GET", "/")
-            _, h_pc = await _asgi_req(app_pc, "GET", "/")
+            _, h_profile = await _asgi_req(app_profile, "GET", "/")
             _, h_work = await _asgi_req(app_work, "GET", "/")
             _, h_sec = await _asgi_req(app_sec, "GET", "/")
             _, h_org = await _asgi_req(app_org, "GET", "/")
 
-            # Tutor combines crud (cards/list/table) + vault + node_mesh + telemetry
+            # Exercise composable capability endpoints across the live node fleet
             st1, b1 = await _asgi_req(
                 app_tutor, "POST", "/api/modules/crud", body=b'{"title":"Eigenvalue Drill"}'
             )
@@ -396,7 +402,7 @@ class TestNodeJourneys:
             st_f, b_f = await _asgi_req(
                 app_tutor, "POST", "/api/modules/vault", body=b'{"filename":"sheet.md"}'
             )
-            st2, b2 = await _asgi_req(app_pc, "GET", "/api/modules/telemetry")
+            st2, b2 = await _asgi_req(app_profile, "GET", "/api/modules/telemetry")
             st3_c, b3_c = await _asgi_req(
                 app_work, "GET", "/api/modules/role-projection", query="stage=candidate_application"
             )
@@ -422,7 +428,7 @@ class TestNodeJourneys:
             st_db, b_db = await _asgi_req(app_org, "GET", "/dashboard")
             st_css, b_css = await _asgi_req(app_org, "GET", "/static/css/plugin.css")
             return {
-                "htmls": (h_tutor, h_pc, h_work, h_sec, h_org),
+                "pend": pend_tutor, "htmls": (h_tutor, h_profile, h_work, h_sec, h_org),
                 "codes": (
                     st1, st_l, st_f, st2, st3_c, st3_d, st_p1, st_p2, st4, st5, st_db, st_css
                 ),
@@ -437,7 +443,7 @@ class TestNodeJourneys:
         # Assert
         assert (spin_dir / "docs/venture_mvp.md").is_file()
         assert spin_res["project_id"] == "saas-spinout"
-        assert consult_res["target_layer"] == "alex-tutor" and consult_res["capsule_matches"]
+        assert consult_res["target_layer"] == "persona-tutor" and consult_res["capsule_matches"]
         assert claim_ok["verified"] is True
         assert v_out["codes"] == (201, 200, 201, 200, 200, 200, 200, 286, 201, 200, 200, 200)
         assert b"knowledge-stewardship-portal" in v_out["dash"] and b"#2dd4bf" in v_out["css"]
@@ -448,9 +454,10 @@ class TestNodeJourneys:
         assert v_out["tel"]["capability"] == "telemetry"
         assert v_out["audit"]["integrity_verified"] is True
         assert v_out["pipe"]["batch_cdc_events"] == 1
+        assert b"data-island='draft-studio'" in v_out["pend"]
         assert b"crud" in v_out["htmls"][0] and b"vault" in v_out["htmls"][0]
         exp_mods = (
-            b"crud", b"telemetry", b"role_projection", b"telemetry", b"data_pipeline"
+            b"crud", b"spatial_atlas", b"role_projection", b"crud", b"data_pipeline"
         )  # fmt: skip
         for expected_mod, raw_html in zip(exp_mods, v_out["htmls"], strict=True):
             assert expected_mod in raw_html

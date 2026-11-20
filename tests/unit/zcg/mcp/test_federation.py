@@ -83,10 +83,17 @@ class TestMCPFederation:
         repo = tmp_path / "repo"
         repo.mkdir()
         _seed_federation_repo(repo)
+        (repo / "src/sample").mkdir(parents=True)
+        (repo / "src/sample/mod.py").write_text(
+            "def hi() -> int:\n    return 1\n", encoding="utf-8"
+        )
         node = FederationMixin(repo_dir=repo, log_dir=tmp_path / "logs")
 
         # Act
         ov = json.loads(node.tool_get_layer_overview({})["content"][0]["text"])
+        ov_ast = json.loads(
+            node.tool_get_layer_overview({"include_ast_graph": True})["content"][0]["text"]
+        )
         bare_ov = json.loads(
             FederationMixin(repo_dir=tmp_path).tool_get_layer_overview({})["content"][0]["text"]
         )
@@ -116,6 +123,11 @@ class TestMCPFederation:
 
         # Assert
         assert ov["channel_1_node_and_system_state"]["layer_id"] == "corp-root"
+        assert "codebase_ast_graph" not in ov["channel_2_governance_and_stack_contracts"]
+        assert (
+            ov_ast["channel_2_governance_and_stack_contracts"]["codebase_ast_graph"]["module_count"]
+            == 1
+        )
         assert bare_ov["channel_4_navigable_docs_and_federated_mcps"]["documents"] == []
         assert doc_disk == "# Index\n"
         assert doc_br == "# Index\n"
@@ -157,7 +169,7 @@ class TestMCPFederation:
             json.dumps(
                 {
                     "schema_version": "zcg-node-v1",
-                    "layer_id": "iso-pc",
+                    "layer_id": "iso-profile",
                     "layer_role": "workstation",
                 }
             ),

@@ -10,7 +10,7 @@ Security patches are maintained for the active `1.x` release line:
 
 | Version | Supported | Notes |
 | :--- | :--- | :--- |
-| `1.0.x` | Yes | Current Sovereign Zero-Cloud Node & `zcg-mcp` baseline. |
+| `1.x` | Yes | Active Sovereign Zero-Cloud Node, `R0..R3` OIDC/IAP Rings, TLS 1.3 & `zcg-mcp` line. |
 
 ---
 
@@ -25,6 +25,7 @@ Every ZeroCloudGravity node enforces five defense-in-depth rings across CLI, hoo
 | **3. Ephemeral Sandboxes** | `chmod 0o555` + TTL Reaper | Ephemeral Department Bots ([spawner.py](src/zcg/ephemeral/spawner.py)) materialize read-only (`0o555`/`0o444`) sandboxes with bounded TTLs and zero write capabilities. |
 | **4. Cryptographic Capsules** | `HMAC-SHA256` + `SHA-256` Receipts | `rcap1` capsules ([codec.py](src/zcg/capsules/codec.py)) authenticate `ZCG_RESONANCE_KEY` frames and detect source tampering via `CITATION_DRIFT_DETECTED` ([citations.py](src/zcg/capsules/citations.py)). |
 | **5. Lifecycle Hook Guard** | `PreToolUse` (`pre_tool_guard.py`) | Deterministic Antigravity hook ([pre_tool_guard.py](antigravity/.gemini/config/scripts/pre_tool_guard.py)) blocks automated mutating Git commands, destructive shell patterns, and protected rule overwrites. |
+| **6. `R0..R3` Surface Rings & TLS 1.3** | `SurfaceAccessPolicy` + `TLSTransportConfig` | Enforces pre-body `R0..R3` capability rings, departmental `required_groups`, Google Cloud IAP / OIDC `S256` PKCE (`email_verified == true` + cryptographic `hd`), `HSTS`, and `PLAINTEXT_NON_LOOPBACK_BLOCKED` ([surface_access.py](src/zcg/web/auth/surface_access.py), [tls.py](src/zcg/web/auth/tls.py)). |
 
 ---
 
@@ -32,7 +33,7 @@ Every ZeroCloudGravity node enforces five defense-in-depth rings across CLI, hoo
 
 - **Zero Shell Interpolation**: Python modules execute external binaries (`git`, `xdg-open`, verification scripts) strictly as argument lists with `shell=False`.
 - **Non-Root Container**: [Dockerfile](Dockerfile) runs `zcg-mcp` under an unprivileged `zcg` user (`UID 10001`) with `ZCG_NO_BROWSER=1` and zero network ports exposed.
-- **Zero Secrets in Git**: Never commit API keys, `ZCG_RESONANCE_KEY` secrets, or private organizational identifiers; inject credentials exclusively via runtime environment variables or Google Cloud Application Default Credentials (`IAM/ADC`).
+- **Zero Secrets & Zero Admin Emails in Git**: Never commit API keys, `ZCG_RESONANCE_KEY` secrets, personal mailboxes, or break-glass admin emails; inject IAM allowlists (`ZCG_OPERATOR_EMAILS`, `ZCG_MEMBER_EMAILS`, `ZCG_SCOPED_EXTERNAL_EMAILS`) and credentials exclusively via runtime environment variables, Google Secret Manager, or Workload Identity Federation (`IAM/ADC`).
 
 ---
 

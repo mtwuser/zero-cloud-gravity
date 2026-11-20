@@ -14,7 +14,7 @@
       "surfaces/data/"
     ],
     "healthcheck_endpoint": "/healthz",
-    "enabled_modules": ["telemetry", "node_mesh", "work_ledger"],
+    "enabled_modules": ["work_ledger", "docs_reader", "crud", "vault", "spatial_atlas"],
     "web_assets": {
       "templates_dir": "web/templates",
       "static_dir": "web/static"

@@ -14,11 +14,25 @@ from typing import Any
 import pytest
 
 from zcg.cli.dispatcher import dispatch_zcg_cli
-from zcg.cockpit.asgi import create_node_cockpit_asgi_app
-from zcg.core.constants import NODE_MANIFEST_REL_PATH, REPO_DIR
+from zcg.cockpit.ops.asgi import create_node_cockpit_asgi_app
+from zcg.cockpit.routing.surface_routing import project_ring_scoped_capsule
+from zcg.core.constants import NODE_MANIFEST_REL_PATH, REPO_DIR, SIDECAR_MANIFEST_REL_PATH
+from zcg.governance.policy.capabilities import compute_template_pack_sha256
+from zcg.governance.runtime.tool_isolation import provision_isolated_tool_manifest
+from zcg.mcp.http_transport import create_mcp_asgi_app
+from zcg.mcp.server import ZeroCloudMCPServer
+from zcg.platform.projection import DisclosureTier, PayloadFieldSegment
 from zcg.topology.identity import resolve_node_entity_identity
-from zcg.web.request import Message, Scope
-from zcg.web.security import CSRF_HEADER
+from zcg.web.auth.security import CSRF_HEADER, compute_sri_sha384
+from zcg.web.auth.surface_access import (
+    DISCLOSURE_TIER_HEADER,
+    GUEST_GRANT_HEADER,
+    SURFACE_RING_HEADER,
+    ExternalSubjectKind,
+    SurfaceRing,
+    issue_scoped_surface_grant,
+)
+from zcg.web.http.request import Message, Scope
 
 
 def _run_zcg(repo_dir: Path, subcmd: str, *args: str) -> dict[str, Any]:
@@ -167,78 +181,80 @@ class TestPluginPortalJourneys:
     def test_personal_sovereign_spinout_project_and_pub_twin_pro_portal_expected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Verify alex-pc stays private while venture spins out and pub-alex serves pro."""
+        """Verify persona-profile stays private while venture spins out and pub-persona is pro."""
         # Arrange
         monkeypatch.setenv("HOME", str(tmp_path / "home"))
         monkeypatch.setenv("ZCG_NO_BROWSER", "1")
-        alex_pc = tmp_path / "alex-pc"
-        alex_work = tmp_path / "alex-work"
+        persona_profile = tmp_path / "persona-profile"
+        persona_work = tmp_path / "persona-work"
         micro_saas = tmp_path / "micro-saas"
-        pub_alex = tmp_path / "pub-alex"
+        pub_persona = tmp_path / "pub-persona"
 
-        # Act — 1. Bootstrap private alex-pc (:8790) & alex-work (:8787) and spinout venture/*
+        # Act — 1. Bootstrap private persona-profile & persona-work and spinout venture/*
         _run_zcg(
-            REPO_DIR, "bootstrap", str(alex_pc), "--id", "alex-pc",
+            REPO_DIR, "bootstrap", str(persona_profile), "--id", "persona-profile",
             "--role", "workstation", "--entity-kind", "individual", "--precedence", "90",
         )  # fmt: skip
         _run_zcg(
-            REPO_DIR, "bootstrap", str(alex_work), "--id", "alex-work",
+            REPO_DIR, "bootstrap", str(persona_work), "--id", "persona-work",
             "--role", "department", "--entity-kind", "individual",
-            "--governing-root", "alex-pc", "--precedence", "87",
+            "--governing-root", "persona-profile", "--precedence", "87",
         )  # fmt: skip
         subprocess.run(
-            ["git", "init", "-b", "master"], cwd=alex_work, check=True, capture_output=True
+            ["git", "init", "-b", "master"], cwd=persona_work, check=True, capture_output=True
         )
         subprocess.run(
-            ["git", "config", "user.email", "alex@example.org"], cwd=alex_work, check=True
+            ["git", "config", "user.email", "persona@example.org"], cwd=persona_work, check=True
         )
-        subprocess.run(["git", "config", "user.name", "Alex"], cwd=alex_work, check=True)
-        subprocess.run(["git", "add", "."], cwd=alex_work, check=True)
+        subprocess.run(["git", "config", "user.name", "Operator"], cwd=persona_work, check=True)
+        subprocess.run(["git", "add", "."], cwd=persona_work, check=True)
         subprocess.run(
-            ["git", "commit", "-m", "init"], cwd=alex_work, check=True, capture_output=True
+            ["git", "commit", "-m", "init"], cwd=persona_work, check=True, capture_output=True
         )
         subprocess.run(
             ["git", "checkout", "-b", "venture/micro-saas"],
-            cwd=alex_work, check=True, capture_output=True,
+            cwd=persona_work, check=True, capture_output=True,
         )  # fmt: skip
-        (alex_work / "app.py").write_text("READY = True\n", encoding="utf-8")
-        subprocess.run(["git", "add", "app.py"], cwd=alex_work, check=True)
+        (persona_work / "app.py").write_text("READY = True\n", encoding="utf-8")
+        subprocess.run(["git", "add", "app.py"], cwd=persona_work, check=True)
         subprocess.run(
-            ["git", "commit", "-m", "mvp"], cwd=alex_work, check=True, capture_output=True
+            ["git", "commit", "-m", "mvp"], cwd=persona_work, check=True, capture_output=True
         )
         subprocess.run(
-            ["git", "checkout", "master"], cwd=alex_work, check=True, capture_output=True
+            ["git", "checkout", "master"], cwd=persona_work, check=True, capture_output=True
         )
 
         spin_res = _run_zcg(
             REPO_DIR, "spinout-project", str(micro_saas),
-            "--source-dir", str(alex_work),
+            "--source-dir", str(persona_work),
             "--id", "micro-saas", "--from-branch", "venture/micro-saas",
         )  # fmt: skip
 
-        # 2. Bootstrap pub-alex Public Sovereign Twin governed by alex-pc & activate in pro
+        # 2. Bootstrap pub-persona Sovereign Twin governed by persona-profile & activate in pro
         _run_zcg(
-            REPO_DIR, "bootstrap", str(pub_alex), "--id", "pub-alex",
-            "--role", "knowledge", "--governing-root", "alex-pc",
+            REPO_DIR, "bootstrap", str(pub_persona), "--id", "pub-persona",
+            "--role", "knowledge", "--governing-root", "persona-profile",
         )  # fmt: skip
-        pub_m_path = pub_alex / NODE_MANIFEST_REL_PATH
+        pub_m_path = pub_persona / NODE_MANIFEST_REL_PATH
         pub_m = json.loads(pub_m_path.read_text(encoding="utf-8"))
         pub_m["visibility"] = "public"
-        pub_m["public_url"] = "https://github.com/alex-example/pub-alex.git"
+        pub_m["public_url"] = "https://github.com/persona-example/pub-persona.git"
         pub_m_path.write_text(json.dumps(pub_m, indent=2) + "\n", encoding="utf-8")
-        (pub_alex / "WORKTASK.md").write_text("# Tasks\n- [x] Ready\n", encoding="utf-8")
-        (pub_alex / "WORKVALI.md").write_text("# Validation\n- [x] Verified\n", encoding="utf-8")
-        (pub_alex / "CHANGELOG.md").write_text("# Changelog\n## [Unreleased]\n", encoding="utf-8")
+        (pub_persona / "WORKTASK.md").write_text("# Tasks\n- [x] Ready\n", encoding="utf-8")
+        (pub_persona / "WORKVALI.md").write_text("# Validation\n- [x] Verified\n", encoding="utf-8")
+        (pub_persona / "CHANGELOG.md").write_text(
+            "# Changelog\n## [Unreleased]\n", encoding="utf-8"
+        )
 
         pub_act = _run_zcg(
-            REPO_DIR, "apply-project", str(pub_alex),
+            REPO_DIR, "apply-project", str(pub_persona),
             "--template", "knowledge-stewardship-portal",
             "--service-action", "activate", "--env", "pro",
         )  # fmt: skip
-        pc_id = resolve_node_entity_identity(alex_pc)
-        pub_id = resolve_node_entity_identity(pub_alex)
+        profile_id = resolve_node_entity_identity(persona_profile)
+        pub_id = resolve_node_entity_identity(pub_persona)
         proj_m = json.loads((micro_saas / NODE_MANIFEST_REL_PATH).read_text(encoding="utf-8"))
-        pub_app = create_node_cockpit_asgi_app(pub_alex)
+        pub_app = create_node_cockpit_asgi_app(pub_persona)
         pub_dash = asyncio.run(_asgi_req(pub_app, "GET", "/dashboard"))
 
         # Assert
@@ -246,21 +262,186 @@ class TestPluginPortalJourneys:
         assert proj_m["layer_role"] == "project"
         assert proj_m["precedence"] == 80
         assert (micro_saas / "app.py").is_file()
-        assert pc_id["visibility"] == "private"
+        assert profile_id["visibility"] == "private"
         assert pub_id["entity_kind"] == "individual"
         assert pub_id["visibility"] == "public"
         assert pub_id["public_node_identity"]["bridge_mode"] == "private-to-public-twin"
-        assert pub_id["public_node_identity"]["canonical_domain"] == "pub-alex.knowledge.local"
+        assert pub_id["public_node_identity"]["canonical_domain"] == "pub-persona.knowledge.local"
         pub_svc = pub_act["services"][0]
         assert (
             pub_svc["intranet_topology"]["environment_reachability"]["pro"] == "public-remote-live"
         )
         assert (
             pub_svc["intranet_topology"]["active_subdomain_url"]
-            == "https://pub-alex.knowledge.local"
+            == "https://pub-persona.knowledge.local"
         )
         assert (
             pub_svc["intranet_topology"]["remote_production_url"]
-            == "https://github.com/alex-example/pub-alex.git"
+            == "https://github.com/persona-example/pub-persona.git"
         )
         assert pub_dash[0] == 200 and b"knowledge-stewardship-portal" in pub_dash[1]
+
+    def test_governed_portal_r0_to_r3_rings_keyless_cloud_deploy_and_cdn_sri_expected(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Verify R0..R3 rings, SHA-256 plugin pinning, cloud_deployment_pro.json, and CDN SRI."""
+        # Arrange
+        monkeypatch.setenv("ZCG_NO_BROWSER", "1")
+        monkeypatch.delenv("GOOGLE_APPLICATION_CREDENTIALS", raising=False)
+        root_ws = tmp_path / "corp-iso-root"
+        portal_ws = tmp_path / "org-iso"
+        tpl_dir = REPO_DIR / "templates/plugin-stack/knowledge-stewardship-portal"
+        tpl_sha = compute_template_pack_sha256(tpl_dir)
+        sri_hash = compute_sri_sha384(b"export const portal = 1;")
+        _run_zcg(
+            REPO_DIR, "bootstrap", str(root_ws), "--id", "corp-iso-root",
+            "--role", "corporate", "--precedence", "10",
+        )  # fmt: skip
+        root_m = json.loads((root_ws / NODE_MANIFEST_REL_PATH).read_text(encoding="utf-8"))
+        root_m["domain_governance"] = {
+            "canonical_domain": "iso.example",
+            "intranet_zone": "intranet.iso.example",
+        }
+        root_m["capability_policy"] = {
+            "plugin_policy": "curated-allowlist",
+            "allowed_plugins": ["knowledge-stewardship-portal"],
+            "allowed_plugin_digests": {"knowledge-stewardship-portal": f"sha256:{tpl_sha}"},
+        }
+        root_m["network_egress_policy"] = {
+            "allowed_domains": ["*.iso.example", "*.pkg.dev"],
+            "enable_canonical_cdn": True,
+            "artifact_mirrors": {
+                "container_registry": "europe-west1-docker.pkg.dev/iso-corp/containers",
+                "pypi_index_url": "https://europe-west1-python.pkg.dev/iso-corp/pypi/simple",
+                "require_private_mirrors": True,
+            },
+        }
+        (root_ws / NODE_MANIFEST_REL_PATH).write_text(json.dumps(root_m, indent=2) + "\n", "utf-8")
+
+        _run_zcg(
+            REPO_DIR, "bootstrap", str(portal_ws), "--id", "org-iso",
+            "--role", "knowledge", "--governing-root", "corp-iso-root", "--precedence", "20",
+        )  # fmt: skip
+        portal_m = json.loads((portal_ws / NODE_MANIFEST_REL_PATH).read_text(encoding="utf-8"))
+        portal_m["visibility"] = "public"
+        portal_m["domain_governance"] = {
+            "canonical_domain": "iso.example",
+            "dns_publication": "public-authoritative",
+        }
+        portal_m["network_egress_policy"] = {
+            "allowed_domains": ["*.iso.example", "*.pkg.dev"],
+            "enable_canonical_cdn": True,
+            "artifact_mirrors": {
+                "pypi_index_url": "https://europe-west1-python.pkg.dev/iso-corp/pypi/simple",
+            },
+        }
+        portal_m["cloud_deployment"] = {
+            "project_id": "iso-cloud-01",
+            "workload_identity_provider": "projects/100/locations/global/workloadIdentityPools/p1",
+            "service_account_email": "portal@iso-cloud-01.iam.gserviceaccount.com",
+        }
+        portal_m["surface_access"] = {
+            "default_ring": "public",
+            "session_key": "e2e-portal-session-key",
+            "route_rules": [
+                {
+                    "path_pattern": "/api/modules/crud*",
+                    "ring": "scoped-external",
+                    "disclosure_tier": "verified_competency",
+                }
+            ],
+        }
+        (portal_ws / NODE_MANIFEST_REL_PATH).write_text(
+            json.dumps(portal_m, indent=2) + "\n", "utf-8"
+        )
+        (portal_ws / "WORKTASK.md").write_text("# Tasks\n- [x] Ready\n", encoding="utf-8")
+        (portal_ws / "WORKVALI.md").write_text("# Validation\n- [x] Ready\n", encoding="utf-8")
+        (portal_ws / "CHANGELOG.md").write_text("# Changelog\n## [Unreleased]\n", encoding="utf-8")
+
+        # Act
+        _run_zcg(
+            REPO_DIR, "apply-project", str(portal_ws), "--parent-dir", str(root_ws),
+            "--template", "knowledge-stewardship-portal",
+            "--service-action", "deploy", "--env", "pro",
+        )  # fmt: skip
+        cloud_doc = json.loads(
+            (portal_ws / "surfaces/infra/cloud_deployment_pro.json").read_text(encoding="utf-8")
+        )
+        app = create_node_cockpit_asgi_app(portal_ws)
+        guest_tok = issue_scoped_surface_grant(
+            signing_key="e2e-portal-session-key",
+            subject_id="partner-guest",
+            ring=SurfaceRing.R1_SCOPED_EXTERNAL,
+            external_kind=ExternalSubjectKind.GUEST,
+            allowed_routes=("/api/modules/crud*",),
+        )
+
+        async def _check() -> tuple[int, dict[str, str], int, int, dict[str, str]]:
+            async def _req_h(
+                path: str, hdrs: dict[str, str] | None = None
+            ) -> tuple[int, dict[str, str]]:
+                raw_h = [(k.encode("latin1"), v.encode("latin1")) for k, v in (hdrs or {}).items()]
+                sent: list[Message] = []
+
+                async def _rcv() -> Message:
+                    return {"type": "http.request", "body": b"", "more_body": False}
+
+                async def _snd(msg: Message) -> None:
+                    sent.append(msg)
+
+                await app(
+                    {
+                        "type": "http",
+                        "method": "GET",
+                        "path": path,
+                        "query_string": b"",
+                        "headers": raw_h,
+                        "client": ("198.51.100.25", 53000),
+                    },
+                    _rcv,
+                    _snd,
+                )
+                resp_h = {
+                    bytes(k).decode("latin1").lower(): bytes(v).decode("latin1")
+                    for k, v in sent[0].get("headers", [])
+                }
+                return int(sent[0]["status"]), resp_h
+
+            st_pub, h_pub = await _req_h("/dashboard")
+            st_401, _ = await _req_h("/api/modules/crud")
+            st_r1, h_r1 = await _req_h("/api/modules/crud", {GUEST_GRANT_HEADER: guest_tok})
+            return st_pub, h_pub, st_401, st_r1, h_r1
+
+        st_pub, h_pub, st_401, st_r1, h_r1 = asyncio.run(_check())
+        tool_doc = provision_isolated_tool_manifest(portal_ws, "gemini-decisions", active_env="pro")
+        mcp_app = create_mcp_asgi_app(ZeroCloudMCPServer(repo_dir=portal_ws))
+        mcp_st, mcp_raw = asyncio.run(
+            _asgi_req(
+                mcp_app, "POST", "/mcp", body=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+            )
+        )
+        cap = project_ring_scoped_capsule(
+            resource_id="res-01",
+            target_node_id="partner-guest",
+            effective_disclosure_tier=h_r1[DISCLOSURE_TIER_HEADER],
+            segments=(
+                PayloadFieldSegment("summary", DisclosureTier.CORE_SUMMARY, "Public"),
+                PayloadFieldSegment("proof", DisclosureTier.VERIFIED_COMPETENCY, "Verified"),
+                PayloadFieldSegment("ssn", DisclosureTier.DAY1_ONBOARDING, "Redacted"),
+            ),
+        )
+
+        # Assert
+        assert sri_hash.startswith("sha384-")
+        assert cloud_doc["fqdn"] == "iso.example"
+        assert cloud_doc["egress_and_cdn"]["cdn_origins"] == ["https://cdn.iso.example"]
+        assert cloud_doc["cloud_run"]["env"]["PIP_INDEX_URL"].endswith("/simple")
+        assert st_pub == 200 and h_pub[SURFACE_RING_HEADER] == "R0"
+        assert "https://cdn.iso.example" in h_pub["content-security-policy"]
+        assert st_401 == 401 and st_r1 == 200
+        assert h_r1[SURFACE_RING_HEADER] == "R1"
+        assert cap.disclosed_fields == {"summary": "Public", "proof": "Verified"}
+        assert "ssn" in cap.withheld_field_ids
+        assert (portal_ws / SIDECAR_MANIFEST_REL_PATH).is_file()
+        assert tool_doc["runtime_dir"] == ".zcg/tools/gemini-decisions"
+        assert mcp_st == 200 and len(json.loads(mcp_raw)["result"]["tools"]) == 9

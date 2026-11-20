@@ -1,0 +1,21 @@
+{
+  "schema_version": "zcg-template-v1",
+  "name": "self-hosted-container",
+  "kind": "tool-stack",
+  "stack_group": "tool-stack",
+  "extends": "nist-csf-security",
+  "target_role": "environment-cluster",
+  "description": "Vendor-neutral OCI container, TLS 1.3 reverse-proxy, and RFC-standard OIDC federation deployment adapter.",
+  "recommended_surface_bindings": [
+    {
+      "binding_id": "self-hosted-container-edge",
+      "mode": "transversal",
+      "target_globs": ["infra/**", "Dockerfile", "system/**"],
+      "architectural_planes": ["infrastructure"],
+      "scopes": ["*"],
+      "traits": ["oci", "self-hosted"],
+      "rule_files": ["templates/tool-stack/self-hosted-container/rules/self-hosted-container.md"],
+      "invariants": ["Enforce non-root OCI images, TLS 1.3 / mTLS edge termination, and standard OIDC federation without cloud vendor lock-in."]
+    }
+  ]
+}

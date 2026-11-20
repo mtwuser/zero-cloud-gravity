@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# ZeroCloudGravity (v1.1.0) — Read-Only Ubuntu Workstation Drift Audit
-# Usage: ./scripts/workstation-audit.sh [<workstation-dir>] [--clean] [--version] [--help]
+# ZeroCloudGravity (v1.2.0) — Read-Only Ubuntu Workstation Drift Audit
+# Usage: ./scripts/workstation-audit.sh [<workstation-dir>] [--git-repos] [--clean] [--version] [--help]
 
 set -euo pipefail
 export LC_ALL=C
@@ -10,14 +10,15 @@ REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 VERSION_STR="$(tr -d '[:space:]' < "${REPO_DIR}/VERSION" 2>/dev/null || echo "unknown")"
 
 WORKSTATION_DIR=""
-MODE="audit"
+MODE="audit"; SCAN_GIT_REPOS=0
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/workstation-audit.sh [<workstation-dir>] [--clean] [--version] [--help]
+Usage: ./scripts/workstation-audit.sh [<workstation-dir>] [--git-repos] [--clean] [--version] [--help]
 
 Modes:
   (no flag)      Read-only audit across Stow symlinks, APT, Snap, NPM, External, GNOME, and Git
+  --git-repos    Include multi-repository Git identity, scope (local/global/includeIf), and GH007 privacy table
   --clean        Interactive cleanup of residual backup files in $HOME
   -v, --version  Show ZeroCloudGravity version
   -h, --help     Show this help message
@@ -27,6 +28,7 @@ EOF
 for arg in "$@"; do
   case "${arg}" in
     audit|--clean) MODE="${arg}" ;;
+    --git-repos) SCAN_GIT_REPOS=1 ;;
     -v|--version) echo "zero-cloud-gravity v${VERSION_STR}"; exit 0 ;;
     -h|--help) usage; exit 0 ;;
     -*)
@@ -45,15 +47,16 @@ for arg in "$@"; do
   esac
 done
 
-if [[ -z "${WORKSTATION_DIR}" ]]; then
-  WORKSTATION_DIR="${ZCG_WORKSTATION_DIR:-${PWD}}"
-  WORKSTATION_DIR="$(cd "${WORKSTATION_DIR}" && pwd)"
-fi
-
-SYSTEM_DIR="${WORKSTATION_DIR}/system"
 WORKSTATION_CONF="${ZCG_WORKSTATION_CONF:-${HOME}/.config/zero-cloud-gravity/workstation.conf}"
-ZCG_RUNTIME_DIR="${REPO_DIR}"
-ACTIVE_PROFILE="universal-base"
+if [[ -z "${WORKSTATION_DIR}" ]]; then
+  if [[ -z "${ZCG_WORKSTATION_DIR:-}" || ! -d "${ZCG_WORKSTATION_DIR}" ]] && [[ -f "${WORKSTATION_CONF}" ]]; then
+    # shellcheck disable=SC1090
+    . "${WORKSTATION_CONF}"
+  fi
+  WORKSTATION_DIR="$(cd "${ZCG_WORKSTATION_DIR:-${PWD}}" && pwd)"
+fi
+SYSTEM_DIR="${WORKSTATION_DIR}/system"
+ZCG_RUNTIME_DIR="${REPO_DIR}"; ACTIVE_PROFILE="universal-base"
 if [[ -f "${WORKSTATION_CONF}" ]]; then
   # shellcheck disable=SC1090
   . "${WORKSTATION_CONF}"
@@ -115,12 +118,14 @@ audit_stow_module() {
 }
 
 ANTIGRAVITY_STOW_BASE="${ZCG_RUNTIME_REAL}"
-if [[ -d "${WORKSTATION_DIR}/antigravity" ]]; then
-  ANTIGRAVITY_STOW_BASE="${WORKSTATION_DIR}"
-elif [[ -n "${ZCG_WORKSTATION_DIR:-}" ]] && [[ -d "${ZCG_WORKSTATION_DIR}/antigravity" ]]; then
+ANTIGRAVITY_ALT_BASE="${WORKSTATION_DIR}"
+if [[ -n "${ZCG_WORKSTATION_DIR:-}" ]] && [[ -d "${ZCG_WORKSTATION_DIR}/antigravity" ]]; then
   ANTIGRAVITY_STOW_BASE="$(cd "${ZCG_WORKSTATION_DIR}" && pwd)"
+elif [[ -d "${WORKSTATION_DIR}/antigravity" ]]; then
+  ANTIGRAVITY_STOW_BASE="${WORKSTATION_DIR}"
+  ANTIGRAVITY_ALT_BASE="${ZCG_RUNTIME_REAL}"
 fi
-audit_stow_module "${ANTIGRAVITY_STOW_BASE}" "${ZCG_RUNTIME_REAL}" "antigravity"
+audit_stow_module "${ANTIGRAVITY_STOW_BASE}" "${ANTIGRAVITY_ALT_BASE}" "antigravity"
 for mod_path in "${WORKSTATION_DIR}"/*/; do
   [[ -d "${mod_path}" ]] || continue
   mod_name="$(basename "${mod_path}")"
@@ -257,7 +262,7 @@ if [[ -d "${EXT_DIR}" ]]; then
     INSTALLED=false
     if [[ -n "${CHECK:-}" ]] && dpkg -s "${CHECK}" &>/dev/null 2>&1; then
       INSTALLED=true
-      if [[ "${IN_MANIFEST}" == true ]] && [[ "${pkg_file}" == *"/apt-repo/"* ]] && ! apt-cache policy "${CHECK}" 2>/dev/null | grep -q 'http'; then
+      if [[ "${IN_MANIFEST}" == true ]] && [[ "${pkg_file}" == *"/apt-repo/"* ]] && ! apt-cache policy "${CHECK}" 2>/dev/null | grep -s 'http' >/dev/null; then
         INACTIVE_REPOS+=("${NAME}")
       fi
     elif [[ -n "${CHECK_CMD:-}" ]] && eval "${CHECK_CMD}" &>/dev/null 2>&1; then
@@ -324,6 +329,49 @@ elif [[ -n "${STATUS_LINES}" ]]; then
   warn "Uncommitted changes in ${WORKSTATION_DIR}"
 else
   ok "Working tree clean"
+fi
+
+# 9. Git Identity & Email Privacy
+section "Git Identity & Privacy"
+if [[ -d "${WORKSTATION_DIR}/.git" ]]; then
+  GIT_EMAIL="$(git -C "${WORKSTATION_DIR}" config --get user.email 2>/dev/null || true)"
+  GIT_NAME="$(git -C "${WORKSTATION_DIR}" config --get user.name 2>/dev/null || true)"
+  INC_COUNT="$(git config --global --get-regexp '^includeif\.' 2>/dev/null | grep -c . || true)"
+  if [[ -z "${GIT_EMAIL}" ]]; then
+    warn "git user.email is not configured in ${WORKSTATION_DIR}"
+  elif [[ "${GIT_EMAIL}" == *"@users.noreply.github.com" ]]; then
+    ok "Identity '${GIT_NAME:-unset} <${GIT_EMAIL}>' (GitHub noreply GH007-safe, includeIf=${INC_COUNT})"
+  else
+    ok "Identity '${GIT_NAME:-unset} <${GIT_EMAIL}>' (includeIf=${INC_COUNT})"
+  fi
+else
+  ok "Not a Git repository (${WORKSTATION_DIR})"
+fi
+
+if [[ "${SCAN_GIT_REPOS}" -eq 1 ]]; then
+  GLOBAL_EMAIL="$(git -C "${HOME}" config --includes --get user.email 2>/dev/null || echo "unset")"
+  GLOBAL_NAME="$(git -C "${HOME}" config --includes --get user.name 2>/dev/null || echo "unset")"
+  item "Global default : ${GLOBAL_NAME} <${GLOBAL_EMAIL}>"
+  SEEN_REPOS=" "
+  for cand in "${WORKSTATION_DIR}" "${ZCG_WORKSTATION_DIR:-}" "${HOME}"/*-profile "${HOME}"/*-security "${HOME}"/*-tutor* "${HOME}"/*-work "${HOME}"/*-wallet "${HOME}"/*-game "${HOME}/Projects"/* "${HOME}/Projects"/*/*; do
+    [[ -n "${cand}" ]] && [[ -d "${cand}/.git" ]] || continue
+    [[ -f "${cand}/system/zcg-node.json" ]] || [[ -f "${cand}/.zcg-project.json" ]] || continue
+    real_repo="$(cd "${cand}" && pwd)"
+    [[ "${SEEN_REPOS}" == *" ${real_repo} "* ]] && continue
+    SEEN_REPOS="${SEEN_REPOS}${real_repo} "
+    r_email="$(git -C "${real_repo}" config --get user.email 2>/dev/null || echo "unset")"
+    l_email="$(git -C "${real_repo}" config --local --get user.email 2>/dev/null || true)"
+    r_scope="global/includeIf"
+    [[ -n "${l_email}" ]] && r_scope="local"
+    r_url="$(git -C "${real_repo}" config --get remote.origin.url 2>/dev/null || echo "local-only")"
+    r_host="local-only"
+    [[ "${r_url}" == *"github.com"* ]] && r_host="github.com"
+    [[ "${r_url}" != "local-only" ]] && [[ "${r_host}" == "local-only" ]] && r_host="custom-remote"
+    r_posture="custom-email"
+    [[ "${r_email}" == *"@users.noreply.github.com" ]] && r_posture="github-noreply-ok"
+    [[ "${r_email}" == "unset" ]] && r_posture="UNSET"
+    item "$(printf '%-34s | %-13s | %-38s | %s (%s)' "$(basename "${real_repo}")" "${r_host}" "${r_email}" "${r_posture}" "${r_scope}")"
+  done
 fi
 
 echo ""

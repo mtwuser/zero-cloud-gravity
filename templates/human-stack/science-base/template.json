@@ -6,5 +6,6 @@
   "extends": "universal-base",
   "target_role": "department",
   "description": "Universal scientific method, 1:1:1 traceability, SI/ISO precision, and E3..E0 epistemic rigor.",
+  "associated_global_skills": ["architecture", "audit"],
   "recommended_surface_bindings": []
 }

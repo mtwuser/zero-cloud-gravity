@@ -33,8 +33,8 @@ from zcg.capsules.surfaces import (
     infer_scope_from_path,
 )
 from zcg.core.constants import ROLE_DEFAULT_PRECEDENCE, VALID_ENVIRONMENTS
+from zcg.core.manifests import collect_layer_effective_bindings
 from zcg.ephemeral.briefs import extract_ephemeral_advisories
-from zcg.governance.consensus import collect_layer_effective_bindings
 from zcg.mcp.unfold import UnfoldMixin
 from zcg.topology.identity import resolve_node_entity_identity
 

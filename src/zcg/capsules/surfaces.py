@@ -6,7 +6,6 @@ Specification: docs/architecture/05_contextual_mcp_and_capsules.md
 from __future__ import annotations
 
 import fnmatch
-import re
 from pathlib import Path
 from typing import Any
 
@@ -28,9 +27,13 @@ from zcg.capsules.constants import (
     STRUCTURAL_PATH_SEGMENTS,
 )
 from zcg.capsules.markdown import extract_codon_tags, slugify_codon
-from zcg.core.constants import AGENTS_MD_MAX_BYTES, MATERIALIZED_RULE_RE
-from zcg.core.manifests import iter_layer_template_dirs, parse_skill_frontmatter
-from zcg.governance.consensus import collect_layer_effective_bindings
+from zcg.core.constants import AGENTS_MD_MAX_BYTES
+from zcg.core.domain import parse_materialized_rule_filename
+from zcg.core.manifests import (
+    collect_layer_effective_bindings,
+    iter_layer_template_dirs,
+    parse_skill_frontmatter,
+)
 
 
 def infer_plane_from_path(rel_path: str) -> str:
@@ -199,7 +202,7 @@ def compare_project_patterns_multilayer(
                     layer_b_skills.add(s_id)
         kw = {
             t
-            for t in re.split(r"[-_]", f"{lname}-{manifest.get('layer_id', '')}".lower())
+            for t in f"{lname}-{manifest.get('layer_id', '')}".lower().replace("_", "-").split("-")
             if len(t) >= MIN_ROUTING_KEYWORD_LEN
         }
         for b in collect_layer_effective_bindings(ldir, manifest):
@@ -216,8 +219,8 @@ def compare_project_patterns_multilayer(
                 "keywords": kw,
             }
         )
-    mat_rules = [r for r in project_rules if MATERIALIZED_RULE_RE.match(r)]
-    filt_rules = [r for r in project_rules if not MATERIALIZED_RULE_RE.match(r)]
+    mat_rules = [r for r in project_rules if parse_materialized_rule_filename(r) is not None]
+    filt_rules = [r for r in project_rules if parse_materialized_rule_filename(r) is None]
     novel_rules = sorted(r for r in filt_rules if r not in layer_b_rules)
     novel_skills = sorted(s for s in project_skills if s not in (layer_a_skills | layer_b_skills))
     root_ag = repo_dir / "antigravity/.gemini/config/AGENTS.md"
@@ -225,7 +228,11 @@ def compare_project_patterns_multilayer(
 
     def _route(item_name: str, item_kind: str) -> dict[str, Any]:
         stem = item_name.removesuffix(".md").lower()
-        tokens = {t for t in re.split(r"[-_.]", stem) if len(t) >= MIN_ROUTING_KEYWORD_LEN}
+        tokens = {
+            t
+            for t in stem.replace("_", "-").replace(".", "-").split("-")
+            if len(t) >= MIN_ROUTING_KEYWORD_LEN
+        }
         for rec in layer_records:
             lname = str(rec["name"])
             if lname != "root" and (lname in stem or bool(tokens & set(rec["keywords"]))):

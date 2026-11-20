@@ -10,10 +10,10 @@ The following table summarizes the canonical metadata declared in [`template.jso
 
 | Attribute | Canonical Value | Verification & Runtime Role |
 | :--- | :--- | :--- |
-| **`id`** | `academic-curriculum` | Domain specialization in `VALID_CONTEXT_STACK_IDS` (`constants.py`) |
+| **`id`** | `academic-curriculum` | Domain specialization in `CANONICAL_STARTER_TEMPLATES` (`src/zcg/core/constants.py`) |
 | **`stack_group`** | `context-stack` | Domain Methodology & Practice Axis |
 | **`tier`** | `2` (`Domain Specialization`) | Materialized into `.agents/rules/academic-curriculum.md` via `zcg sync-layer` |
-| **`extends`** | `["academic-base"]` | Transitively resolves `universal-base -> academic-base -> academic-curriculum` |
+| **`extends`** | `"academic-base"` | Transitively resolves `universal-base -> academic-base -> academic-curriculum` |
 | **`rules_file`** | [`rules/academic-curriculum.md`](rules/academic-curriculum.md) | Curriculum decomposition, Bloom/`M1..M4` rubrics, and mastery telemetry |
 
 ---
@@ -30,7 +30,7 @@ The `academic-curriculum` specialization standardizes how educational repositori
 
 ## 3. Mounting & Cross-References
 
-Declare `academic-curriculum` in `system/zcg-node.json` under `stack_groups.context_stack` and synchronize the node:
+Declare `academic-curriculum` in `system/zcg-node.json` under `default_stack_templates` and synchronize the node:
 
 ```bash
 zcg sync-layer /path/to/academic-node

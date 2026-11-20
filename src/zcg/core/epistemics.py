@@ -5,7 +5,6 @@ Specification: docs/architecture/01_core_and_node_manifest.md
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from typing import Any
 
@@ -24,11 +23,71 @@ from zcg.core.constants import (
 )
 from zcg.core.manifests import ensure_contained_path, load_node_manifest
 
-_HUMAN_STACK_LINE_RE = re.compile(
-    r"^\s*[-*]?\s*\**Human-Stack(?:\s+Profile)?(?:\s*\(Optional\))?\**\s*:\s*(.+)$",
-    re.IGNORECASE | re.MULTILINE,
+_HUMAN_STACK_LABELS: tuple[str, ...] = (
+    "human-stack",
+    "human-stack profile",
+    "human-stack (optional)",
+    "human-stack profile (optional)",
 )
-_INTERACTION_LANG_RE = re.compile(r"Interaction Language:\s*[A-Za-z]+\s*\(([a-z]{2})\)")
+_INTERACTION_LANG_MARKER: str = "Interaction Language:"
+
+
+def _extract_human_stack_line_value(markdown_text: str) -> str:
+    for raw_line in markdown_text.splitlines():
+        head, sep, rhs = raw_line.partition(":")
+        label = head.strip().lstrip("-*").strip().strip("*").strip().lower()
+        if sep and label in _HUMAN_STACK_LABELS:
+            return rhs.strip()
+    return ""
+
+
+def _extract_interaction_language_code(markdown_text: str) -> str:
+    if _INTERACTION_LANG_MARKER not in markdown_text:
+        return ""
+    line_tail = markdown_text.split(_INTERACTION_LANG_MARKER, 1)[1].splitlines()[0]
+    label_part, open_p, after_open = line_tail.partition("(")
+    code, close_p, _ = after_open.partition(")")
+    clean_lbl = label_part.strip()
+    if (
+        open_p
+        and close_p
+        and clean_lbl.isascii()
+        and clean_lbl.isalpha()
+        and len(code) == 2
+        and code.isascii()
+        and code.isalpha()
+        and code.islower()
+    ):
+        return code
+    return ""
+
+
+VALID_GLOBAL_PROFILES: tuple[str, ...] = (
+    "universal-base",
+    "academic-base",
+    "science-base",
+    "business-base",
+    "academic",
+    "science",
+    "technical",
+    "business",
+    "full",
+)
+_UB, _AB = ("universal-base", "universal-base.md"), ("academic-base", "academic-base.md")
+_SB = ("science-base", "science-base.md")
+_SE = ("software-engineering", "software-engineering.md")
+_BB = ("business-base", "business-base.md")
+PROFILE_TEMPLATE_CHAIN: dict[str, tuple[tuple[str, str], ...]] = {
+    "universal-base": (_UB,),
+    "academic-base": (_UB, _AB),
+    "science-base": (_UB, _SB),
+    "business-base": (_UB, _BB),
+    "academic": (_UB, _AB),
+    "science": (_UB, _SB),
+    "technical": (_UB, _SB, _SE),
+    "business": (_UB, _BB),
+    "full": (_UB, _AB, _SB, _SE, _BB),
+}
 
 
 def normalize_human_stack_tokens(raw_value: Any) -> list[str]:
@@ -36,7 +95,7 @@ def normalize_human_stack_tokens(raw_value: Any) -> list[str]:
     parts = (
         [str(x) for x in raw_value]
         if isinstance(raw_value, list)
-        else re.split(r"[|,]+", str(raw_value or ""))
+        else str(raw_value or "").replace("|", ",").split(",")
     )
     valid: list[str] = []
     for p in parts:
@@ -66,8 +125,8 @@ def resolve_effective_human_stack(
     for scope_name, fpath in sources:
         if (
             fpath.is_file()
-            and (match := _HUMAN_STACK_LINE_RE.search(fpath.read_text(encoding="utf-8")))
-            and (tokens := normalize_human_stack_tokens(match.group(1)))
+            and (raw_hs := _extract_human_stack_line_value(fpath.read_text(encoding="utf-8")))
+            and (tokens := normalize_human_stack_tokens(raw_hs))
         ):
             return {"facets": tokens, "scope": scope_name}
     if m_tokens := normalize_human_stack_tokens(m.get("human_stack")):
@@ -91,12 +150,12 @@ def resolve_effective_interaction_language(
         eff_h = home_dir.resolve()
         hm = load_node_manifest(eff_h / "zero-cloud-gravity")
         ag_p = eff_h / ".gemini/config/AGENTS.md"
-        ag_m = (
-            _INTERACTION_LANG_RE.search(ag_p.read_text(encoding="utf-8"))
+        ag_code = (
+            _extract_interaction_language_code(ag_p.read_text(encoding="utf-8"))
             if ag_p.is_file()
-            else None
+            else ""
         )
-        h_l = str(hm.get("interaction_language") or (ag_m.group(1) if ag_m else "")).strip()
+        h_l = str(hm.get("interaction_language") or ag_code).strip()
     cands = (
         (str(m.get("interaction_language") or "").strip(), "workspace-manifest"),
         (str(p_m.get("interaction_language") or "").strip(), "parent-layer-manifest"),

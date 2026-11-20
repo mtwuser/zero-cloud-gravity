@@ -19,8 +19,15 @@ from zcg.core.domain import (
     Identifier,
     RepositoryPort,
     ensure_tz_aware,
+    extract_ticket_ids,
     generate_identifier,
     identifier_to_uuid,
+    is_kebab_id,
+    is_safe_git_ref,
+    is_safe_git_remote,
+    is_safe_host,
+    normalize_cdn_origins,
+    parse_materialized_rule_filename,
     uuid_to_identifier,
     validate_identifier,
     validate_long_text,
@@ -121,3 +128,64 @@ class TestDomain:
             entity.title = "Mutated"  # type: ignore[misc]
         with pytest.raises(ValueError, match="timezone-aware"):
             _VentureEntity(title="Bad TZ", created_at=naive_dt)
+
+    def test_normalize_cdn_origins_deduplication_loopback_and_rejection_guards_expected(
+        self,
+    ) -> None:
+        """Verify CDN origin normalization accepts HTTPS/loopback and rejects spoofing/paths."""
+        # Arrange
+        cdn = "https://CDN.Iso.Example"
+
+        # Act
+        norm = normalize_cdn_origins(
+            ("", f"{cdn}/", "https://cdn.iso.example", "http://127.0.0.1:8720")
+        )
+
+        # Assert
+        assert norm == ("https://cdn.iso.example", "http://127.0.0.1:8720")
+        for bad in (
+            "http://cdn.iso.example",
+            "https://*.iso.example",
+            "https://user@cdn.iso.example",
+            "https://cdn.iso.example/sub",
+            "ftp://cdn.iso.example",
+        ):
+            with pytest.raises(ValueError, match="Invalid CDN origin"):
+                normalize_cdn_origins((bad,))
+
+    def test_regex_free_kebab_git_host_materialized_rule_and_ticket_validators_expected(
+        self,
+    ) -> None:
+        """Verify trailing-newline immunity, TCP port bounds, rule filenames, and ticket IDs."""
+        # Arrange
+        body = "Completed [BKL-001] and **GOV-2026-A** plus (OPS-102-3); skip bad_BKL-009 and A-1"
+
+        # Act
+        mat_ok = parse_materialized_rule_filename("layer-10-corp-root.md")
+        tks_all = extract_ticket_ids(body)
+        tks_digits = extract_ticket_ids(body, digits_only_suffix=True)
+
+        # Assert
+        assert is_kebab_id("corp-root-01") and not is_kebab_id("")
+        assert not is_kebab_id("corp-root\n") and not is_kebab_id("-bad")
+        assert is_safe_git_ref("feature/ok-1.0_rc") and not is_safe_git_ref("feature/bad\n")
+        assert is_safe_host("portal.iso.example:8443") and is_safe_host("localhost")
+        assert not is_safe_host("") and not is_safe_host("bad host")
+        assert not is_safe_host("portal.iso.example:0")
+        assert not is_safe_host("portal.iso.example:70000")
+        assert not is_safe_host(":8080") and not is_safe_host("-bad.example")
+        assert is_safe_git_remote("https://github.com/iso-org/repo.git")
+        assert is_safe_git_remote("ssh://git@github.com:2222/iso-org/repo.git")
+        assert is_safe_git_remote("git@github.com:iso-org/repo.git")
+        assert is_safe_git_remote("file:///tmp/repo.git")
+        assert not is_safe_git_remote("") and not is_safe_git_remote("-oProxyCommand=evil")
+        assert not is_safe_git_remote("ftp://github.com/repo.git")
+        assert not is_safe_git_remote("https://github.com/repo.git?bad=1")
+        assert not is_safe_git_remote("file://")
+        assert mat_ok == ("10", "corp-root")
+        assert parse_materialized_rule_filename("other.md") is None
+        assert parse_materialized_rule_filename("layer-10.md") is None
+        assert parse_materialized_rule_filename("layer-xx-root.md") is None
+        assert parse_materialized_rule_filename("layer-10-Bad_Id.md") is None
+        assert tks_all == ["BKL-001", "GOV-2026-A", "OPS-102-3"]
+        assert tks_digits == ["BKL-001", "OPS-102-3"]

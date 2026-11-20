@@ -13,8 +13,8 @@ import pytest
 
 from zcg.platform.projection import DisclosureTier, PayloadFieldSegment, RolePayloadProjector
 from zcg.platform.projection_router import create_role_projection_router, parse_payload_segments
-from zcg.web.factory import create_web_app
-from zcg.web.security import WebAppError
+from zcg.web.auth.security import WebAppError
+from zcg.web.http.factory import create_web_app
 
 
 async def _call(

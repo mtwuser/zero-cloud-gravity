@@ -1,0 +1,89 @@
+name: Keyless MCP Registry & Package Publication
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zcg-mcp-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-mcp-manifest:
+    name: Verify server.json Parity & zcg-mcp Self-Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          allow-prereleases: true
+
+      - name: Validate server.json schema invariants & SemVer parity
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPATH: "src"
+        run: |
+          python - <<'PY'
+          import json
+          import tomllib
+          from pathlib import Path
+
+          ver = Path("VERSION").read_text("utf-8").strip()
+          pyproj = tomllib.loads(Path("pyproject.toml").read_text("utf-8"))
+          srv = json.loads(Path("server.json").read_text("utf-8"))
+          readme = Path("README.md").read_text("utf-8")
+
+          assert pyproj["project"]["version"] == ver
+          assert srv["version"] == ver
+          assert srv["packages"][0]["version"] == ver
+          assert len(srv["description"]) <= 100
+          assert f"<!-- mcp-name: {srv['name']} -->" in readme
+          print(f"Verified MCP Registry manifest {srv['name']}@{ver}")
+          PY
+          PYTHONPATH=src python -m zcg.mcp.server --repo-dir . --self-test
+
+  publish-mcp-registry:
+    name: Keyless OIDC Publish to Official MCP Registry
+    needs: validate-mcp-manifest
+    if: vars.ZCG_MCP_REGISTRY_PUBLISH == '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.14 & build wheel/sdist
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          allow-prereleases: true
+
+      - name: Build zero-dependency distribution artifacts
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      - name: Publish package via PyPI Trusted Publisher OIDC (optional)
+        if: vars.ZCG_PYPI_TRUSTED_PUBLISHER == '1'
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Authenticate via GitHub OIDC & publish server.json to MCP Registry
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" -o /tmp/mcp-publisher.tar.gz
+          tar -xzf /tmp/mcp-publisher.tar.gz -C /tmp mcp-publisher
+          chmod +x /tmp/mcp-publisher
+          /tmp/mcp-publisher login github-oidc
+          /tmp/mcp-publisher publish

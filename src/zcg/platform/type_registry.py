@@ -5,13 +5,18 @@ Specification: docs/architecture/01_core_and_node_manifest.md
 
 from __future__ import annotations
 
+import ipaddress
 import itertools
 import math
+import string
+import uuid
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 from typing import Final
+from urllib.parse import urlsplit
 
 HIGH_CARDINALITY_THRESHOLD: Final[float] = 0.80
 LOW_CARDINALITY_THRESHOLD: Final[float] = 0.10
@@ -171,6 +176,76 @@ def detect_positional_anchors(values: Sequence[str]) -> tuple[tuple[int, str], .
         if len(chars) == 1 and not (ch := next(iter(chars))).isalnum():
             anchors.append((pos, ch))
     return tuple(anchors)
+
+
+UUID_CANONICAL_LEN: Final[int] = 36
+ISO_TIMESTAMP_MIN_LEN: Final[int] = 16
+ISO_TIMESTAMP_SEP_INDEX: Final[int] = 10
+MIN_HEX_DIGEST_LEN: Final[int] = 16
+
+
+def _is_uuid_string(val: str) -> bool:
+    if len(val) != UUID_CANONICAL_LEN:
+        return False
+    try:
+        return str(uuid.UUID(val)).lower() == val.lower()
+    except ValueError:
+        return False
+
+
+def _is_email_string(val: str) -> bool:
+    if any(ch.isspace() for ch in val):
+        return False
+    local, sep, domain = val.partition("@")
+    return bool(
+        sep
+        and local
+        and "@" not in domain
+        and "." in domain
+        and not domain.startswith(".")
+        and not domain.endswith(".")
+    )
+
+
+def _is_http_url_string(val: str) -> bool:
+    parsed = urlsplit(val)
+    return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+
+
+def _is_iso_timestamp_string(val: str) -> bool:
+    if len(val) < ISO_TIMESTAMP_MIN_LEN or val[ISO_TIMESTAMP_SEP_INDEX] not in ("T", " "):
+        return False
+    try:
+        datetime.fromisoformat(val)
+        return True
+    except ValueError:
+        return False
+
+
+def _is_ipv4_string(val: str) -> bool:
+    try:
+        ipaddress.IPv4Address(val)
+        return True
+    except ipaddress.AddressValueError:
+        return False
+
+
+def _is_hex_digest_string(val: str) -> bool:
+    return (
+        len(val) >= MIN_HEX_DIGEST_LEN
+        and val.isascii()
+        and all(ch in string.hexdigits for ch in val)
+    )
+
+
+PATTERN_VALIDATORS: Final[tuple[tuple[StructuralPattern, Callable[[str], bool]], ...]] = (
+    (StructuralPattern.UUID, _is_uuid_string),
+    (StructuralPattern.EMAIL, _is_email_string),
+    (StructuralPattern.URL, _is_http_url_string),
+    (StructuralPattern.ISO_TIMESTAMP, _is_iso_timestamp_string),
+    (StructuralPattern.IPV4, _is_ipv4_string),
+    (StructuralPattern.HEXADECIMAL, _is_hex_digest_string),
+)
 
 
 DEFAULT_CANONICAL_TYPE_RULES: Final[tuple[TypeMappingRule, ...]] = (

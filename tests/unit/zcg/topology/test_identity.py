@@ -95,10 +95,10 @@ class TestIdentity:
         id_oss = identity.resolve_node_entity_identity(oss_pub)
 
         # Arrange — Individual workstation & individual study node (.personal.local)
-        ind_ws = tmp_path / "user-pc"
+        ind_ws = tmp_path / "user-profile"
         _write_manifest(
             ind_ws,
-            {"layer_id": "user-pc", "layer_role": "workstation", "entity_kind": "individual"},
+            {"layer_id": "user-profile", "layer_role": "workstation", "entity_kind": "individual"},
         )
         id_ind_ws = identity.resolve_node_entity_identity(ind_ws)
         ind_study = tmp_path / "study-lab"
@@ -150,7 +150,7 @@ class TestIdentity:
             {
                 "layer_id": "pub-user",
                 "layer_role": "knowledge",
-                "governing_root_id": "user-pc",
+                "governing_root_id": "user-profile",
                 "public_url": "https://github.com/example/pub-user.git",
             },
         )
@@ -169,7 +169,7 @@ class TestIdentity:
         assert (
             id_ind_study["public_node_identity"]["canonical_domain"] == "study-lab.personal.local"
         )
-        assert id_ind_study["governing_root_id"] == "user-pc"
+        assert id_ind_study["governing_root_id"] == "user-profile"
         assert id_twin["public_node_identity"]["bridge_mode"] == "private-to-public-twin"
         assert id_twin["public_node_identity"]["recognizable_in_network"] is True
         assert unapproved_know["visibility"] == "private"

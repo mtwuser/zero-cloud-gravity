@@ -14,14 +14,13 @@ from typing import Any
 
 from zcg.capsules.citations import load_citation_telemetry_radar
 from zcg.capsules.constants import (
-    ANSI_ESCAPE_RE,
     CHARS_PER_TOKEN_ESTIMATE,
     MAX_RECOMMENDED_MCP_FANOUT,
 )
 from zcg.capsules.grcc import discover_deep_context_index, read_git_branch_document
 from zcg.capsules.markdown import merge_unique_strings, read_non_empty_lines
 from zcg.capsules.surfaces import compare_project_patterns_multilayer
-from zcg.cockpit.lifecycle import summarize_runtime_orchestration
+from zcg.core.ast_graph import build_codebase_ast_graph
 from zcg.core.constants import AGENTS_MD_MAX_BYTES, REPO_DIR, VALID_ENVIRONMENTS
 from zcg.core.epistemics import resolve_effective_human_stack
 from zcg.core.manifests import (
@@ -32,7 +31,10 @@ from zcg.core.manifests import (
     read_os_pretty_name,
     read_version,
 )
+from zcg.core.markdown_scan import strip_ansi_csi
 from zcg.ephemeral.lifecycle import inspect_ephemeral_forks
+from zcg.governance.runtime.mcp_connectors import resolve_governed_mcp_connectors
+from zcg.governance.workspace.antigravity_sync import summarize_runtime_orchestration
 from zcg.mcp.catalogs import resolve_mcp_capability_profile
 from zcg.mcp.surfaces import SurfaceGovernanceMixin
 from zcg.topology.identity import resolve_node_entity_identity
@@ -102,6 +104,11 @@ class FederationMixin(SurfaceGovernanceMixin):
                 "global_skills": skills,
                 "stack_templates": discover_layer_template_names(tdir),
                 "baseline_guardrails": manifest.get("baseline_guardrails", []),
+                **(
+                    {"codebase_ast_graph": build_codebase_ast_graph(tdir)}
+                    if bool(args.get("include_ast_graph"))
+                    else {}
+                ),
             },
             "channel_3_active_invariants_and_hooks": {
                 "agents_md_bytes": ag_bytes,
@@ -186,7 +193,7 @@ class FederationMixin(SurfaceGovernanceMixin):
             results["checks"][key] = {
                 "exit_code": code,
                 "passed": ok,
-                "output": ANSI_ESCAPE_RE.sub("", raw_out).strip(),
+                "output": strip_ansi_csi(raw_out).strip(),
             }
         results["warnings"] = (
             []
@@ -276,6 +283,9 @@ class FederationMixin(SurfaceGovernanceMixin):
             if (len(mcps) > MAX_RECOMMENDED_MCP_FANOUT and not f_role and not env_arg)
             else []
         )
+        gov_connectors = resolve_governed_mcp_connectors(
+            self.repo_dir, manifest=root_m, active_env=env_arg or "dev"
+        )
         payload = {
             "layer_id": root_m.get("layer_id"),
             "layer_role": root_m.get("layer_role"),
@@ -285,6 +295,7 @@ class FederationMixin(SurfaceGovernanceMixin):
             "environment_profile": act_prof,
             "mounted_layers": self.discover_mounted_layers(),
             "federated_mcp_count": len(mcps),
+            "governed_mcp_connectors": gov_connectors,
             "warnings": warns,
             "federated_mcps": mcps,
         }

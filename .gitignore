@@ -21,3 +21,4 @@ logs/
 .agents/telemetry/
 .agents/SESSION.md
 .workstation-state.json
+.zcg/

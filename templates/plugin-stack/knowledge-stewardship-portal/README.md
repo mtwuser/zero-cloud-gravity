@@ -1,6 +1,6 @@
 # `knowledge-stewardship-portal` (`plugin-stack`) — Tier 2 Epistemic Corpus & Public Twin Portal
 
-> Tier 2 runtime Reference Dashboard extending `scientific-methodology` for public and institutional `knowledge` nodes (`gov-*`, `geo-*`, `sci-*`, `org-*`, `:8720`), combining `data_pipeline` (`SchemaDiscovery` / `CDC` / `CVS`), `crud` (`epistemic-entries`), `vault`, and `node_mesh`.
+> Tier 2 runtime Reference Dashboard extending `scientific-methodology` for public and institutional `knowledge` nodes (`gov-*`, `geo-*`, `sci-*`, `org-*`, `:8720`), combining `docs_reader`, `work_ledger`, `crud` (`epistemic-entries`), `data_pipeline` (`SchemaDiscovery` / `CDC` / `CVS`), `vault`, `spatial_atlas`, and `portal_inbox`.
 
 ---
 
@@ -13,7 +13,7 @@ The table below summarizes the canonical metadata declared in [`template.json`](
 | **`id`** | `knowledge-stewardship-portal` | Default `knowledge` role plugin in `CANONICAL_STARTER_TEMPLATES` (`constants.py`) |
 | **`stack_group`** | `plugin-stack` | Editable Reference Dashboard & Runtime Surface Axis |
 | **`extends`** | `"scientific-methodology"` | Transitively resolves `universal-base -> science-base -> scientific-methodology` |
-| **`enabled_modules`** | `["data_pipeline", "crud", "vault", "node_mesh"]` | Composes stateful CDC/CVS ingestion, epistemic CRUD entries, blob vault, and 1-hop mesh |
+| **`enabled_modules`** | `["docs_reader", "work_ledger", "crud", "data_pipeline", "vault", "spatial_atlas", "portal_inbox"]` | Composes epistemic docs reader, work ledger, epistemic CRUD entries, stateful CDC/CVS ingestion, blob vault, interactive 2D/3D Spatial Atlas, and `R3` portal exposure/mailbox control |
 | **`web_assets`** | `web/templates/` + `web/static/` | Cascading `TemplateCatalog` (`index.html`, `partials/overview.html`) & `--zcg-*` `plugin.css` |
 
 ---

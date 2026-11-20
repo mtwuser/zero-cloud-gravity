@@ -54,14 +54,14 @@ Never execute mutating git commands automatically. Substitute `<branch>` with th
 ```bash
 ### Release vX.Y.Z (<Repo Name>)
 cd <REPO_PATH>
-git add -A
+git add -u
 git commit -m "chore(release): publish vX.Y.Z"
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
 git push origin <branch> --follow-tags
 ```
 
 - **Dual-Remote Private Dev Workspace (`dev-<repo>` $\rightarrow$ Private CI Gate $\rightarrow$ Public Open-Source Snapshot)**:
-  When releasing an Open-Source upstream repository, **always execute `/release` from `ZCG_DEV_REPO_DIR` (`dev-zero-cloud-gravity`, `entity_kind: "open-source"` on verified linear `master`), NEVER from a personal or corporate runtime clone (`~/<user-pc>`)** (`OSS_PERSONAL_REPO_PUBLISH_BLOCKED`). Follow the gated CI-verified export so a public tag never needs re-patching:
+  When releasing an Open-Source upstream repository, **always execute `/release` from `ZCG_DEV_REPO_DIR` (`dev-zero-cloud-gravity`, `entity_kind: "open-source"` on verified linear `master`), NEVER from a personal or corporate runtime clone (`~/<user>-profile`)** (`OSS_PERSONAL_REPO_PUBLISH_BLOCKED`). Follow the gated CI-verified export so a public tag never needs re-patching:
   0. **Step 0 — Pre-Release Private Branch CI Gate (When `dev-<repo>` Is `[ahead N]`)**: Before cutting the release commit/tag, inspect `git status -sb`. If local `<branch>` has unpushed commits ahead of `origin/<branch>`, **STOP** before bumping `VERSION` and first validate those commits via an isolated branch (`git checkout -b release/vX.Y.Z-rc && git branch -f <branch> origin/<branch> && make oss-push-branch` $\rightarrow$ confirm private GitHub Actions `8/8` green $\rightarrow$ `make oss-promote-master`).
   1. **Step A — Seal & Validate Release Commit on Private `origin` First**: Commit the release bump (`CHANGELOG.md`, `VERSION`, `pyproject.toml`, `server.json`, `README.md`), tag `vX.Y.Z` locally, push to private `origin` (`git push origin <branch> --follow-tags`), and confirm private GitHub Actions (`8/8` gates) turns green.
   2. **Step B — Export Sterile Single-Commit Snapshot to Public `upstream` + Sync `$HOME`**: Run `make oss-publish RELEASE_VERSION=X.Y.Z` (authorized directly for the repository admin via GitHub Ruleset bypass while external contributors use Fork Pull Requests or `make oss-publish CREATE_PR=1 CONTRIB_BRANCH=contrib/<slug> OSS_REMOTE_URL=<fork-url>`), which exports `1` tracker-free commit (`git archive HEAD` minus `WORK*.md`, `BACKLOG.md`, `roadmaps/`, and `.github/dependabot.yml`) + annotated tag `vX.Y.Z` onto public `master` and syncs `$HOME`:
